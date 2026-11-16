@@ -5,6 +5,7 @@ import settingState from '@/store/setting/state'
 import themeState from '@/store/theme/state'
 import { isUrl } from '@/utils'
 import { privateStorageDirectoryPath } from '@/utils/fs'
+import { buildM3ThemeColors } from '@/theme/m3'
 import { type ImageSourcePropType } from 'react-native'
 
 export const BG_IMAGES = {
@@ -68,12 +69,20 @@ export const buildActiveThemeColors = (theme: LX.Theme): LX.ActiveTheme => {
     theme.config.extInfo[k] = theme.config.themeColors[v.replace(varColorRxp, '$1') as ColorsKey]
   }
 
+  const m3Colors = buildM3ThemeColors(
+    theme.config.themeColors['c-primary'],
+    theme.isDark,
+    theme.config.themeColors['c-950'],
+    theme.config.themeColors['c-600'],
+  )
+
   return {
     id: theme.id,
     name: theme.name,
     isDark: theme.isDark,
     ...theme.config.themeColors,
     ...theme.config.extInfo,
+    ...m3Colors,
     'c-font': theme.config.themeColors['c-850'],
     'c-font-label': theme.config.themeColors['c-450'],
     'c-primary-font': theme.config.themeColors['c-primary'],

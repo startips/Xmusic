@@ -1,23 +1,20 @@
 import { memo, useMemo } from 'react'
+import { View } from 'react-native'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { withAlpha } from '@/theme/m3'
 import Text from './Text'
-// const menuItemHeight = 42
-// const menuItemWidth = 100
 
 const styles = createStyle({
-  text: {
-    // paddingLeft: 4,
-    // paddingRight: 4,
-    // borderRadius: 2,
-    // lineHeight: 12,
-    // marginTop: 2,
-    marginRight: 5,
-    fontWeight: '400',
-    // marginRight: 5,
-    // marginBottom: 2,
-    // alignSelf: 'flex-start',
+  container: {
+    marginRight: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
     alignSelf: 'center',
+  },
+  text: {
+    fontWeight: '600',
   },
 })
 
@@ -28,26 +25,29 @@ export default memo(({ type = 'normal', children }: {
   children: string
 }) => {
   const theme = useTheme()
-  // console.log(visible)
   const colors = useMemo(() => {
-    const colors = { textColor: '' }
+    let textColor = theme['c-badge-primary']
     switch (type) {
       case 'normal':
-        // colors.bgColor = theme.primary
-        colors.textColor = theme['c-badge-primary']
+        textColor = theme['c-badge-primary']
         break
       case 'secondary':
-        // colors.bgColor = theme.primary
-        colors.textColor = theme['c-badge-secondary']
+        textColor = theme['c-badge-secondary']
         break
       case 'tertiary':
-        // colors.bgColor = theme.primary
-        colors.textColor = theme['c-badge-tertiary']
+        textColor = theme['c-badge-tertiary']
         break
     }
-    return colors
+    return {
+      textColor,
+      bgColor: withAlpha(textColor, theme.isDark ? 0.2 : 0.14),
+    }
   }, [type, theme])
 
-  return <Text style={styles.text} size={9} color={colors.textColor}>{children}</Text>
+  return (
+    <View style={{ ...styles.container, backgroundColor: colors.bgColor }}>
+      <Text style={styles.text} size={9} color={colors.textColor}>{children}</Text>
+    </View>
+  )
 })
 

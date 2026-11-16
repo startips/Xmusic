@@ -13,6 +13,7 @@ import { updateSetting } from '@/core/common'
 import { checkUpdate } from '@/core/version'
 import { initDeeplink } from '@/core/init/deeplink'
 import settingState from '@/store/setting/state'
+import { M3Radius } from '@/theme/m3'
 
 const Content = () => {
   const theme = useTheme()
@@ -142,13 +143,13 @@ const Footer = ({ componentId }: { componentId: string }) => {
           isAgreePact
             ? null
             : (
-                <Button style={{ ...styles.btn, backgroundColor: theme['c-button-background'] }} onPress={handleRejct}>
-                  <Text color={theme['c-button-font']}>不接受</Text>
+                <Button style={{ ...styles.btn, backgroundColor: theme['m3-surface-container-highest'] }} onPress={handleRejct}>
+                  <Text style={styles.btnLabel} color={theme['m3-on-surface']}>不接受</Text>
                 </Button>
               )
         }
-        <Button disabled={confirmBtn.disabled} style={{ ...styles.btn, backgroundColor: theme['c-button-background'] }} onPress={handleConfirm}>
-          <Text color={theme['c-button-font']}>{confirmBtn.text}</Text>
+        <Button disabled={confirmBtn.disabled} style={{ ...styles.btn, backgroundColor: theme['m3-primary-container'] }} onPress={handleConfirm}>
+          <Text style={styles.btnLabel} color={theme['m3-on-primary-container']}>{confirmBtn.text}</Text>
         </Button>
       </View>
     </>
@@ -180,7 +181,8 @@ const styles = createStyle({
   },
   title: {
     textAlign: 'center',
-    marginBottom: 15,
+    fontWeight: '700',
+    marginBottom: 14,
   },
   part: {
     marginBottom: 10,
@@ -198,26 +200,25 @@ const styles = createStyle({
   tip: {
     textAlignVertical: 'bottom',
     fontWeight: 'bold',
-    paddingLeft: 15,
-    paddingRight: 15,
-    paddingBottom: 15,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
   },
   btns: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingBottom: 15,
-    paddingLeft: 15,
-    // paddingRight: 15,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   btn: {
     flex: 1,
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingLeft: 10,
-    paddingRight: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    borderRadius: 4,
-    marginRight: 15,
+    borderRadius: M3Radius.full,
+  },
+  btnLabel: {
+    fontWeight: '600',
   },
 })
 

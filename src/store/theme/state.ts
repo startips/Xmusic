@@ -1,4 +1,5 @@
 import { createContext } from 'react'
+import { buildM3ThemeColors } from '@/theme/m3'
 // import type { RootState } from '@/store'
 
 
@@ -251,6 +252,7 @@ const state: InitState = {
   shouldUseDarkColors: false,
   theme: {
     ...theme,
+    ...buildM3ThemeColors(theme['c-primary'], theme.isDark, theme['c-950'], theme['c-600']),
     'c-app-background': theme['c-primary-light-600-alpha-600'],
     'c-main-background': 'rgba(255, 255, 255, 0.9)',
 

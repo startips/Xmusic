@@ -57,8 +57,7 @@ const List = forwardRef<ListType, ListProps>(({
 
   const refreshControl = useMemo(() => (
     <RefreshControl
-      colors={[theme['c-primary']]}
-      // progressBackgroundColor={theme.primary}
+      colors={[theme['m3-primary']]}
       refreshing={status == 'refreshing'}
       onRefresh={onRefresh} />
   ), [status, onRefresh, theme])
@@ -86,6 +85,7 @@ const List = forwardRef<ListType, ListProps>(({
     <FlatList
       ref={flatListRef}
       style={styles.list}
+      contentContainerStyle={styles.contentContainer}
       data={currentList}
       onEndReachedThreshold={0.5}
       // maxToRenderPerBatch={4}
@@ -133,12 +133,15 @@ const styles = createStyle({
   list: {
     flexGrow: 1,
     flexShrink: 1,
-    paddingLeft: 15,
-    paddingRight: 15,
+    paddingHorizontal: 12,
+  },
+  contentContainer: {
+    paddingTop: 4,
+    paddingBottom: 16,
   },
   footer: {
     textAlign: 'center',
-    padding: 10,
+    padding: 12,
   },
 })
 

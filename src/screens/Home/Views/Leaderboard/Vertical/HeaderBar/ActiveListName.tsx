@@ -4,6 +4,8 @@ import { TouchableOpacity } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
+import { Icon } from '@/components/common/Icon'
+import { M3Radius } from '@/theme/m3'
 
 export interface ActiveListNameProps {
   onShowBound: () => void
@@ -23,8 +25,17 @@ export default forwardRef<ActiveListNameType, ActiveListNameProps>(({ onShowBoun
   }), [])
 
   return (
-    <TouchableOpacity onPress={onShowBound} style={styles.currentList}>
-      <Text numberOfLines={1} style={styles.currentListText} color={theme['c-button-font']}>{currentListName}</Text>
+    <TouchableOpacity
+      onPress={onShowBound}
+      activeOpacity={0.75}
+      style={{
+        ...styles.currentList,
+        backgroundColor: theme['m3-surface-container'],
+        borderColor: theme['m3-outline-variant'],
+      }}
+    >
+      <Text numberOfLines={1} size={13} style={styles.currentListText} color={theme['m3-on-surface']}>{currentListName}</Text>
+      <Icon name="chevron-right" size={11} color={theme['m3-on-surface-variant']} />
     </TouchableOpacity>
   )
 })
@@ -34,23 +45,16 @@ const styles = createStyle({
   currentList: {
     flex: 1,
     flexDirection: 'row',
-    paddingRight: 2,
-    // height: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: M3Radius.full,
+    borderWidth: 0.8,
     alignItems: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  currentListIcon: {
-    paddingLeft: 15,
-    paddingRight: 10,
-    // paddingTop: 10,
-    // paddingBottom: 0,
+    justifyContent: 'space-between',
   },
   currentListText: {
     flex: 1,
-    // minWidth: 70,
-    // paddingLeft: 10,
-    paddingRight: 10,
-    // paddingTop: 10,
-    // paddingBottom: 10,
+    paddingRight: 8,
+    fontWeight: '600',
   },
 })

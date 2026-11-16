@@ -5,7 +5,7 @@ import { useI18n } from '@/lang'
 import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
 import { createStyle } from '@/utils/tools'
-import { BorderWidths } from '@/theme'
+import { M3Radius } from '@/theme/m3'
 
 export interface SortTabProps {
   onSortChange: (id: string) => void
@@ -41,13 +41,29 @@ export default forwardRef<SortTabType, SortTabProps>(({ onSortChange }, ref) => 
   }
 
   return (
-    <ScrollView ref={scrollViewRef} style={styles.container} keyboardShouldPersistTaps={'always'} horizontal>
+    <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps={'always'} horizontal showsHorizontalScrollIndicator={false}>
       {
-        sorts.map(s => (
-          <TouchableOpacity style={styles.button} onPress={() => { handleSortChange(s.id) }} key={s.id}>
-            <Text style={{ ...styles.buttonText, borderBottomColor: activeId == s.id ? theme['c-primary-background-active'] : 'transparent' }} color={activeId == s.id ? theme['c-primary-font-active'] : theme['c-font']}>{s.label}</Text>
-          </TouchableOpacity>
-        ))
+        sorts.map(s => {
+          const active = activeId == s.id
+          return (
+            <TouchableOpacity
+              style={{
+                ...styles.button,
+                backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container'],
+              }}
+              onPress={() => { handleSortChange(s.id) }}
+              key={s.id}
+            >
+              <Text
+                size={13}
+                style={active ? styles.buttonTextActive : styles.buttonText}
+                color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
+              >
+                {s.label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })
       }
     </ScrollView>
   )
@@ -58,24 +74,23 @@ const styles = createStyle({
   container: {
     flexGrow: 1,
     flexShrink: 1,
-    // paddingLeft: 5,
-    // paddingRight: 5,
+  },
+  contentContainer: {
+    alignItems: 'center',
+    gap: 6,
   },
   button: {
-    // height: 38,
-    // lineHeight: 38,
     justifyContent: 'center',
-    paddingLeft: 14,
-    paddingRight: 14,
-    // width: 80,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: M3Radius.full,
   },
   buttonText: {
-    // height: 38,
-    // lineHeight: 38,
     textAlign: 'center',
-    paddingHorizontal: 2,
-    paddingVertical: 3,
-    borderBottomWidth: BorderWidths.normal3,
+    fontWeight: '400',
+  },
+  buttonTextActive: {
+    textAlign: 'center',
+    fontWeight: '600',
   },
 })

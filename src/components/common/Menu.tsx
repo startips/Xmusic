@@ -8,9 +8,11 @@ import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
 import { scaleSizeH, scaleSizeW } from '@/utils/pixelRatio'
+import { M3Radius } from '@/theme/m3'
 
-const menuItemHeight = scaleSizeH(40)
-const menuItemWidth = scaleSizeW(100)
+const menuItemHeight = scaleSizeH(42)
+const menuItemWidth = scaleSizeW(108)
+const MENU_PADDING_V = 6
 
 export interface Position { w: number, h: number, x: number, y: number, menuWidth?: number, menuHeight?: number }
 export interface MenuSize { width?: number, height?: number }
@@ -28,25 +30,19 @@ const styles = createStyle({
   },
   menu: {
     position: 'absolute',
-    // borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'lightgray',
-    borderRadius: 2,
-    backgroundColor: 'white',
-    elevation: 3,
+    borderWidth: 1,
+    borderRadius: M3Radius.md,
+    paddingVertical: MENU_PADDING_V,
+    overflow: 'hidden',
+    elevation: 8,
   },
   menuItem: {
-    paddingLeft: 10,
-    paddingRight: 10,
-    // height: menuItemHeight,
-    // width: menuItemWidth,
-    // alignItems: 'center',
+    marginHorizontal: 6,
+    paddingLeft: 12,
+    paddingRight: 12,
+    borderRadius: M3Radius.sm,
     justifyContent: 'center',
-    // backgroundColor: '#ccc',
   },
-  // menuText: {
-  //   // textAlign: 'center',
-  //   fontSize: 14,
-  // },
 })
 
 interface Props<M extends Menus = Menus> {
@@ -87,12 +83,12 @@ const Menu = ({
   }, [menuSize, width, height])
 
   const menuStyle = useMemo(() => {
-    let menuHeight = menus.length * menuItemStyle.height
+    let menuHeight = menus.length * menuItemStyle.height + MENU_PADDING_V * 2
     const topHeight = buttonPosition.y - 20
     const bottomHeight = windowSize.height - buttonPosition.y - buttonPosition.h - 20
     if (menuHeight > topHeight && menuHeight > bottomHeight) menuHeight = Math.max(topHeight, bottomHeight)
 
-    const menuWidth = menuItemStyle.width
+    const menuWidth = menuItemStyle.width + 12
     const bottomSpace = windowSize.height - buttonPosition.y - buttonPosition.h - 20
     const rightSpace = windowSize.width - buttonPosition.x - menuWidth
     const showInBottom = bottomSpace >= menuHeight
@@ -127,36 +123,49 @@ const Menu = ({
   // console.log(menuStyle)
   // console.log(menuItemStyle)
   return (
-    <View style={{ ...styles.menu, ...menuStyle, backgroundColor: theme['c-content-background'] }} onStartShouldSetResponder={() => true}>
+    <View
+      style={{
+        ...styles.menu,
+        ...menuStyle,
+        backgroundColor: theme['m3-surface-container-high'],
+        borderColor: theme['m3-outline-variant'],
+      }}
+      onStartShouldSetResponder={() => true}
+    >
       <Animated.ScrollView keyboardShouldPersistTaps={'always'}>
         {
-          menus.map((menu, index) => (
+          menus.map((menu) => (
             menu.disabled
               ? (
                   <View
                     key={menu.action}
-                    style={{ ...styles.menuItem, width: menuItemStyle.width, height: menuItemStyle.height, opacity: 0.4 }}
+                    style={{ ...styles.menuItem, width: menuItemStyle.width, height: menuItemStyle.height, opacity: 0.38 }}
                   >
-                    <Text style={{ textAlign: center ? 'center' : 'left' }} size={fontSize} numberOfLines={1}>{menu.label}</Text>
+                    <Text style={{ textAlign: center ? 'center' : 'left' }} size={fontSize} color={theme['m3-on-surface']} numberOfLines={1}>{menu.label}</Text>
                   </View>
                 )
               : menu.action == activeId
                 ? (
                     <View
                       key={menu.action}
-                      style={{ ...styles.menuItem, width: menuItemStyle.width, height: menuItemStyle.height }}
+                      style={{
+                        ...styles.menuItem,
+                        width: menuItemStyle.width,
+                        height: menuItemStyle.height,
+                        backgroundColor: theme['m3-secondary-container'],
+                      }}
                     >
-                      <Text style={{ textAlign: center ? 'center' : 'left' }} color={theme['c-primary-font-active']} size={fontSize} numberOfLines={1}>{menu.label}</Text>
+                      <Text style={{ textAlign: center ? 'center' : 'left', fontWeight: '600' }} color={theme['m3-on-secondary-container']} size={fontSize} numberOfLines={1}>{menu.label}</Text>
                     </View>
                   )
                 : (
                     <TouchableHighlight
                       key={menu.action}
                       style={{ ...styles.menuItem, width: menuItemStyle.width, height: menuItemStyle.height }}
-                      underlayColor={theme['c-primary-background-active']}
+                      underlayColor={theme['m3-surface-container-highest']}
                       onPress={() => { menuPress(menu) }}
                     >
-                      <Text style={{ textAlign: center ? 'center' : 'left' }} size={fontSize} numberOfLines={1}>{menu.label}</Text>
+                      <Text style={{ textAlign: center ? 'center' : 'left' }} color={theme['m3-on-surface']} size={fontSize} numberOfLines={1}>{menu.label}</Text>
                     </TouchableHighlight>
                   )
 

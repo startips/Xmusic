@@ -7,6 +7,7 @@ import { scaleSizeW } from '@/utils/pixelRatio'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import { useTheme } from '@/store/theme/hook'
 import Image from '@/components/common/Image'
+import { M3Radius } from '@/theme/m3'
 
 const gap = scaleSizeW(15)
 export default memo(({ item, index, width, showSource, onPress }: {
@@ -25,14 +26,14 @@ export default memo(({ item, index, width, showSource, onPress }: {
     item.source
       ? (
           <View style={{ ...styles.listItem, width: itemWidth }}>
-            <View style={{ ...styles.listItemImg, backgroundColor: theme['c-content-background'] }}>
-              <TouchableOpacity activeOpacity={0.5} onPress={handlePress}>
-                <Image url={item.img} nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${item.id}`} style={{ width: itemWidth, height: itemWidth, borderRadius: 4 }} />
+            <View style={{ ...styles.listItemImg, backgroundColor: theme['m3-surface-container'] }}>
+              <TouchableOpacity activeOpacity={0.75} onPress={handlePress}>
+                <Image url={item.img} nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${item.id}`} style={{ width: itemWidth, height: itemWidth, borderRadius: M3Radius.md }} />
                 { showSource ? <Text style={styles.sourceLabel} size={9} color="#fff" >{item.source}</Text> : null }
               </TouchableOpacity>
             </View>
-            <TouchableOpacity activeOpacity={0.5} onPress={handlePress}>
-              <Text style={styles.listItemTitle} numberOfLines={ 2 }>{item.name}</Text>
+            <TouchableOpacity activeOpacity={0.75} onPress={handlePress}>
+              <Text style={styles.listItemTitle} color={theme['m3-on-surface']} numberOfLines={ 2 }>{item.name}</Text>
             </TouchableOpacity>
             {/* <Text>{JSON.stringify(item)}</Text> */}
           </View>
@@ -47,38 +48,38 @@ const styles = createStyle({
     margin: 10,
   },
   listItemImg: {
-    // backgroundColor: '#eee',
-    borderRadius: 4,
-    marginBottom: 5,
+    borderRadius: M3Radius.md,
+    marginBottom: 7,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: {
           width: 0,
-          height: 1,
+          height: 2,
         },
-        shadowOpacity: 0.20,
-        shadowRadius: 1.41,
+        shadowOpacity: 0.16,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 2,
+        elevation: 3,
       },
     }),
   },
   sourceLabel: {
-    paddingLeft: 4,
-    paddingBottom: 2,
-    paddingRight: 4,
+    paddingLeft: 6,
+    paddingBottom: 3,
+    paddingTop: 2,
+    paddingRight: 6,
     position: 'absolute',
     top: 0,
     right: 0,
-    borderBottomLeftRadius: 3,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderBottomLeftRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   listItemTitle: {
-    fontSize: 12,
-    // overflow: 'hidden',
+    fontSize: 13,
+    fontWeight: '500',
     marginBottom: 5,
   },
 })

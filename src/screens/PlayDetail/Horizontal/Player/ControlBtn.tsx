@@ -1,35 +1,54 @@
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
-// import { useIsPlay } from '@/store/player/hook'
 import { playNext, playPrev, togglePlay } from '@/core/player/player'
-// import { scaleSizeW } from '@/utils/pixelRatio'
 import { useIsPlay } from '@/store/player/hook'
 import { useLayout } from '@/utils/hooks'
 import { marginLeft } from '../constant'
 import { BTN_WIDTH } from '../MoreBtn/Btn'
-
-// const WIDTH = scaleSizeW(48)
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 const PrevBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
+  const btnSize = size * 0.88
   const handlePlayPrev = () => {
     void playPrev()
   }
   return (
-    <TouchableOpacity style={{ ...styles.cotrolBtn, width: size, height: size }} activeOpacity={0.5} onPress={handlePlayPrev}>
-      <Icon name='prevMusic' color={theme['c-button-font']} rawSize={size * 0.7} />
+    <TouchableOpacity
+      style={{
+        ...styles.controlBtn,
+        width: btnSize,
+        height: btnSize,
+        borderRadius: M3Radius.full,
+        backgroundColor: withAlpha(theme['m3-surface-container-high'], 0.85),
+      }}
+      activeOpacity={0.75}
+      onPress={handlePlayPrev}
+    >
+      <Icon name='prevMusic' color={theme['m3-on-surface']} rawSize={btnSize * 0.48} />
     </TouchableOpacity>
   )
 }
 const NextBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
+  const btnSize = size * 0.88
   const handlePlayNext = () => {
     void playNext()
   }
   return (
-    <TouchableOpacity style={{ ...styles.cotrolBtn, width: size, height: size }} activeOpacity={0.5} onPress={handlePlayNext}>
-      <Icon name='nextMusic' color={theme['c-button-font']} rawSize={size * 0.7} />
+    <TouchableOpacity
+      style={{
+        ...styles.controlBtn,
+        width: btnSize,
+        height: btnSize,
+        borderRadius: M3Radius.full,
+        backgroundColor: withAlpha(theme['m3-surface-container-high'], 0.85),
+      }}
+      activeOpacity={0.75}
+      onPress={handlePlayNext}
+    >
+      <Icon name='nextMusic' color={theme['m3-on-surface']} rawSize={btnSize * 0.48} />
     </TouchableOpacity>
   )
 }
@@ -38,20 +57,30 @@ const TogglePlayBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
   const isPlay = useIsPlay()
   return (
-    <TouchableOpacity style={{ ...styles.cotrolBtn, width: size, height: size }} activeOpacity={0.5} onPress={togglePlay}>
-      <Icon name={isPlay ? 'pause' : 'play'} color={theme['c-button-font']} rawSize={size * 0.7} />
+    <TouchableOpacity
+      style={{
+        ...styles.controlBtn,
+        width: size * 1.15,
+        height: size,
+        borderRadius: isPlay ? M3Radius.lg : M3Radius.full,
+        backgroundColor: theme['m3-primary-container'],
+      }}
+      activeOpacity={0.75}
+      onPress={togglePlay}
+    >
+      <Icon name={isPlay ? 'pause' : 'play'} color={theme['m3-on-primary-container']} rawSize={size * 0.5} />
     </TouchableOpacity>
   )
 }
 
-const MIN_SIZE = BTN_WIDTH * 1.1
+const MIN_SIZE = BTN_WIDTH * 1.25
 export default () => {
   const { onLayout, height, width } = useLayout()
-  const size = Math.max(Math.min(height * 0.65, (width - marginLeft) * 0.52 * 0.3) * global.lx.fontSize, MIN_SIZE)
+  const size = Math.max(Math.min(height * 0.68, (width - marginLeft) * 0.52 * 0.3) * global.lx.fontSize, MIN_SIZE)
   return (
-    <View style={{ ...styles.content, gap: size * 0.5 }} onLayout={onLayout}>
+    <View style={{ ...styles.content, gap: size * 0.35 }} onLayout={onLayout}>
       <PrevBtn size={size} />
-      <TogglePlayBtn size={size}/>
+      <TogglePlayBtn size={size} />
       <NextBtn size={size} />
     </View>
   )
@@ -63,19 +92,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     flexDirection: 'row',
-    // paddingVertical: 8,
-    gap: 22,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+    gap: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cotrolBtn: {
+  controlBtn: {
     justifyContent: 'center',
     alignItems: 'center',
-
-    // backgroundColor: '#ccc',
-    shadowOpacity: 1,
-    textShadowRadius: 1,
-    // marginLeft: 10,
   },
 })

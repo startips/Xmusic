@@ -12,6 +12,7 @@ import { createStyle } from '@/utils/tools'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { Icon } from '@/components/common/Icon'
 import ImageBackground from '@/components/common/ImageBackground'
+import { M3Radius } from '@/theme/m3'
 
 const useActive = (id: string) => {
   const activeThemeId = useSettingValue('theme.id')
@@ -33,16 +34,16 @@ const ThemeItem = ({ id, name, color, image, setTheme, showAll }: {
   return (
     showAll || isActive ? (
       <TouchableOpacity style={{ ...styles.item, width: scaleSizeH(ITEM_HEIGHT) }} activeOpacity={0.5} onPress={() => { setTheme(id) }}>
-        <View style={{ ...styles.colorContent, width: scaleSizeH(COLOR_ITEM_HEIGHT), borderColor: isActive ? color : 'transparent' }}>
+        <View style={{ ...styles.colorContent, width: scaleSizeH(COLOR_ITEM_HEIGHT), borderColor: isActive ? theme['m3-primary'] : 'transparent' }}>
           {
             image
               ? <ImageBackground style={{ ...styles.imageContent, width: scaleSizeH(IMAGE_HEIGHT), backgroundColor: color }}
-                  imageStyle={{ borderRadius: 4 }}
+                  imageStyle={{ borderRadius: M3Radius.xs }}
                   source={image} />
               : <View style={{ ...styles.imageContent, width: scaleSizeH(IMAGE_HEIGHT), backgroundColor: color }}></View>
             }
         </View>
-        <Text style={styles.name} size={12} color={isActive ? color : theme['c-font']} numberOfLines={1}>{name}</Text>
+        <Text style={{ ...styles.name, fontWeight: isActive ? '700' : '400' }} size={12} color={isActive ? theme['m3-primary'] : theme['m3-on-surface-variant']} numberOfLines={1}>{name}</Text>
       </TouchableOpacity>
     ) : null
   )
@@ -120,9 +121,9 @@ export default memo(() => {
   )
 })
 
-const ITEM_HEIGHT = 62
-const COLOR_ITEM_HEIGHT = 36
-const IMAGE_HEIGHT = 29
+const ITEM_HEIGHT = 64
+const COLOR_ITEM_HEIGHT = 38
+const IMAGE_HEIGHT = 30
 const styles = createStyle({
   list: {
     flexDirection: 'row',
@@ -131,26 +132,21 @@ const styles = createStyle({
     marginTop: 5,
   },
   item: {
-    // marginRight: 15,
     alignItems: 'center',
-    // marginTop: 5,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
   },
   colorContent: {
     height: COLOR_ITEM_HEIGHT,
-    borderRadius: 4,
-    borderWidth: 1.6,
+    borderRadius: M3Radius.sm,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
   },
   imageContent: {
     height: IMAGE_HEIGHT,
-    borderRadius: 4,
-    // elevation: 1,
+    borderRadius: M3Radius.xs,
   },
   name: {
-    marginTop: 2,
+    marginTop: 4,
   },
   moreBtn: {
     marginLeft: 10,

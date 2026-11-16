@@ -6,7 +6,9 @@ import Text from '@/components/common/Text'
 import { useI18n } from '@/lang'
 
 import { useSettingValue } from '@/store/setting/hook'
+import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
+import { M3Radius } from '@/theme/m3'
 
 type Sources = Readonly<Array<LX.OnlineSource | 'all'>>
 
@@ -29,8 +31,9 @@ export const useSourceListI18n = (list: Sources) => {
   }, [list, sourceNameType, t])
 }
 
-const Component = <S extends Sources>({ fontSize = 15, center, onSourceChange }: SourceSelectorProps<S>, ref: Ref<SourceSelectorType<S>>) => {
+const Component = <S extends Sources>({ fontSize = 13, center, onSourceChange }: SourceSelectorProps<S>, ref: Ref<SourceSelectorType<S>>) => {
   const sourceNameType = useSettingValue('common.sourceNameType')
+  const theme = useTheme()
   const [list, setList] = useState([] as unknown as S)
   const [source, setSource] = useState<S[number]>('kw')
   const t = useI18n()
@@ -60,7 +63,16 @@ const Component = <S extends Sources>({ fontSize = 15, center, onSourceChange }:
       activeId={source}
     >
       <View style={styles.sourceMenu}>
-        <Text style={{ textAlign: center ? 'center' : 'left' }} numberOfLines={1} size={fontSize}>{t(`source_${sourceNameType}_${source}`)}</Text>
+        <View style={{ ...styles.chip, backgroundColor: theme['m3-secondary-container'] }}>
+          <Text
+            style={{ ...styles.chipText, textAlign: center ? 'center' : 'left' }}
+            numberOfLines={1}
+            size={fontSize}
+            color={theme['m3-on-secondary-container']}
+          >
+            {t(`source_${sourceNameType}_${source}`)}
+          </Text>
+        </View>
       </View>
     </DorpDownMenu>
   )
@@ -73,11 +85,15 @@ const styles = createStyle({
   sourceMenu: {
     height: '100%',
     justifyContent: 'center',
-    // paddingTop: 12,
-    // paddingBottom: 12,
-    paddingLeft: 15,
-    paddingRight: 15,
-    // backgroundColor: '#ccc',
-
+    paddingHorizontal: 2,
+  },
+  chip: {
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: M3Radius.full,
+    justifyContent: 'center',
+  },
+  chipText: {
+    fontWeight: '600',
   },
 })

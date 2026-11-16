@@ -9,10 +9,8 @@ import { createStyle } from '@/utils/tools'
 import SourceSelector, {
   type SourceSelectorType,
 } from './SourceSelector'
-import { useTheme } from '@/store/theme/hook'
 // import { BorderWidths } from '@/theme'
 import ActiveListName, { type ActiveListNameType } from './ActiveListName'
-import { BorderWidths } from '@/theme'
 
 export interface HeaderBarProps {
   onShowBound: () => void
@@ -27,7 +25,6 @@ export interface HeaderBarType {
 export default forwardRef<HeaderBarType, HeaderBarProps>(({ onShowBound, onSourceChange }, ref) => {
   const activeListNameRef = useRef<ActiveListNameType>(null)
   const sourceSelectorRef = useRef<SourceSelectorType>(null)
-  const theme = useTheme()
 
   useImperativeHandle(ref, () => ({
     setBound(source, id, name) {
@@ -38,7 +35,7 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onShowBound, onSourc
 
 
   return (
-    <View style={{ ...styles.currentList, borderBottomColor: theme['c-border-background'] }}>
+    <View style={styles.currentList}>
       <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} />
       <ActiveListName ref={activeListNameRef} onShowBound={onShowBound} />
     </View>
@@ -48,10 +45,13 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onShowBound, onSourc
 const styles = createStyle({
   currentList: {
     flexDirection: 'row',
-    height: 38,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 2,
+    paddingBottom: 8,
+    height: 44,
     zIndex: 2,
-    // paddingRight: 10,
-    borderBottomWidth: BorderWidths.normal,
+    gap: 8,
   },
   selector: {
     width: 86,

@@ -3,6 +3,7 @@ import { View } from 'react-native'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 
 interface Props {
@@ -15,8 +16,14 @@ export default ({ title, children }: Props) => {
 
   return (
     <View style={styles.container}>
-      <Text style={{ ...styles.title, borderLeftColor: theme['c-primary'] }} size={16} >{title}</Text>
-      <View>
+      <Text style={styles.title} color={theme['m3-primary']} size={14}>{title}</Text>
+      <View
+        style={{
+          ...styles.card,
+          backgroundColor: withAlpha(theme['m3-surface-container'], 0.78),
+          borderColor: theme['m3-outline-variant'],
+        }}
+      >
         {children}
       </View>
     </View>
@@ -26,13 +33,18 @@ export default ({ title, children }: Props) => {
 
 const styles = createStyle({
   container: {
-    // paddingLeft: 10,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
+    marginBottom: 16,
   },
   title: {
-    borderLeftWidth: 5,
-    paddingLeft: 12,
-    marginBottom: 10,
-    // lineHeight: 16,
+    fontWeight: '700',
+    paddingLeft: 6,
+    marginBottom: 8,
+  },
+  card: {
+    borderRadius: M3Radius.lg,
+    borderWidth: 0.6,
+    paddingTop: 12,
+    paddingHorizontal: 8,
+    paddingBottom: 2,
   },
 })

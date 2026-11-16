@@ -115,16 +115,16 @@ export default forwardRef<InputType, InputProps>(({ onChangeText, onClearText, c
         autoCapitalize="none"
         onChangeText={changeText}
         autoComplete="off"
-        style={StyleSheet.compose({ ...styles.input, color: theme['c-font'], fontSize: setSpText(size) }, style)}
-        placeholderTextColor={theme['c-primary-dark-100-alpha-600']}
-        selectionColor={theme['c-primary-light-100-alpha-300']}
+        style={StyleSheet.compose({ ...styles.input, color: theme['m3-on-surface'], fontSize: setSpText(size) }, style)}
+        placeholderTextColor={theme['m3-on-surface-variant']}
+        selectionColor={theme['m3-primary']}
         ref={inputRef} {...props} />
       {/* <View style={styles.clearBtnContent}>
       <Animated.View style={{ ...styles.clearBtnContent, transform: [{ scale: scaleClearBtn }] }}> */}
         {clearBtn
           ? <View style={styles.clearBtnContent}>
               <TouchableOpacity style={styles.clearBtn} onPress={clearText}>
-                <Icon name="remove" color={theme['c-primary-dark-100-alpha-500']} size={11} />
+                <Icon name="remove" color={theme['m3-on-surface-variant']} size={12} />
               </TouchableOpacity>
             </View>
           : null

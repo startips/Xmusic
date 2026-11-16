@@ -8,14 +8,14 @@ import { useTheme } from '@/store/theme/hook'
 import { usePlayerMusicInfo } from '@/store/player/hook'
 import Text from '@/components/common/Text'
 import { scaleSizeH } from '@/utils/pixelRatio'
-import { HEADER_HEIGHT as _HEADER_HEIGHT, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
+import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import commonState from '@/store/common/state'
 import SettingPopup, { type SettingPopupType } from '../../components/SettingPopup'
 import { useStatusbarHeight } from '@/store/common/hook'
 import Btn from './Btn'
 import TimeoutExitBtn from './TimeoutExitBtn'
 
-export const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT)
+export const HEADER_HEIGHT = scaleSizeH(52)
 
 
 const Title = () => {
@@ -25,8 +25,8 @@ const Title = () => {
 
   return (
     <View style={styles.titleContent}>
-      <Text numberOfLines={1} style={styles.title}>{musicInfo.name}</Text>
-      <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>{musicInfo.singer}</Text>
+      <Text numberOfLines={1} size={16} style={styles.title} color={theme['m3-on-surface']}>{musicInfo.name}</Text>
+      <Text numberOfLines={1} style={styles.subtitle} size={12} color={theme['m3-on-surface-variant']}>{musicInfo.singer}</Text>
     </View>
   )
 }
@@ -60,18 +60,21 @@ export default memo(() => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    // justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    gap: 6,
     height: '100%',
   },
   titleContent: {
     flex: 1,
-    paddingHorizontal: 5,
-    // alignItems: 'center',
+    paddingHorizontal: 6,
     justifyContent: 'center',
   },
   title: {
-    // flex: 1,
-    // textAlign: 'center',
+    fontWeight: '700',
+  },
+  subtitle: {
+    marginTop: 1,
   },
   icon: {
     paddingLeft: 4,

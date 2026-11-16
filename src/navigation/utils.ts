@@ -5,6 +5,7 @@ import {
   SYNC_MODE_MODAL,
 } from './screenNames'
 import themeState from '@/store/theme/state'
+import { toOpaqueColor } from '@/theme/m3'
 
 
 export const getStatusBarStyle = (isDark: boolean) => isDark ? 'light' : 'dark'
@@ -36,7 +37,7 @@ export const showPactModal = () => {
         },
         navigationBar: {
           // visible: false,
-          backgroundColor: theme['c-content-background'],
+          backgroundColor: toOpaqueColor(theme['c-main-background'] || theme['c-content-background']),
         },
         // animations: {
 
@@ -85,7 +86,7 @@ export const showVersionModal = () => {
         },
         navigationBar: {
           // visible: false,
-          backgroundColor: theme['c-content-background'],
+          backgroundColor: toOpaqueColor(theme['c-main-background'] || theme['c-content-background']),
         },
         // animations: {
 
@@ -134,7 +135,7 @@ export const showSyncModeModal = () => {
         },
         navigationBar: {
           // visible: false,
-          backgroundColor: theme['c-content-background'],
+          backgroundColor: toOpaqueColor(theme['c-main-background'] || theme['c-content-background']),
         },
         // animations: {
 

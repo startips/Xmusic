@@ -26,6 +26,10 @@ export default ({ componentId }: Props) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    navigations.syncScreenNavigationTheme()
+  }, [isHorizontalMode])
+
   return (
     <PageContent>
       {

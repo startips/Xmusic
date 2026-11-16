@@ -3,22 +3,23 @@ import { View, TouchableOpacity } from 'react-native'
 
 import { Icon } from '@/components/common/Icon'
 import { pop } from '@/navigation'
-// import { AppColors } from '@/theme'
 import StatusBar from '@/components/common/StatusBar'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
-import { HEADER_HEIGHT as _HEADER_HEIGHT } from '@/config/constant'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import commonState from '@/store/common/state'
 import { useStatusbarHeight } from '@/store/common/hook'
+import { useTheme } from '@/store/theme/hook'
+import { M3Radius } from '@/theme/m3'
 
-const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT)
+const TOP_BAR_HEIGHT = scaleSizeH(50)
 
 export default memo(({ musicInfo }: {
   musicInfo: LX.Music.MusicInfo
 }) => {
   const t = useI18n()
+  const theme = useTheme()
   const statusBarHeight = useStatusbarHeight()
 
   const back = () => {
@@ -26,16 +27,20 @@ export default memo(({ musicInfo }: {
   }
 
   return (
-    <View style={{ height: HEADER_HEIGHT + statusBarHeight, paddingTop: statusBarHeight }}>
+    <View style={{ height: TOP_BAR_HEIGHT + statusBarHeight, paddingTop: statusBarHeight }}>
       <StatusBar />
-      <View style={{ ...styles.container }}>
-        <TouchableOpacity onPress={back} style={{ ...styles.button, width: HEADER_HEIGHT }}>
-          <Icon name="chevron-left" size={18} />
+      <View style={styles.container}>
+        <TouchableOpacity
+          onPress={back}
+          activeOpacity={0.7}
+          style={{ ...styles.button, backgroundColor: theme['m3-surface-container'] }}
+        >
+          <Icon name="chevron-left" size={16} color={theme['m3-on-surface']} />
         </TouchableOpacity>
-        <Text numberOfLines={1} size={16} style={styles.title}>{t('comment_title', { name: musicInfo.name, singer: musicInfo.singer })}</Text>
-        {/* <TouchableOpacity onPress={back} style={{ ...styles.button }}>
-          <Icon name="available_updates" style={{ color: theme.normal }} size={24} />
-        </TouchableOpacity> */}
+        <Text numberOfLines={1} size={17} color={theme['m3-on-surface']} style={styles.title}>
+          {t('comment_title', { name: musicInfo.name, singer: musicInfo.singer })}
+        </Text>
+        <View style={styles.rightSpacer} />
       </View>
     </View>
   )
@@ -47,22 +52,22 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
-    paddingRight: 40,
-    // backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    paddingHorizontal: 14,
   },
   button: {
-    // paddingLeft: 10,
-    // paddingRight: 10,
-    width: '100%',
+    width: 36,
+    height: 36,
+    borderRadius: M3Radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
     flex: 1,
     textAlign: 'center',
+    fontWeight: '700',
+    paddingHorizontal: 10,
   },
-  icon: {
-    paddingLeft: 4,
-    paddingRight: 4,
+  rightSpacer: {
+    width: 36,
   },
 })

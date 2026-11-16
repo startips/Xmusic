@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { View } from 'react-native'
 import Button from '@/components/common/Button'
+import { Icon } from '@/components/common/Icon'
 
 import { createStyle } from '@/utils/tools'
 import { pop } from '@/navigation'
@@ -11,7 +12,7 @@ import { handleCollect, handlePlay } from './listAction'
 import songlistState from '@/store/songlist/state'
 import { useI18n } from '@/lang'
 import { useListInfo } from './state'
-// import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
+import { M3Radius } from '@/theme/m3'
 
 export default memo(() => {
   const theme = useTheme()
@@ -34,14 +35,26 @@ export default memo(() => {
 
   return (
     <View style={styles.container}>
-      <Button onPress={handleCollection} style={styles.controlBtn}>
-        <Text style={{ ...styles.controlBtnText, color: theme['c-button-font'] }}>{t('collect_songlist')}</Text>
+      <Button
+        onPress={back}
+        style={{ ...styles.backBtn, backgroundColor: theme['m3-surface-container-highest'] }}
+      >
+        <Icon name="chevron-left" size={14} color={theme['m3-on-surface']} />
+        <Text size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('back')}</Text>
       </Button>
-      <Button onPress={handlePlayAll} style={styles.controlBtn}>
-        <Text style={{ ...styles.controlBtnText, color: theme['c-button-font'] }}>{t('play_all')}</Text>
+      <Button
+        onPress={handleCollection}
+        style={{ ...styles.actionBtn, backgroundColor: theme['m3-surface-container-highest'] }}
+      >
+        <Icon name="love" size={14} color={theme['m3-on-surface']} />
+        <Text size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('collect_songlist')}</Text>
       </Button>
-      <Button onPress={back} style={styles.controlBtn}>
-        <Text style={{ ...styles.controlBtnText, color: theme['c-button-font'] }}>{t('back')}</Text>
+      <Button
+        onPress={handlePlayAll}
+        style={{ ...styles.actionBtn, backgroundColor: theme['m3-primary'] }}
+      >
+        <Icon name="play" size={13} color={theme['m3-on-primary']} />
+        <Text size={13} style={styles.btnLabel} color={theme['m3-on-primary']}>{t('play_all')}</Text>
       </Button>
     </View>
   )
@@ -51,21 +64,30 @@ const styles = createStyle({
   container: {
     flexDirection: 'row',
     width: '100%',
-    flexGrow: 0,
-    flexShrink: 0,
+    marginTop: 14,
+    gap: 8,
   },
-  controlBtn: {
-    flexGrow: 1,
-    flexShrink: 1,
-    width: '33%',
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingLeft: 10,
-    paddingRight: 10,
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: M3Radius.full,
+    gap: 4,
   },
-  controlBtnText: {
-    fontSize: 13,
-    textAlign: 'center',
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: M3Radius.full,
+    gap: 6,
+  },
+  btnLabel: {
+    fontWeight: '600',
   },
 })
 

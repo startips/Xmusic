@@ -1,6 +1,8 @@
 import Button from '@/components/common/Button'
 import Text from '@/components/common/Text'
 import { useI18n } from '@/lang'
+import { useTheme } from '@/store/theme/hook'
+import { M3Radius } from '@/theme/m3'
 import { createStyle } from '@/utils/tools'
 import { forwardRef, useImperativeHandle, useState } from 'react'
 
@@ -15,6 +17,7 @@ export interface CurrentTagBtnType {
 
 export default forwardRef<CurrentTagBtnType, CurrentTagBtnProps>(({ onShowList }, ref) => {
   const t = useI18n()
+  const theme = useTheme()
   const [name, setName] = useState('')
 
   useImperativeHandle(ref, () => ({
@@ -25,8 +28,8 @@ export default forwardRef<CurrentTagBtnType, CurrentTagBtnProps>(({ onShowList }
   }))
 
   return (
-    <Button style={styles.btn} onPress={onShowList}>
-      <Text style={styles.sourceMenu}>{name}</Text>
+    <Button style={{ ...styles.btn, backgroundColor: theme['m3-surface-container'] }} onPress={onShowList}>
+      <Text size={13} style={styles.sourceMenu} color={theme['m3-on-surface']}>{name}</Text>
     </Button>
   )
 })
@@ -34,16 +37,14 @@ export default forwardRef<CurrentTagBtnType, CurrentTagBtnProps>(({ onShowList }
 
 const styles = createStyle({
   btn: {
-    paddingLeft: 15,
-    paddingRight: 15,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingVertical: 5,
+    borderRadius: M3Radius.full,
     justifyContent: 'center',
   },
   sourceMenu: {
-    // height: 38,
-    // lineHeight: 38,
     textAlign: 'center',
-    // minWidth: 70,
-    // paddingTop: 10,
-    // paddingBottom: 10,
+    fontWeight: '500',
   },
 })

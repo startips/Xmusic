@@ -32,15 +32,23 @@ export default ({ isHome }: { isHome: boolean }) => {
   }
   // console.log('render title')
 
-  const title = musicInfo.id
+  const hasMusic = Boolean(musicInfo.id)
+  const title = hasMusic
     ? musicInfo.singer
       ? formatMusicName(downloadFileName, musicInfo.name, musicInfo.singer)
       : musicInfo.name
-    : ''
-  // console.log(playMusicInfo)
+    : 'Xmusic'
+
   return (
-    <TouchableOpacity style={styles.container} onLongPress={handleLongPress} onPress={handlePress} activeOpacity={0.7} >
-      <Text color={theme['c-font-label']} numberOfLines={1}>{title}</Text>
+    <TouchableOpacity style={styles.container} onLongPress={handleLongPress} onPress={handlePress} activeOpacity={0.7}>
+      <Text
+        size={hasMusic ? 14 : 13}
+        style={hasMusic ? styles.titleText : styles.idleText}
+        color={hasMusic ? theme['m3-on-surface'] : theme['m3-on-surface-variant']}
+        numberOfLines={1}
+      >
+        {title}
+      </Text>
     </TouchableOpacity>
   )
 }
@@ -69,8 +77,12 @@ const styles = createStyle({
   container: {
     width: '100%',
     paddingHorizontal: 2,
-    // paddingBottom: 4,
-    // height: '50%',
-    // backgroundColor: 'rgba(0, 0, 0, .1)',
+    paddingBottom: 2,
+  },
+  titleText: {
+    fontWeight: '600',
+  },
+  idleText: {
+    fontWeight: '500',
   },
 })

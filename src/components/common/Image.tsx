@@ -4,7 +4,7 @@ import { createStyle } from '@/utils/tools'
 import { type ComponentProps, memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { View, type ViewProps, StyleSheet, Image as FastImage } from 'react-native'
 // import FastImage, { type FastImageProps } from 'react-native-fast-image'
-import Text from './Text'
+import { XmusicMark } from './XmusicMark'
 import { useLayout } from '@/utils/hooks'
 // export type { OnLoadEvent } from 'react-native-fast-image'
 
@@ -24,12 +24,14 @@ export const defaultHeaders = {
 const EmptyPic = memo(({ style, nativeID }: { style: ImageProps['style'], nativeID: ImageProps['nativeID'] }) => {
   const theme = useTheme()
   const { onLayout, width } = useLayout()
-  const size = width * 0.36
 
   return (
-    <View style={StyleSheet.compose({ ...styles.emptyPic, backgroundColor: theme['c-primary-light-900-alpha-200'], gap: size * 0.1 }, style)} onLayout={onLayout} nativeID={nativeID}>
-      <Text size={size} color={theme['c-primary-light-400-alpha-200']}>L</Text>
-      <Text size={size} color={theme['c-primary-light-400-alpha-200']} style={styles.text}>X</Text>
+    <View
+      style={StyleSheet.compose({ ...styles.emptyPic, backgroundColor: theme['m3-primary-container'] }, style)}
+      onLayout={onLayout}
+      nativeID={nativeID}
+    >
+      <XmusicMark size={width} />
     </View>
   )
 })
@@ -87,8 +89,5 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  text: {
-    paddingLeft: 2,
   },
 })

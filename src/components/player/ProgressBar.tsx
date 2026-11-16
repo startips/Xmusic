@@ -4,20 +4,18 @@ import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { scaleSizeW, scaleSizeH } from '@/utils/pixelRatio'
 import { useDrag } from '@/utils/hooks'
-import { Icon } from '@/components/common/Icon'
-// import { AppColors } from '@/theme'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 
 const DefaultBar = memo(() => {
   const theme = useTheme()
 
-  return <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-300-alpha-800'], position: 'absolute', width: '100%', left: 0, top: 0 }}></View>
+  return <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-surface-container-highest'], 0.9), position: 'absolute', width: '100%', left: 0, top: 0 }}></View>
 })
 
 const BufferedBar = memo(({ progress }: { progress: number }) => {
-  // console.log(bufferedProgress)
   const theme = useTheme()
-  return <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-400-alpha-700'], position: 'absolute', width: `${progress * 100}%`, left: 0, top: 0 }}></View>
+  return <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.28), position: 'absolute', width: `${progress * 100}%`, left: 0, top: 0 }}></View>
 })
 
 
@@ -74,14 +72,19 @@ const Progress = ({ progress, duration, buffered }: {
   // console.log(progress)
   const progressStr: `${number}%` = `${progress * 100}%`
 
-  const progressDotStyle = useMemo(() => {
+  const progressThumbStyle = useMemo(() => {
+    const thumbW = scaleSizeW(draging ? 6 : 5)
+    const thumbH = scaleSizeH(draging ? 20 : 16)
     return {
-      width: progressDotSize,
-      position: 'absolute',
-      right: -progressDotSize / 2,
-      top: -(progressDotSize - progressHeightSize) / 2,
-    } as const
-  }, [])
+      width: thumbW,
+      height: thumbH,
+      borderRadius: M3Radius.full,
+      backgroundColor: theme['m3-primary'],
+      position: 'absolute' as const,
+      right: -thumbW / 2,
+      top: -(thumbH - progressHeightSize) / 2,
+    }
+  }, [draging, theme])
 
   const durationRef = useRef(duration)
   useEffect(() => {
@@ -100,14 +103,14 @@ const Progress = ({ progress, duration, buffered }: {
           draging
             ? (
                 <>
-                  <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-100-alpha-700'], width: progressStr, position: 'absolute', left: 0, top: 0 }} />
-                  <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-100-alpha-600'], width: `${dragProgress * 100}%`, position: 'absolute', left: 0, top: 0 }}>
-                    <Icon name="full_stop" color={theme['c-primary-light-100']} rawSize={progressDotSize} style={progressDotStyle} />
+                  <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.4), width: progressStr, position: 'absolute', left: 0, top: 0 }} />
+                  <View style={{ ...styles.progressBar, backgroundColor: theme['m3-primary'], width: `${dragProgress * 100}%`, position: 'absolute', left: 0, top: 0 }}>
+                    <View style={progressThumbStyle} />
                   </View>
                 </>
               ) : (
-                <View style={{ ...styles.progressBar, backgroundColor: theme['c-primary-light-100-alpha-400'], width: progressStr, position: 'absolute', left: 0, top: 0 }}>
-                  <Icon name="full_stop" color={theme['c-primary-light-100']} rawSize={progressDotSize} style={progressDotStyle} />
+                <View style={{ ...styles.progressBar, backgroundColor: theme['m3-primary'], width: progressStr, position: 'absolute', left: 0, top: 0 }}>
+                  <View style={progressThumbStyle} />
                 </View>
               )
         }
@@ -121,22 +124,20 @@ const Progress = ({ progress, duration, buffered }: {
 
 
 const progressContentPadding = 10
-const progressHeight = 3.6
+const progressHeight = 5
 const progressContentHeight = progressContentPadding * 2 + progressHeight
 const progressHeightSize = scaleSizeH(progressHeight)
-let progressDotSize = scaleSizeW(progressContentHeight * 0.8)
 const styles = createStyle({
   progress: {
     width: '100%',
     height: progressContentHeight,
-    // backgroundColor: 'rgba(0,0,0,0.5)',
     paddingTop: progressContentPadding,
     paddingBottom: progressContentPadding,
     zIndex: 1,
   },
   progressBar: {
     height: progressHeight,
-    borderRadius: 4,
+    borderRadius: M3Radius.full,
   },
   pressBar: {
     position: 'absolute',

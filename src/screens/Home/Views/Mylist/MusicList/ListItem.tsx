@@ -9,6 +9,7 @@ import { useAssertApiSupport } from '@/store/common/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import Text from '@/components/common/Text'
 import Badge from '@/components/common/Badge'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
@@ -42,37 +43,52 @@ export default memo(({ item, index, activeIndex, onPress, onShowMenu, onLongPres
   const active = activeIndex == index
 
   const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
+  const rowBg = isSelected
+    ? theme['m3-primary-container']
+    : active
+      ? withAlpha(theme['m3-primary-container'], 0.65)
+      : 'transparent'
 
   return (
-    <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT, backgroundColor: isSelected ? theme['c-primary-background-hover'] : 'rgba(0,0,0,0)', opacity: isSupported ? 1 : 0.5 }}>
-      <TouchableOpacity style={styles.listItemLeft} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
-        {
-          active
-            ? <Icon style={styles.sn} name="play-outline" size={13} color={theme['c-primary-font']} />
-            : <Text style={styles.sn} size={13} color={theme['c-300']}>{index + 1}</Text>
-        }
-        <View style={styles.itemInfo}>
-          {/* <View style={styles.listItemTitle}> */}
-          <Text color={active ? theme['c-primary-font'] : theme['c-font']} numberOfLines={1}>{item.name}</Text>
-          {/* </View> */}
-          <View style={styles.listItemSingle}>
-            <Badge>{item.source.toUpperCase()}</Badge>
-            <Text style={styles.listItemSingleText} size={11} color={active ? theme['c-primary-alpha-200'] : theme['c-500']} numberOfLines={1}>
-              {singer}
+    <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT, opacity: isSupported ? 1 : 0.5 }}>
+      <View style={{ ...styles.rowInner, backgroundColor: rowBg }}>
+        <TouchableOpacity style={styles.listItemLeft} activeOpacity={0.65} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
+          {
+            active
+              ? <Icon style={styles.sn} name="play-outline" size={14} color={theme['m3-primary']} />
+              : <Text style={styles.sn} size={13} color={theme['m3-on-surface-variant']}>{index + 1}</Text>
+          }
+          <View style={styles.itemInfo}>
+            <Text
+              size={15}
+              style={active ? styles.titleActive : styles.titleText}
+              color={isSelected || active ? theme['m3-on-primary-container'] : theme['m3-on-surface']}
+              numberOfLines={1}
+            >
+              {item.name}
             </Text>
+            <View style={styles.listItemSingle}>
+              <Badge>{item.source.toUpperCase()}</Badge>
+              <Text
+                style={styles.listItemSingleText}
+                size={12}
+                color={isSelected || active ? theme['m3-on-primary-container'] : theme['m3-on-surface-variant']}
+                numberOfLines={1}
+              >
+                {singer}
+              </Text>
+            </View>
           </View>
-        </View>
-        {
-          isShowInterval ? (
-            <Text size={12} color={active ? theme['c-primary-alpha-400'] : theme['c-250']} numberOfLines={1}>{item.interval}</Text>
-          ) : null
-        }
-      </TouchableOpacity>
-      {/* <View style={styles.listItemRight}> */}
-      <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
-        <Icon name="dots-vertical" style={{ color: theme['c-350'] }} size={12} />
-      </TouchableOpacity>
-      {/* </View> */}
+          {
+            isShowInterval ? (
+              <Text size={12} color={active ? theme['m3-on-primary-container'] : theme['m3-on-surface-variant']} numberOfLines={1}>{item.interval}</Text>
+            ) : null
+          }
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
+          <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }, (prevProps, nextProps) => {
@@ -89,13 +105,17 @@ export default memo(({ item, index, activeIndex, onPress, onShowMenu, onLongPres
 
 const styles = createStyle({
   listItem: {
-    // width: '50%',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  rowInner: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    // paddingLeft: 10,
+    paddingLeft: 4,
     paddingRight: 2,
+    borderRadius: M3Radius.md,
     alignItems: 'center',
-    // borderBottomWidth: BorderWidths.normal,
   },
   listItemLeft: {
     flex: 1,
@@ -103,44 +123,36 @@ const styles = createStyle({
     flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    height: '100%',
   },
   sn: {
-    width: 38,
-    // fontSize: 12,
+    width: 34,
     textAlign: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
     paddingLeft: 3,
     paddingRight: 3,
+    fontWeight: '500',
   },
   itemInfo: {
     flexGrow: 1,
     flexShrink: 1,
-    // paddingTop: 10,
-    // paddingBottom: 10,
-    paddingRight: 2,
+    paddingRight: 6,
   },
-  // listItemTitle: {
-  //   flexGrow: 0,
-  //   flexShrink: 1,
-  // },
+  titleText: {
+    fontWeight: '500',
+  },
+  titleActive: {
+    fontWeight: '700',
+  },
   listItemSingle: {
     paddingTop: 3,
     flexDirection: 'row',
-    // alignItems: 'flex-end',
+    alignItems: 'center',
   },
   listItemSingleText: {
-    // backgroundColor: 'rgba(0,0,0,0.2)',
     flexGrow: 0,
     flexShrink: 1,
-    fontWeight: '300',
-    // fontSize: 15,
+    fontWeight: '400',
   },
-  // listItemBadge: {
-  //   // fontSize: 10,
-  //   paddingLeft: 5,
-  //   paddingTop: 2,
-  //   alignSelf: 'flex-start',
-  // },
   listItemRight: {
     flexGrow: 0,
     flexShrink: 0,
@@ -150,11 +162,8 @@ const styles = createStyle({
 
   moreButton: {
     height: '80%',
-    paddingLeft: 16,
-    paddingRight: 16,
-    // paddingTop: 10,
-    // paddingBottom: 10,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingLeft: 14,
+    paddingRight: 12,
     justifyContent: 'center',
   },
 })

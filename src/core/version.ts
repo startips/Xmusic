@@ -19,7 +19,7 @@ export const hideModal = (componentId: string) => {
   void Navigation.dismissOverlay(componentId)
 }
 
-export const checkUpdate = async() => {
+export const checkUpdate = async(silent = false) => {
   versionActions.setVersionInfo({ status: 'checking' })
   let versionInfo: InitState['versionInfo'] = { ...versionState.versionInfo }
   try {
@@ -56,6 +56,7 @@ export const checkUpdate = async() => {
 
   if (!versionInfo.isLatest) {
     if (versionInfo.isUnknown) {
+      if (silent) return
       const time = await getIgnoreVersionFailTipTime()
       if (Date.now() - time < 7 * 86400000) return
       saveIgnoreVersionFailTipTime(Date.now())

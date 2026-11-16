@@ -1,6 +1,5 @@
 import { memo, useState, useMemo, useCallback } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { BorderWidths } from '@/theme'
 import { Icon } from '@/components/common/Icon'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
@@ -12,15 +11,16 @@ import { useI18n } from '@/lang'
 import Image from '@/components/common/Image'
 import CommentImage from './CommentImage'
 import CommentText from './CommentText'
+import { M3Radius, withAlpha } from '@/theme/m3'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const defaultUser = require('@/resources/images/defaultUser.jpg')
 
-const GAP = 12
 const avatarWidth = scaleSizeW(36)
 
-const CommentFloor = memo(({ comment, isLast }: {
+const CommentFloor = memo(({ comment, isLast, isReply }: {
   comment: Comment
   isLast?: boolean
+  isReply?: boolean
 }) => {
   const theme = useTheme()
   const [isAvatarError, setIsAvatarError] = useState(false)
@@ -35,10 +35,10 @@ const CommentFloor = memo(({ comment, isLast }: {
     if (!comment.reply?.length) return null
     const endIndex = comment.reply.length - 1
     return (
-      <View style={{ ...styles.replyFloor, borderTopColor: theme['c-list-header-border-bottom'] }}>
+      <View style={{ ...styles.replyFloor, backgroundColor: withAlpha(theme['m3-surface-container-low'], 0.85), borderColor: theme['m3-outline-variant'] }}>
         {
           comment.reply.map((c, index) => (
-            <CommentFloor comment={c} isLast={index === endIndex} key={`${comment.id}_${c.id}`} />
+            <CommentFloor comment={c} isLast={index === endIndex} isReply key={`${comment.id}_${c.id}`} />
           ))
         }
       </View>
@@ -50,16 +50,31 @@ const CommentFloor = memo(({ comment, isLast }: {
   const likedCount = useMemo(() => {
     if (comment.likedCount == null) return null
     return (
-      <View style={styles.like}>
-        <Icon name="thumbs-up" style={{ color: theme['c-450'] }} size={12} />
-        <Text style={styles.likedCount} size={12} color={ theme['c-450'] }>{comment.likedCount}</Text>
+      <View style={{ ...styles.like, backgroundColor: theme['m3-surface-container-high'] }}>
+        <Icon name="thumbs-up" style={{ color: theme['m3-on-surface-variant'] }} size={11} />
+        <Text style={styles.likedCount} size={11.5} color={theme['m3-on-surface-variant']}>{comment.likedCount}</Text>
       </View>
     )
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
-    <View style={{ ...styles.container, borderBottomColor: theme['c-list-header-border-bottom'], borderBottomWidth: isLast ? 0 : BorderWidths.normal, paddingBottom: isLast ? 0 : GAP }}>
+    <View
+      style={
+        isReply
+          ? {
+              ...styles.replyItem,
+              borderBottomColor: theme['m3-outline-variant'],
+              borderBottomWidth: isLast ? 0 : 0.6,
+              paddingBottom: isLast ? 0 : 10,
+            }
+          : {
+              ...styles.container,
+              backgroundColor: withAlpha(theme['m3-surface-container'], 0.72),
+              borderColor: theme['m3-outline-variant'],
+            }
+      }
+    >
       <View style={styles.comment}>
         <View>
           <Image
@@ -69,13 +84,13 @@ const CommentFloor = memo(({ comment, isLast }: {
         </View>
         <View style={styles.right}>
           <View style={styles.info}>
-            <View>
-              <Text selectable numberOfLines={1} size={14}>
+            <View style={styles.userMeta}>
+              <Text selectable numberOfLines={1} size={14} style={styles.userName} color={theme['m3-on-surface']}>
                 {comment.userName}
               </Text>
               <View style={styles.metaInfo}>
-                <Text numberOfLines={1} size={12} color={theme['c-450']}>{comment.timeStr}</Text>
-                { comment.location ? <Text numberOfLines={1} style={styles.location} size={12} color={theme['c-450']}>{t('location', { location: comment.location })}</Text> : null }
+                <Text numberOfLines={1} size={11.5} color={theme['m3-on-surface-variant']}>{comment.timeStr}</Text>
+                { comment.location ? <Text numberOfLines={1} style={styles.location} size={11.5} color={theme['m3-on-surface-variant']}>{t('location', { location: comment.location })}</Text> : null }
               </View>
             </View>
             {likedCount}
@@ -102,15 +117,18 @@ const CommentFloor = memo(({ comment, isLast }: {
 const styles = createStyle({
   container: {
     flex: 1,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
-    marginTop: GAP,
-    paddingBottom: GAP,
-    borderBottomWidth: BorderWidths.normal,
-    borderStyle: 'dashed',
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: M3Radius.lg,
+    borderWidth: 0.6,
+  },
+  replyItem: {
+    flex: 1,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   comment: {
     flex: 1,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
     flexDirection: 'row',
   },
   right: {
@@ -120,9 +138,15 @@ const styles = createStyle({
   info: {
     flex: 1,
     flexDirection: 'row',
-    // backgroundColor: 'rgba(0,0,0,0.1)',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  userMeta: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  userName: {
+    fontWeight: '600',
   },
   metaInfo: {
     marginTop: 2,
@@ -134,21 +158,25 @@ const styles = createStyle({
   like: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: M3Radius.full,
   },
   likedCount: {
-    marginLeft: 2,
+    marginLeft: 4,
   },
   images: {
-    paddingTop: 5,
+    paddingTop: 8,
     width: '100%',
     flexDirection: 'row',
   },
   replyFloor: {
-    marginTop: GAP,
-    marginLeft: 20,
-    borderTopWidth: BorderWidths.normal,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
-    borderStyle: 'dashed',
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 8,
+    paddingTop: 2,
+    borderRadius: M3Radius.md,
+    borderWidth: 0.6,
   },
 })
 
@@ -156,7 +184,7 @@ const stylesRaw = StyleSheet.create({
   avatar: {
     height: avatarWidth,
     width: avatarWidth,
-    borderRadius: 4,
+    borderRadius: M3Radius.full,
   },
 })
 

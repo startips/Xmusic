@@ -13,7 +13,7 @@ import { scaleSizeH, scaleSizeW, scaleSizeWR } from '@/utils/pixelRatio'
 import { useBufferProgress } from '@/plugins/player'
 import { useSettingValue } from '@/store/setting/hook'
 
-const FONT_SIZE = 13
+const FONT_SIZE = 11
 const PADDING_TOP_RAW = 1.8
 const PADDING_TOP = Math.round(scaleSizeWR(PADDING_TOP_RAW))
 const MARGIN_TOP = Math.round(scaleSizeH(2))
@@ -21,13 +21,12 @@ const PADDING_TOP_PROGRESS = PADDING_TOP + MARGIN_TOP
 
 const PlayTimeCurrent = ({ timeStr }: { timeStr: string }) => {
   const theme = useTheme()
-  // console.log(timeStr)
-  return <Text size={FONT_SIZE} color={theme['c-500']}>{timeStr}</Text>
+  return <Text size={FONT_SIZE} color={theme['m3-on-surface-variant']}>{timeStr}</Text>
 }
 
 const PlayTimeMax = memo(({ timeStr }: { timeStr: string }) => {
   const theme = useTheme()
-  return <Text size={FONT_SIZE} color={theme['c-500']}>{timeStr}</Text>
+  return <Text size={FONT_SIZE} color={theme['m3-on-surface-variant']}>{timeStr}</Text>
 })
 
 export default ({ isHome }: { isHome: boolean }) => {
@@ -43,13 +42,12 @@ export default ({ isHome }: { isHome: boolean }) => {
 
   return (
     <View style={stylesRaw.container}>
-      {/* <MusicName /> */}
       <View style={styles.status}>
         <Status autoUpdate={autoUpdate} />
       </View>
-      <View style={{ flexGrow: 0, flexShrink: 0, flexDirection: 'row', alignItems: 'flex-start' }} >
+      <View style={{ flexGrow: 0, flexShrink: 0, flexDirection: 'row', alignItems: 'center' }} >
         <PlayTimeCurrent timeStr={nowPlayTimeStr} />
-        <Text size={FONT_SIZE} color={theme['c-500']}> / </Text>
+        <Text size={FONT_SIZE} color={theme['m3-on-surface-variant']}> / </Text>
         <PlayTimeMax timeStr={maxPlayTimeStr} />
       </View>
       <View style={[StyleSheet.absoluteFill, stylesRaw.progress]}>

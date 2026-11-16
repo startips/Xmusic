@@ -19,14 +19,17 @@ import { showPactModal } from '@/core/common'
 export default memo(() => {
   const theme = useTheme()
   const t = useI18n()
-  const openHomePage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile#readme')
-  }
-  const openIssuePage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile/issues?q=is%3Aissue+')
+  const openForkRepoPage = () => {
+    void openUrl('https://github.com/startips/Xmusic')
   }
   const openGHReleasePage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile/releases')
+    void openUrl('https://github.com/startips/Xmusic/releases')
+  }
+  const openIssuePage = () => {
+    void openUrl('https://github.com/startips/Xmusic/issues')
+  }
+  const openHomePage = () => {
+    void openUrl('https://github.com/lyswhut/lx-music-mobile#readme')
   }
   const openFAQPage = () => {
     void openUrl('https://lyswhut.github.io/lx-music-doc/mobile/faq')
@@ -63,30 +66,34 @@ export default memo(() => {
   return (
     <Section title={t('setting_about')}>
       <View style={styles.part}>
-        <Text style={styles.text} >本软件完全免费，代码已开源。开源地址：</Text>
-        <TouchableOpacity onPress={openHomePage}>
-          <Text style={textLinkStyle}>https://github.com/lyswhut/lx-music-mobile</Text>
+        <Text style={styles.text} >当前修改版仓库（Xmusic）：</Text>
+        <TouchableOpacity onPress={openForkRepoPage}>
+          <Text style={textLinkStyle}>https://github.com/startips/Xmusic</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>最新版下载地址：</Text>
+        <Text style={styles.text}>Xmusic 发布页：</Text>
         <TouchableOpacity onPress={openGHReleasePage}>
           <Text style={textLinkStyle}>GitHub Releases</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text} >软件的常见问题可转至：</Text>
-        <TouchableOpacity onPress={openFAQPage}>
-          <Text style={textLinkStyle}>移动版常见问题</Text>
+        <Text style={styles.text}>问题反馈可前往：</Text>
+        <TouchableOpacity onPress={openIssuePage}>
+          <Text style={textLinkStyle}>Xmusic Issues</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}><Text style={styles.boldText}>本软件没有客服</Text>，但我们整理了一些常见的使用问题。<Text style={styles.boldText} >仔细、仔细、仔细</Text>地阅读常见问题后，</Text>
-        <Text style={styles.text}>仍有问题可到 GitHub </Text>
-        <TouchableOpacity onPress={openIssuePage}>
-          <Text style={textLinkStyle}>提交 Issue</Text>
+        <Text style={styles.text} >本软件基于开源项目 LX Music 衍生修改，完全免费，上游仓库地址：</Text>
+        <TouchableOpacity onPress={openHomePage}>
+          <Text style={textLinkStyle}>https://github.com/lyswhut/lx-music-mobile</Text>
         </TouchableOpacity>
-        <Text style={styles.text}>。</Text>
+      </View>
+      <View style={styles.part}>
+        <Text style={styles.text} >原版常见问题可转至：</Text>
+        <TouchableOpacity onPress={openFAQPage}>
+          <Text style={textLinkStyle}>移动版常见问题</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.part}>
         <Text style={styles.text}>由于软件开发的初衷仅是为了对新技术的学习与研究，因此软件直至停止维护都将会一直保持纯净。</Text>

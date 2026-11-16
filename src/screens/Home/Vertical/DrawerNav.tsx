@@ -11,49 +11,59 @@ import type { InitState } from '@/store/common/state'
 // import commonState from '@/store/common/state'
 import { exitApp, setNavActiveId } from '@/core/common'
 import Text from '@/components/common/Text'
+import { XmusicMark } from '@/components/common/XmusicMark'
 import { useSettingValue } from '@/store/setting/hook'
+import { M3Radius } from '@/theme/m3'
 
 const styles = createStyle({
   container: {
     flex: 1,
-    // alignItems: 'center',
-    // justifyContent: 'center',
-    // padding: 10,
   },
   header: {
-    paddingTop: 40,
-    paddingBottom: 50,
+    paddingTop: 32,
+    paddingBottom: 28,
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
+  brandBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: M3Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerText: {
-    textAlign: 'center',
-    marginLeft: 16,
+    fontWeight: '700',
+    marginLeft: 14,
   },
   menus: {
     flex: 1,
   },
   list: {
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
+    gap: 4,
   },
   menuItem: {
     flexDirection: 'row',
-    paddingTop: 13,
-    paddingBottom: 13,
-    paddingLeft: 25,
-    paddingRight: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: M3Radius.full,
     alignItems: 'center',
-    // backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  footerWrap: {
+    paddingHorizontal: 12,
+    paddingBottom: 12,
   },
   iconContent: {
     width: 24,
     alignItems: 'center',
   },
   text: {
-    paddingLeft: 20,
-    // fontWeight: '500',
+    paddingLeft: 16,
   },
 })
 
@@ -61,10 +71,12 @@ const Header = () => {
   const theme = useTheme()
   const statusBarHeight = useStatusbarHeight()
   return (
-    <View style={{ paddingTop: statusBarHeight, backgroundColor: theme['c-primary-light-700-alpha-500'] }}>
+    <View style={{ paddingTop: statusBarHeight, backgroundColor: theme['m3-surface-container'] }}>
       <View style={styles.header}>
-        <Icon name="logo" color={theme['c-primary-dark-100-alpha-300']} size={28} />
-        <Text style={styles.headerText} size={28} color={theme['c-primary-dark-100-alpha-300']}>LX Music</Text>
+        <View style={{ ...styles.brandBadge, backgroundColor: theme['m3-primary-container'] }}>
+          <XmusicMark size={44} />
+        </View>
+        <Text style={styles.headerText} size={24} color={theme['m3-on-surface']}>Xmusic</Text>
       </View>
     </View>
   )
@@ -82,17 +94,17 @@ const MenuItem = ({ id, icon, onPress }: {
   const theme = useTheme()
 
   return activeId == id
-    ? <View style={styles.menuItem}>
+    ? <View style={{ ...styles.menuItem, backgroundColor: theme['m3-secondary-container'] }}>
         <View style={styles.iconContent}>
-          <Icon name={icon} size={20} color={theme['c-primary-font-active']} />
+          <Icon name={icon} size={20} color={theme['m3-on-secondary-container']} />
         </View>
-        <Text style={styles.text} color={theme['c-primary-font']}>{t(id)}</Text>
+        <Text style={{ ...styles.text, fontWeight: '600' }} color={theme['m3-on-secondary-container']}>{t(id)}</Text>
       </View>
-    : <TouchableOpacity style={styles.menuItem} onPress={() => { onPress(id) }}>
+    : <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={() => { onPress(id) }}>
         <View style={styles.iconContent}>
-          <Icon name={icon} size={20} color={theme['c-font-label']} />
+          <Icon name={icon} size={20} color={theme['m3-on-surface-variant']} />
         </View>
-        <Text style={styles.text}>{t(id)}</Text>
+        <Text style={styles.text} color={theme['m3-on-surface']}>{t(id)}</Text>
       </TouchableOpacity>
 }
 
@@ -124,7 +136,7 @@ export default memo(() => {
 
 
   return (
-    <View style={{ ...styles.container, backgroundColor: theme['c-content-background'] }}>
+    <View style={{ ...styles.container, backgroundColor: theme['m3-surface-container-low'] }}>
       <Header />
       <ScrollView style={styles.menus}>
         <View style={styles.list}>
@@ -132,12 +144,14 @@ export default memo(() => {
         </View>
       </ScrollView>
 
-      {
-        showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null
-      }
-      {
-        showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null
-      }
+      <View style={styles.footerWrap}>
+        {
+          showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null
+        }
+        {
+          showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null
+        }
+      </View>
     </View>
   )
 })

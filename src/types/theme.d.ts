@@ -1,4 +1,5 @@
 import type { ImageSourcePropType } from 'react-native'
+import type { M3SemanticColors } from '../theme/m3'
 
 declare global {
   namespace LX {
@@ -260,7 +261,7 @@ declare global {
       'c-primary-light-1000-alpha-900': string
     }
 
-    type ActiveTheme = ThemeColors & Omit<Theme['config']['extInfo'], 'bg-image'> & Pick<Theme, 'id' | 'name' | 'isDark'> & {
+    type ActiveTheme = ThemeColors & M3SemanticColors & Omit<Theme['config']['extInfo'], 'bg-image'> & Pick<Theme, 'id' | 'name' | 'isDark'> & {
       'c-font': string
       'c-font-label': string
       'c-primary-font': string

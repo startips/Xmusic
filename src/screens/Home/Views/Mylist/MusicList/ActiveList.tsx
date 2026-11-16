@@ -2,8 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'r
 import { TouchableOpacity } from 'react-native'
 
 import { Icon } from '@/components/common/Icon'
-import { BorderWidths } from '@/theme'
 import { useTheme } from '@/store/theme/hook'
+import { M3Radius } from '@/theme/m3'
 import { useActiveListId, useListFetching } from '@/store/list/hook'
 import listState from '@/store/list/state'
 import { createStyle } from '@/utils/tools'
@@ -59,12 +59,22 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
   }, [])
 
   return (
-    <TouchableOpacity onPress={showList} onLongPress={onScrollToTop} style={{ ...styles.currentList, opacity: visibleBar ? 1 : 0, borderBottomColor: theme['c-border-background'] }}>
-      <Icon style={styles.currentListIcon} color={theme['c-button-font']} name="chevron-right" size={12} />
-      { fetching ? <Loading color={theme['c-button-font']} style={styles.loading} /> : null }
-      <Text style={styles.currentListText} numberOfLines={1} color={theme['c-button-font']}>{currentListName}</Text>
-      <TouchableOpacity style={styles.currentListBtns} onPress={onShowSearchBar}>
-        <Icon color={theme['c-button-font']} name="search-2" />
+    <TouchableOpacity
+      onPress={showList}
+      onLongPress={onScrollToTop}
+      activeOpacity={0.75}
+      style={{
+        ...styles.currentList,
+        opacity: visibleBar ? 1 : 0,
+        backgroundColor: theme['m3-surface-container'],
+        borderColor: theme['m3-outline-variant'],
+      }}
+    >
+      <Icon style={styles.currentListIcon} color={theme['m3-on-surface-variant']} name="chevron-right" size={12} />
+      { fetching ? <Loading color={theme['m3-primary']} style={styles.loading} /> : null }
+      <Text style={styles.currentListText} size={14} numberOfLines={1} color={theme['m3-on-surface']}>{currentListName}</Text>
+      <TouchableOpacity style={{ ...styles.currentListBtns, backgroundColor: theme['m3-secondary-container'] }} onPress={onShowSearchBar}>
+        <Icon color={theme['m3-on-secondary-container']} name="search-2" size={14} />
       </TouchableOpacity>
     </TouchableOpacity>
   )
@@ -74,34 +84,32 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
 const styles = createStyle({
   currentList: {
     flexDirection: 'row',
-    paddingRight: 2,
-    height: 36,
+    marginHorizontal: 14,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingLeft: 14,
+    paddingRight: 5,
+    height: 42,
+    borderRadius: M3Radius.full,
+    borderWidth: 0.8,
     alignItems: 'center',
-    borderBottomWidth: BorderWidths.normal,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
   },
   currentListIcon: {
-    paddingLeft: 15,
-    paddingRight: 10,
-    // paddingTop: 10,
-    // paddingBottom: 0,
+    paddingRight: 8,
   },
   currentListText: {
     flex: 1,
-    // minWidth: 70,
-    // paddingLeft: 10,
     paddingRight: 10,
-    // paddingTop: 10,
-    // paddingBottom: 10,
+    fontWeight: '600',
   },
   loading: {
     marginRight: 5,
   },
   currentListBtns: {
-    width: 46,
+    width: 32,
+    height: 32,
+    borderRadius: M3Radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    height: '100%',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
   },
 })

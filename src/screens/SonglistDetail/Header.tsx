@@ -1,6 +1,5 @@
 import { forwardRef, memo, useEffect, useImperativeHandle, useState } from 'react'
 import { View } from 'react-native'
-import { BorderWidths } from '@/theme'
 import ButtonBar from './ActionBar'
 import { useNavigationComponentDidAppear } from '@/navigation'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
@@ -12,8 +11,9 @@ import Image from '@/components/common/Image'
 import { useListInfo } from './state'
 import { useAnimateOnecNumber } from '@/utils/hooks/useAnimateNumber'
 import { useStatusbarHeight } from '@/store/common/hook'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
-const IMAGE_WIDTH = scaleSizeW(70)
+const IMAGE_WIDTH = scaleSizeW(84)
 
 const CountText = memo(({ count }: { count: string }) => {
   const [animFade] = useAnimateOnecNumber(0, 1, 250, false)
@@ -49,7 +49,7 @@ const Pic = ({ componentId, playCount, imgUrl }: {
 
   return (
     <View style={{ ...styles.listItemImg, width: IMAGE_WIDTH, height: IMAGE_WIDTH }}>
-      <Image nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.id}`} url={pic} style={{ flex: 1, borderRadius: 4 }} />
+      <Image nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.id}`} url={pic} style={{ flex: 1, borderRadius: M3Radius.md }} />
       {
         playCount && animated ? <CountText count={playCount} /> : null
       }
@@ -84,66 +84,77 @@ export default forwardRef<HeaderType, HeaderProps>(({ componentId }: { component
   }), [])
 
   return (
-    <View style={{ ...styles.container, paddingTop: statusBarHeight, borderBottomColor: theme['c-border-background'] }}>
-      <View style={{ flexDirection: 'row', flexGrow: 0, flexShrink: 0, padding: 10 }}>
-        <Pic componentId={componentId} playCount={detailInfo.playCount} imgUrl={detailInfo.imgUrl} />
-        <View style={{ flexDirection: 'column', flexGrow: 1, flexShrink: 1, paddingLeft: 5 }} nativeID={NAV_SHEAR_NATIVE_IDS.songlistDetail_title}>
-          <Text size={14} numberOfLines={ 1 }>{detailInfo.name}</Text>
-          <View style={{ flexGrow: 0, flexShrink: 1 }}>
-            <Text size={13} color={theme['c-font-label']} numberOfLines={ 4 }>{detailInfo.desc}</Text>
+    <View style={{ ...styles.wrapper, paddingTop: statusBarHeight + 8 }}>
+      <View
+        style={{
+          ...styles.heroCard,
+          backgroundColor: withAlpha(theme['m3-surface-container'], 0.85),
+          borderColor: theme['m3-outline-variant'],
+        }}
+      >
+        <View style={styles.heroTopRow}>
+          <Pic componentId={componentId} playCount={detailInfo.playCount} imgUrl={detailInfo.imgUrl} />
+          <View style={styles.infoCol} nativeID={NAV_SHEAR_NATIVE_IDS.songlistDetail_title}>
+            <Text size={16} color={theme['m3-on-surface']} style={styles.title} numberOfLines={2}>
+              {detailInfo.name || info.name}
+            </Text>
+            {
+              detailInfo.desc
+                ? <Text size={12.5} color={theme['m3-on-surface-variant']} style={styles.desc} numberOfLines={3}>{detailInfo.desc}</Text>
+                : null
+            }
           </View>
         </View>
+        <ButtonBar />
       </View>
-      <ButtonBar />
-      {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <View style={{ flexGrow: 0, flexShrink: 1, paddingTop: 5, paddingRight: 5 }}>
-              <Text style={{ fontSize: 12, color: AppColors.normal20 }} numberOfLines={ 1 }>{playCount || '-'}</Text>
-              <Text style={{ fontSize: 12, color: AppColors.normal30 }} numberOfLines={ 1 }>{this.props.selectListInfo.author || this.props.listDetailData.info.author}</Text>
-            </View>
-      </View> */}
     </View>
   )
 })
 
 const styles = createStyle({
-  container: {
-    flexDirection: 'column',
-    flexWrap: 'nowrap',
-    borderBottomWidth: BorderWidths.normal,
+  wrapper: {
+    paddingHorizontal: 12,
+    paddingBottom: 6,
+  },
+  heroCard: {
+    borderRadius: M3Radius.lg,
+    borderWidth: 0.6,
+    padding: 14,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoCol: {
+    flex: 1,
+    paddingLeft: 14,
+    justifyContent: 'center',
+  },
+  title: {
+    fontWeight: '700',
+    lineHeight: 22,
+  },
+  desc: {
+    marginTop: 6,
+    lineHeight: 18,
   },
   listItemImg: {
-    // backgroundColor: '#eee',
     flexGrow: 0,
     flexShrink: 0,
     overflow: 'hidden',
-    // width: 70,
-    // height: 70,
-    // ...Platform.select({
-    //   ios: {
-    //     shadowColor: '#000',
-    //     shadowOffset: {
-    //       width: 0,
-    //       height: 1,
-    //     },
-    //     shadowOpacity: 0.20,
-    //     shadowRadius: 1.41,
-    //   },
-    //   android: {
-    //     elevation: 2,
-    //   },
-    // }),
+    borderRadius: M3Radius.md,
   },
   playCount: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    fontSize: 12,
-    paddingLeft: 3,
-    paddingRight: 3,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    bottom: 5,
+    left: 5,
+    right: 5,
+    fontSize: 10.5,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.56)',
     color: '#fff',
-    borderBottomLeftRadius: 4,
-    borderBottomRightRadius: 4,
+    borderRadius: M3Radius.full,
+    textAlign: 'center',
   },
 })

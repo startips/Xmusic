@@ -9,6 +9,7 @@ import { useTheme } from '@/store/theme/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
 import { createStyle, type RowInfo } from '@/utils/tools'
+import { M3Radius } from '@/theme/m3'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
@@ -57,28 +58,56 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
   const tagInfo = useQualityTag(item)
 
   const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
+  const isTopRank = index < 3
 
   return (
-    <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT, backgroundColor: isSelected ? theme['c-primary-background-hover'] : 'rgba(0,0,0,0)' }}>
-      <TouchableOpacity style={styles.listItemLeft} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
-        <Text style={styles.sn} size={13} color={theme['c-300']}>{index + 1}</Text>
-        <View style={styles.itemInfo}>
-          <Text numberOfLines={1}>{item.name}</Text>
-          <View style={styles.listItemSingle}>
-            { tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null }
-            { showSource ? <Badge type="tertiary">{item.source}</Badge> : null }
-            <Text style={styles.listItemSingleText} size={11} color={theme['c-500']} numberOfLines={1}>{singer}</Text>
+    <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT }}>
+      <View
+        style={{
+          ...styles.rowInner,
+          backgroundColor: isSelected ? theme['m3-primary-container'] : 'transparent',
+        }}
+      >
+        <TouchableOpacity style={styles.listItemLeft} activeOpacity={0.65} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
+          <Text
+            style={isTopRank ? styles.snTop : styles.sn}
+            size={13}
+            color={isTopRank ? theme['m3-primary'] : theme['m3-on-surface-variant']}
+          >
+            {index + 1}
+          </Text>
+          <View style={styles.itemInfo}>
+            <Text
+              size={15}
+              style={styles.titleText}
+              color={isSelected ? theme['m3-on-primary-container'] : theme['m3-on-surface']}
+              numberOfLines={1}
+            >
+              {item.name}
+            </Text>
+            <View style={styles.listItemSingle}>
+              { tagInfo.type ? <Badge type={tagInfo.type}>{tagInfo.text}</Badge> : null }
+              { showSource ? <Badge type="tertiary">{item.source}</Badge> : null }
+              <Text
+                style={styles.listItemSingleText}
+                size={12}
+                color={isSelected ? theme['m3-on-primary-container'] : theme['m3-on-surface-variant']}
+                numberOfLines={1}
+              >
+                {singer}
+              </Text>
+            </View>
           </View>
-        </View>
-        {
-          isShowInterval ? (
-            <Text size={12} color={theme['c-250']} numberOfLines={1}>{item.interval}</Text>
-          ) : null
-        }
-      </TouchableOpacity>
-     <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
-        <Icon name="dots-vertical" style={{ color: theme['c-350'] }} size={12} />
-      </TouchableOpacity>
+          {
+            isShowInterval ? (
+              <Text size={12} color={theme['m3-on-surface-variant']} numberOfLines={1}>{item.interval}</Text>
+            ) : null
+          }
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
+          <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }, (prevProps, nextProps) => {
@@ -92,13 +121,17 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
 
 const styles = createStyle({
   listItem: {
-    // width: '100%',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  rowInner: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    // paddingLeft: 10,
+    paddingLeft: 4,
     paddingRight: 2,
+    borderRadius: M3Radius.md,
     alignItems: 'center',
-    // borderBottomWidth: BorderWidths.normal,
   },
   listItemLeft: {
     flex: 1,
@@ -106,48 +139,45 @@ const styles = createStyle({
     flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    height: '100%',
   },
   sn: {
-    width: 38,
-    // fontSize: 12,
+    width: 34,
     textAlign: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
     paddingLeft: 3,
     paddingRight: 3,
+    fontWeight: '500',
+  },
+  snTop: {
+    width: 34,
+    textAlign: 'center',
+    paddingLeft: 3,
+    paddingRight: 3,
+    fontWeight: '700',
   },
   itemInfo: {
     flexGrow: 1,
     flexShrink: 1,
-    paddingRight: 2,
-    // paddingTop: 10,
-    // paddingBottom: 10,
+    paddingRight: 6,
   },
-  // listItemTitle: {
-  //   // backgroundColor: 'rgba(0,0,0,0.2)',
-  //   flexGrow: 0,
-  //   flexShrink: 1,
-  //   // fontSize: 15,
-  // },
+  titleText: {
+    fontWeight: '500',
+  },
   listItemSingle: {
-    paddingTop: 2,
+    paddingTop: 3,
     flexDirection: 'row',
     alignItems: 'center',
-    // alignItems: 'flex-end',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
   },
   listItemTimeLabel: {
     marginRight: 5,
     fontWeight: '400',
   },
   listItemSingleText: {
-    // fontSize: 13,
-    // paddingTop: 2,
     flexGrow: 0,
     flexShrink: 1,
-    fontWeight: '300',
+    fontWeight: '400',
   },
   listItemBadge: {
-    // fontSize: 10,
     paddingLeft: 5,
     paddingTop: 2,
     alignSelf: 'flex-start',
@@ -160,11 +190,8 @@ const styles = createStyle({
   },
   moreButton: {
     height: '80%',
-    paddingLeft: 16,
-    paddingRight: 16,
-    // paddingTop: 10,
-    // paddingBottom: 10,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingLeft: 14,
+    paddingRight: 12,
     justifyContent: 'center',
   },
 })

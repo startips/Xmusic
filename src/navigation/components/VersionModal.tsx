@@ -13,6 +13,7 @@ import { useI18n } from '@/lang'
 import { useVersionDownloadProgressUpdated, useVersionInfo, useVersionInfoIgnoreVersionUpdated } from '@/store/version/hook'
 import ModalContent from './ModalContent'
 import { checkUpdate, downloadUpdate, hideModal, setIgnoreVersion } from '@/core/version'
+import { M3Radius } from '@/theme/m3'
 
 const VersionItem = ({ version, desc }: VersionInfo) => {
   return (
@@ -181,20 +182,20 @@ const VersionModal = ({ componentId }: { componentId: string }) => {
         {
           ignoreBtn.show
             ? (
-                <Button disabled={ignoreBtn.disabled} style={{ ...styles.btn, backgroundColor: theme['c-button-background'] }} onPress={handleIgnore}>
-                  <Text color={theme['c-button-font']}>{ignoreBtn.text}</Text>
+                <Button disabled={ignoreBtn.disabled} style={{ ...styles.btn, backgroundColor: theme['m3-surface-container-highest'] }} onPress={handleIgnore}>
+                  <Text style={styles.btnLabel} color={theme['m3-on-surface']}>{ignoreBtn.text}</Text>
                 </Button>
               )
             : null
         }
-        <Button style={{ ...styles.btn, backgroundColor: theme['c-button-background'] }} onPress={handleCancel}>
-          <Text color={theme['c-button-font']}>{closeBtnText}</Text>
+        <Button style={{ ...styles.btn, backgroundColor: theme['m3-surface-container-highest'] }} onPress={handleCancel}>
+          <Text style={styles.btnLabel} color={theme['m3-on-surface']}>{closeBtnText}</Text>
         </Button>
         {
           confirmBtn.show
             ? (
-                <Button disabled={confirmBtn.disabled} style={{ ...styles.btn, backgroundColor: theme['c-button-background'] }} onPress={handleConfirm}>
-                  <Text color={theme['c-button-font']}>{confirmBtn.text}</Text>
+                <Button disabled={confirmBtn.disabled} style={{ ...styles.btn, backgroundColor: theme['m3-primary-container'] }} onPress={handleConfirm}>
+                  <Text style={styles.btnLabel} color={theme['m3-on-primary-container']}>{confirmBtn.text}</Text>
                 </Button>
               )
             : null
@@ -218,8 +219,9 @@ const styles = createStyle({
   },
   title: {
     fontSize: 18,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 15,
+    marginBottom: 14,
   },
   history: {
     marginTop: 15,
@@ -236,26 +238,25 @@ const styles = createStyle({
     lineHeight: 18,
   },
   tip: {
-    paddingLeft: 15,
-    paddingRight: 15,
+    paddingHorizontal: 18,
     paddingBottom: 10,
   },
   btns: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingBottom: 15,
-    paddingLeft: 15,
-    // paddingRight: 15,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   btn: {
     flex: 1,
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingLeft: 10,
-    paddingRight: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    borderRadius: 4,
-    marginRight: 15,
+    borderRadius: M3Radius.full,
+  },
+  btnLabel: {
+    fontWeight: '600',
   },
 })
 

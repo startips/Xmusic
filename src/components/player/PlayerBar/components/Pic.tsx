@@ -9,13 +9,14 @@ import Image from '@/components/common/Image'
 import { useCallback } from 'react'
 import { setLoadErrorPicUrl, setMusicInfo } from '@/core/player/playInfo'
 
-const PIC_HEIGHT = scaleSizeH(46)
+const PIC_HEIGHT = scaleSizeH(44)
 
 const styles = StyleSheet.create({
   image: {
     width: PIC_HEIGHT,
     height: PIC_HEIGHT,
-    borderRadius: 2,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
 })
 

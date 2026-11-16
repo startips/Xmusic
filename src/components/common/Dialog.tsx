@@ -7,9 +7,8 @@ import { useKeyboard } from '@/utils/hooks'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
-import { scaleSizeH } from '@/utils/pixelRatio'
+import { M3Radius } from '@/theme/m3'
 
-const HEADER_HEIGHT = 20
 const styles = createStyle({
   centeredView: {
     flex: 1,
@@ -18,39 +17,34 @@ const styles = createStyle({
   },
   modalView: {
     maxWidth: '90%',
-    minWidth: '60%',
+    minWidth: '72%',
     maxHeight: '78%',
-    // backgroundColor: 'white',
-    borderRadius: 4,
-    // shadowColor: '#000',
-    // shadowOffset: {
-    //   width: 0,
-    //   height: 2,
-    // },
-    // shadowOpacity: 0.25,
-    // shadowRadius: 4,
-    elevation: 3,
+    borderRadius: M3Radius.xl,
+    overflow: 'hidden',
+    elevation: 6,
   },
   header: {
     flexGrow: 0,
     flexShrink: 0,
     flexDirection: 'row',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    height: HEADER_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 18,
+    paddingBottom: 8,
+    paddingLeft: 20,
+    paddingRight: 14,
   },
   title: {
-    paddingLeft: 5,
-    paddingRight: 25,
-    lineHeight: HEADER_HEIGHT,
+    flex: 1,
+    fontWeight: '600',
+    paddingRight: 8,
   },
   closeBtn: {
-    position: 'absolute',
-    right: 0,
-    borderTopRightRadius: 4,
+    width: 30,
+    height: 30,
+    borderRadius: M3Radius.full,
     flexGrow: 0,
     flexShrink: 0,
-    height: HEADER_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -91,20 +85,24 @@ export default forwardRef<DialogType, DialogProps>(({
 
   const closeBtnComponent = useMemo(() => {
     return closeBtn
-      ? <TouchableHighlight style={{ ...styles.closeBtn, width: scaleSizeH(HEADER_HEIGHT) }} underlayColor={theme['c-primary-dark-200-alpha-600']} onPress={() => modalRef.current?.setVisible(false)}>
-          <Icon name="close" color={theme['c-primary-dark-500-alpha-500']} size={10} />
+      ? <TouchableHighlight style={styles.closeBtn} underlayColor={theme['m3-surface-container-highest']} onPress={() => modalRef.current?.setVisible(false)}>
+          <Icon name="close" color={theme['m3-on-surface-variant']} size={12} />
         </TouchableHighlight>
       : null
   }, [closeBtn, theme])
 
   return (
-    <Modal onHide={onHide} keyHide={keyHide} bgHide={bgHide} bgColor="rgba(50,50,50,.3)" ref={modalRef}>
+    <Modal onHide={onHide} keyHide={keyHide} bgHide={bgHide} bgColor={theme['m3-scrim']} ref={modalRef}>
       <View style={{ ...styles.centeredView, paddingBottom: keyboardShown ? keyboardHeight : 0 }}>
-        <View style={{ ...styles.modalView, height, backgroundColor: theme['c-content-background'] }} onStartShouldSetResponder={() => true}>
-          <View style={{ ...styles.header, backgroundColor: theme['c-primary-light-100-alpha-100'] }}>
-            <Text style={styles.title} size={13} color={theme['c-primary-light-1000']} numberOfLines={1}>{title}</Text>
-            {closeBtnComponent}
-          </View>
+        <View style={{ ...styles.modalView, height, backgroundColor: theme['m3-surface-container-high'] }} onStartShouldSetResponder={() => true}>
+          {(title || closeBtn)
+            ? (
+                <View style={styles.header}>
+                  <Text style={styles.title} size={16} color={theme['m3-on-surface']} numberOfLines={1}>{title}</Text>
+                  {closeBtnComponent}
+                </View>
+              )
+            : null}
           {children}
         </View>
       </View>

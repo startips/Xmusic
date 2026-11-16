@@ -1,7 +1,4 @@
 import { View, TouchableOpacity } from 'react-native'
-// import Button from '@/components/common/Button'
-// import { navigations } from '@/navigation'
-// import { BorderWidths } from '@/theme'
 import { useTheme } from '@/store/theme/hook'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { useI18n } from '@/lang'
@@ -9,149 +6,117 @@ import { createStyle } from '@/utils/tools'
 import { Icon } from '@/components/common/Icon'
 import Text from '@/components/common/Text'
 import StatusBar from '@/components/common/StatusBar'
-import { useSettingValue } from '@/store/setting/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
-import { HEADER_HEIGHT } from '@/config/constant'
-import { type InitState as CommonState } from '@/store/common/state'
+import { setNavActiveId } from '@/core/common'
+import commonState, { type InitState as CommonState } from '@/store/common/state'
 import SearchTypeSelector from '@/screens/Home/Views/Search/SearchTypeSelector'
+import { M3Radius } from '@/theme/m3'
+
+const TOP_BAR_HEIGHT = 50
 
 const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNode>> = {
   nav_search: <SearchTypeSelector />,
 }
 
-
-// const LeftTitle = () => {
-//   const id = useNavActiveId()
-//   const t = useI18n()
-
-//   return <Text style={styles.leftTitle} size={18}>{t(id)}</Text>
-// }
-const LeftHeader = () => {
-  const theme = useTheme()
-  const id = useNavActiveId()
-  const t = useI18n()
-  const statusBarHeight = useStatusbarHeight()
-
-  const openMenu = () => {
-    global.app_event.changeMenuVisible(true)
-  }
-
-  return (
-    <View style={{
-      ...styles.container,
-      height: scaleSizeH(HEADER_HEIGHT) + statusBarHeight,
-      paddingTop: statusBarHeight,
-    }}>
-      <View style={styles.left}>
-        <TouchableOpacity style={styles.btn} onPress={openMenu}>
-          <Icon color={theme['c-font']} name="menu" size={18} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.titleBtn} onPress={openMenu}>
-          <Text style={styles.leftTitle} size={18}>{t(id)}</Text>
-        </TouchableOpacity>
-      </View>
-      {headerComponents[id] ?? null}
-
-      {/* <TouchableOpacity style={styles.btn} onPress={openSetting}>
-        <Icon style={{ ...styles.btnText, color: theme['c-font'] }} name="setting" size={styles.btnText.fontSize} />
-      </TouchableOpacity> */}
-    </View>
-  )
-}
-
-
-// const RightTitle = () => {
-//   const id = useNavActiveId()
-//   const t = useI18n()
-
-//   return <Text style={styles.rightTitle} size={18}>{t(id)}</Text>
-// }
-const RightHeader = () => {
-  const theme = useTheme()
-  const t = useI18n()
-  const id = useNavActiveId()
-  const statusBarHeight = useStatusbarHeight()
-
-  const openMenu = () => {
-    global.app_event.changeMenuVisible(true)
-  }
-  return (
-    <View style={{
-      ...styles.container,
-      height: scaleSizeH(HEADER_HEIGHT) + statusBarHeight,
-      paddingTop: statusBarHeight,
-    }}>
-      <View style={styles.left}>
-        <TouchableOpacity style={styles.titleBtn} onPress={openMenu}>
-          <Text style={styles.rightTitle} size={18}>{t(id)}</Text>
-        </TouchableOpacity>
-      </View>
-      {headerComponents[id] ?? null}
-      <TouchableOpacity style={styles.btn} onPress={openMenu}>
-        <Icon color={theme['c-font']} name="menu" size={18} />
-      </TouchableOpacity>
-      {/* <TouchableOpacity style={styles.btn} onPress={openSetting}>
-        <Icon style={{ ...styles.btnText, color: theme['c-font'] }} name="setting" size={styles.btnText.fontSize} />
-      </TouchableOpacity> */}
-    </View>
-  )
-}
-
 const Header = () => {
-  const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
+  const theme = useTheme()
+  const id = useNavActiveId()
+  const t = useI18n()
+  const statusBarHeight = useStatusbarHeight()
+  const isSetting = id == 'nav_setting'
+
+  const handleBack = () => {
+    setNavActiveId(commonState.lastNavActiveId)
+  }
+
+  const handleOpenSetting = () => {
+    setNavActiveId('nav_setting')
+  }
 
   return (
     <>
       <StatusBar />
-      {
-        drawerLayoutPosition == 'left'
-          ? <LeftHeader />
-          : <RightHeader />
-      }
-
+      <View
+        style={{
+          ...styles.container,
+          height: scaleSizeH(TOP_BAR_HEIGHT) + statusBarHeight,
+          paddingTop: statusBarHeight,
+        }}
+      >
+        <View style={styles.left}>
+          {isSetting
+            ? (
+                <TouchableOpacity
+                  style={{ ...styles.iconBtn, backgroundColor: theme['m3-surface-container'] }}
+                  activeOpacity={0.7}
+                  onPress={handleBack}
+                >
+                  <Icon color={theme['m3-on-surface']} name="chevron-left" size={16} />
+                </TouchableOpacity>
+              )
+            : null}
+          <Text
+            style={isSetting ? styles.backTitle : styles.title}
+            size={21}
+            color={theme['m3-on-surface']}
+            numberOfLines={1}
+          >
+            {t(id)}
+          </Text>
+        </View>
+        <View style={styles.right}>
+          {headerComponents[id] ?? null}
+          {!isSetting
+            ? (
+                <TouchableOpacity
+                  style={{ ...styles.iconBtn, backgroundColor: theme['m3-surface-container'] }}
+                  activeOpacity={0.7}
+                  onPress={handleOpenSetting}
+                >
+                  <Icon color={theme['m3-on-surface-variant']} name="setting" size={17} />
+                </TouchableOpacity>
+              )
+            : null}
+        </View>
+      </View>
     </>
   )
 }
 
-
 const styles = createStyle({
   container: {
-    // width: '100%',
-    paddingRight: 5,
+    paddingHorizontal: 14,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.1)',
     zIndex: 10,
   },
   left: {
     flex: 1,
     flexDirection: 'row',
-    paddingLeft: 5,
     alignItems: 'center',
     height: '100%',
+    paddingRight: 8,
   },
-  btn: {
-    // flex: 1,
-    width: HEADER_HEIGHT,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: '100%',
+  },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: M3Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
   },
-  titleBtn: {
-    flex: 1,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
-    height: '100%',
-    justifyContent: 'center',
+  title: {
+    fontWeight: '700',
   },
-  leftTitle: {
-    paddingLeft: 14,
-    paddingRight: 16,
-  },
-  rightTitle: {
-    paddingLeft: 16,
-    paddingRight: 16,
+  backTitle: {
+    fontWeight: '700',
+    marginLeft: 10,
   },
 })
 

@@ -13,7 +13,7 @@ import { storageDataPrefix } from '@/config/constant'
 import { saveData } from '@/plugins/storage'
 import { throttle } from '@/utils/common'
 import { getSelectedManagedFolder, saveFontSize, saveViewPrevState, setSelectedManagedFolder } from '@/utils/data'
-import { showPactModal as handleShowPactModal } from '@/navigation'
+import { showPactModal as handleShowPactModal, navigations } from '@/navigation'
 import { hideDesktopLyricView } from '@/utils/nativeModules/lyricDesktop'
 import { getPersistedUriList, selectManagedFolder } from '@/utils/fs'
 
@@ -75,6 +75,7 @@ export const setStatusbarHeight = (size: number) => {
 
 export const setComponentId = (name: keyof CommonStateType['componentIds'], id: string) => {
   commonActions.setComponentId(name, id)
+  navigations.syncScreenNavigationTheme()
 }
 export const removeComponentId = (name: string) => {
   commonActions.removeComponentId(name)
@@ -82,7 +83,12 @@ export const removeComponentId = (name: string) => {
 
 export const setNavActiveId = (id: Parameters<typeof commonActions.setNavActiveId>['0']) => {
   if (id == commonState.navActiveId) return
+  const prevWasSetting = commonState.navActiveId == 'nav_setting'
+  const nextIsSetting = id == 'nav_setting'
   commonActions.setNavActiveId(id)
+  if (prevWasSetting !== nextIsSetting) {
+    navigations.syncScreenNavigationTheme()
+  }
   if (id != 'nav_setting') {
     commonActions.setLastNavActiveId(id)
     saveViewPrevState({ id })

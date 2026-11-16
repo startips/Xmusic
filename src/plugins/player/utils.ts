@@ -280,13 +280,8 @@ export const updateOptions = async(options = {
     Capability.SkipToNext,
   ],
 
-  // Icons for the notification on Android (if you don't like the default ones)
-  // playIcon: require('./play-icon.png'),
-  // pauseIcon: require('./pause-icon.png'),
-  // stopIcon: require('./stop-icon.png'),
-  // previousIcon: require('./previous-icon.png'),
-  // nextIcon: require('./next-icon.png'),
-  // icon: notificationIcon, // The notification icon
+  // Icons for the notification on Android
+  icon: { uri: 'ic_stat_xmusic' } as unknown as number,
 }) => {
   return TrackPlayer.updateOptions(options)
 }

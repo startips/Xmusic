@@ -7,6 +7,7 @@ import Text from '@/components/common/Text'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
+import { M3Radius } from '@/theme/m3'
 
 
 interface ListProps {
@@ -25,8 +26,15 @@ const ListItem = ({ keyword, onSearch }: {
 }) => {
   const theme = useTheme()
   return (
-    <Button style={{ ...styles.button, backgroundColor: theme['c-button-background'] }} onPress={() => { onSearch(keyword) }}>
-      <Text color={theme['c-button-font']} size={13}>{keyword}</Text>
+    <Button
+      style={{
+        ...styles.button,
+        backgroundColor: theme['m3-surface-container'],
+        borderColor: theme['m3-outline-variant'],
+      }}
+      onPress={() => { onSearch(keyword) }}
+    >
+      <Text color={theme['m3-on-surface']} size={13}>{keyword}</Text>
     </Button>
   )
 }
@@ -87,12 +95,13 @@ const styles = createStyle({
   },
   button: {
     textAlign: 'center',
-    paddingLeft: 10,
-    paddingRight: 10,
-    paddingTop: 5,
-    paddingBottom: 5,
-    borderRadius: 4,
-    marginRight: 10,
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingTop: 6,
+    paddingBottom: 6,
+    borderRadius: M3Radius.full,
+    borderWidth: 0.6,
+    marginRight: 8,
     marginTop: 8,
   },
 })

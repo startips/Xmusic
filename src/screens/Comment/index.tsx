@@ -13,12 +13,9 @@ import { COMPONENT_IDS } from '@/config/constant'
 import { setComponentId } from '@/core/common'
 import PageContent from '@/components/PageContent'
 import playerState from '@/store/player/state'
-import { scaleSizeH } from '@/utils/pixelRatio'
-import { BorderWidths } from '@/theme'
+import { M3Radius } from '@/theme/m3'
 
 type ActiveId = 'hot' | 'new'
-
-const BAR_HEIGHT = scaleSizeH(34)
 
 const HeaderItem = ({ id, label, isActive, onPress }: {
   id: ActiveId
@@ -27,10 +24,22 @@ const HeaderItem = ({ id, label, isActive, onPress }: {
   onPress: (id: ActiveId) => void
 }) => {
   const theme = useTheme()
-  // console.log(theme)
   const components = useMemo(() => (
-    <TouchableOpacity style={styles.tabBtn} onPress={() => { !isActive && onPress(id) }}>
-      <Text color={isActive ? theme['c-primary-font-active'] : theme['c-font']}>{label}</Text>
+    <TouchableOpacity
+      style={{
+        ...styles.tabBtn,
+        backgroundColor: isActive ? theme['m3-secondary-container'] : 'transparent',
+      }}
+      activeOpacity={0.75}
+      onPress={() => { !isActive && onPress(id) }}
+    >
+      <Text
+        size={13.5}
+        style={{ fontWeight: isActive ? '700' : '500' }}
+        color={isActive ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   ), [isActive, theme, label, onPress, id])
 
@@ -130,15 +139,17 @@ export default memo(({ componentId }: {
   const commentComponent = useMemo(() => {
     return (
       <View style={styles.container}>
-        <View style={{ ...styles.tabHeader, borderBottomColor: theme['c-border-background'], height: BAR_HEIGHT }}>
-          <View style={styles.left}>
+        <View style={styles.tabHeader}>
+          <View style={{ ...styles.segmentedWrap, backgroundColor: theme['m3-surface-container-low'], borderColor: theme['m3-outline-variant'] }}>
             {tabs.map(({ id, label }) => <HeaderItem id={id} label={label} key={id} isActive={activeId == id} onPress={toggleTab} />)}
           </View>
-          <View>
-            <TouchableOpacity onPress={refreshComment} style={{ ...styles.btn, width: BAR_HEIGHT }}>
-              <Icon name="available_updates" size={20} color={theme['c-600']} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={refreshComment}
+            activeOpacity={0.7}
+            style={{ ...styles.btn, backgroundColor: theme['m3-surface-container'] }}
+          >
+            <Icon name="available_updates" size={18} color={theme['m3-on-surface-variant']} />
+          </TouchableOpacity>
         </View>
         <PagerView
           ref={pagerViewRef}
@@ -186,29 +197,32 @@ const styles = createStyle({
   },
   tabHeader: {
     flexDirection: 'row',
-    // paddingLeft: 10,
-    paddingRight: 10,
-    // justifyContent: 'center',
-    borderBottomWidth: BorderWidths.normal,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  left: {
-    flex: 1,
+  segmentedWrap: {
     flexDirection: 'row',
-    paddingLeft: 5,
+    alignItems: 'center',
+    borderRadius: M3Radius.full,
+    borderWidth: 0.6,
+    padding: 3,
+    gap: 4,
   },
   tabBtn: {
-    // flex: 1,
-    paddingLeft: 10,
-    paddingRight: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: M3Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
   },
   btn: {
-    // flex: 1,
+    width: 36,
+    height: 36,
+    borderRadius: M3Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
   },
   pagerView: {
     flex: 1,

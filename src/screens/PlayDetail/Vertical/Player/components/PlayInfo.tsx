@@ -13,13 +13,12 @@ import { useBufferProgress } from '@/plugins/player'
 
 const PlayTimeCurrent = ({ timeStr }: { timeStr: string }) => {
   const theme = useTheme()
-  // console.log(timeStr)
-  return <Text color={theme['c-500']}>{timeStr}</Text>
+  return <Text size={12} color={theme['m3-on-surface-variant']}>{timeStr}</Text>
 }
 
 const PlayTimeMax = memo(({ timeStr }: { timeStr: string }) => {
   const theme = useTheme()
-  return <Text color={theme['c-500']}>{timeStr}</Text>
+  return <Text size={12} color={theme['m3-on-surface-variant']}>{timeStr}</Text>
 })
 
 export default () => {

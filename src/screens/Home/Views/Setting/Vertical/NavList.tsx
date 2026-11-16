@@ -1,12 +1,12 @@
 import { memo, useCallback, useState } from 'react'
-import { View, TouchableOpacity, ScrollView } from 'react-native'
+import { TouchableOpacity, ScrollView } from 'react-native'
 
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
 import { SETTING_SCREENS, type SettingScreenIds } from '../Main'
 import { useI18n } from '@/lang'
-import { BorderRadius, BorderWidths } from '@/theme'
+import { M3Radius } from '@/theme/m3'
 
 
 const ListItem = memo(({ id, activeId, onPress }: {
@@ -24,11 +24,23 @@ const ListItem = memo(({ id, activeId, onPress }: {
   }
 
   return (
-    <View style={{ ...styles.listItem, backgroundColor: active ? theme['c-primary-background-active'] : 'transparent' }}>
-      <TouchableOpacity style={styles.listName} onPress={handlePress}>
-        <Text numberOfLines={1} color={active ? theme['c-primary-font'] : theme['c-font']}>{t(`setting_${id}`)}</Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      style={{
+        ...styles.listItem,
+        backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container'],
+      }}
+      activeOpacity={0.75}
+      onPress={handlePress}
+    >
+      <Text
+        size={13}
+        numberOfLines={1}
+        style={active ? styles.listTextActive : styles.listText}
+        color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
+      >
+        {t(`setting_${id}`)}
+      </Text>
+    </TouchableOpacity>
   )
 }, (prevProps, nextProps) => {
   return !!(prevProps.id === nextProps.id &&
@@ -42,7 +54,6 @@ export default ({ onChangeId }: {
   onChangeId: (id: SettingScreenIds) => void
 }) => {
   const [activeId, setActiveId] = useState(global.lx.settingActiveId)
-  const theme = useTheme()
 
   const handleChangeId = useCallback((id: SettingScreenIds) => {
     onChangeId(id)
@@ -52,7 +63,7 @@ export default ({ onChangeId }: {
   }, [])
 
   return (
-    <ScrollView horizontal style={{ ...styles.container, borderBottomColor: theme['c-border-background'] }} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps={'always'}>
+    <ScrollView horizontal style={styles.container} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps={'always'} showsHorizontalScrollIndicator={false}>
       {
         SETTING_SCREENS.map(id => <ListItem key={id} id={id} activeId={activeId} onPress={handleChangeId} />)
       }
@@ -63,41 +74,29 @@ export default ({ onChangeId }: {
 
 const styles = createStyle({
   container: {
-    height: 50,
+    height: 44,
     flexGrow: 0,
     flexShrink: 0,
-    borderBottomWidth: BorderWidths.normal,
-    opacity: 0.7,
   },
   contentContainer: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    padding: 5,
-    // backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingBottom: 6,
+    gap: 6,
   },
-  // listContainer: {
-  //   // borderBottomWidth: BorderWidths.normal2,
-  // },
-
   listItem: {
-    // width: '33.33%',
-    height: 40,
-    paddingLeft: 15,
-    paddingRight: 15,
-    // height: 'auto',
-    // flexDirection: 'row',
-    // alignItems: 'center',
-    paddingHorizontal: 5,
-    // paddingVertical: 10,
-    borderRadius: BorderRadius.normal,
-    marginBottom: 5,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
-  },
-  listName: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: M3Radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
-    // paddingLeft: 5,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  listText: {
+    fontWeight: '400',
+  },
+  listTextActive: {
+    fontWeight: '600',
   },
 })
