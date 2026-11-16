@@ -1,8 +1,7 @@
 import { memo, useRef } from 'react'
 
-import { View, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 
-import { Icon } from '@/components/common/Icon'
 import { pop } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
 import { usePlayerMusicInfo } from '@/store/player/hook'
@@ -24,8 +23,8 @@ const Title = () => {
 
   return (
     <View style={styles.titleContent}>
-      <Text numberOfLines={1} style={styles.title} size={14}>{musicInfo.name}</Text>
-      <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>{musicInfo.singer}</Text>
+      <Text numberOfLines={1} style={styles.title} size={15} color={theme['m3-on-surface']}>{musicInfo.name}</Text>
+      <Text numberOfLines={1} style={styles.subtitle} size={12} color={theme['m3-on-surface-variant']}>{musicInfo.singer}</Text>
     </View>
   )
 }
@@ -43,9 +42,7 @@ export default memo(() => {
   return (
     <View style={{ height: HEADER_HEIGHT }} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_header}>
       <View style={styles.container}>
-        <TouchableOpacity onPress={back} style={{ ...styles.button, width: HEADER_HEIGHT }}>
-          <Icon name="chevron-left" size={18} />
-        </TouchableOpacity>
+        <Btn icon="chevron-left" onPress={back} />
         <Title />
         <DesktopLyricBtn />
         <CommentBtn />
@@ -60,25 +57,22 @@ export default memo(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 0,
-    // backgroundColor: '#ccc',
     flexDirection: 'row',
-    // justifyContent: 'center',
-    height: '100%',
-  },
-  button: {
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 6,
     height: '100%',
-    flex: 0,
   },
   titleContent: {
     flex: 1,
-    // alignItems: 'center',
+    paddingHorizontal: 4,
     justifyContent: 'center',
   },
   title: {
-    // flex: 1,
-    // textAlign: 'center',
+    fontWeight: '700',
+  },
+  subtitle: {
+    marginTop: 1,
   },
   icon: {
     paddingLeft: 4,

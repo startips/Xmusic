@@ -3,10 +3,11 @@ import { Icon } from '@/components/common/Icon'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { scaleSizeW } from '@/utils/pixelRatio'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 import { HEADER_HEIGHT } from '@/config/constant'
 export const BTN_WIDTH = scaleSizeW(HEADER_HEIGHT)
-export const BTN_ICON_SIZE = 20
+export const BTN_ICON_SIZE = 17
 
 export default ({ icon, size, color, onPress, onLongPress }: {
   icon: string
@@ -17,20 +18,27 @@ export default ({ icon, size, color, onPress, onLongPress }: {
 }) => {
   const theme = useTheme()
   return (
-    <TouchableOpacity style={{ ...styles.cotrolBtn, width: BTN_WIDTH, height: BTN_WIDTH }} activeOpacity={0.5} onPress={onPress} onLongPress={onLongPress}>
-      <Icon name={icon} color={color ?? theme['c-550']} size={size ?? BTN_ICON_SIZE} />
+    <TouchableOpacity
+      style={{
+        ...styles.cotrolBtn,
+        backgroundColor: withAlpha(theme['m3-surface-container-highest'], 0.72),
+      }}
+      activeOpacity={0.75}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    >
+      <Icon name={icon} color={color ?? theme['m3-on-surface']} size={size ?? BTN_ICON_SIZE} />
     </TouchableOpacity>
   )
 }
 
 const styles = createStyle({
   cotrolBtn: {
-    // marginLeft: 5,
+    width: 34,
+    height: 34,
+    borderRadius: M3Radius.full,
     justifyContent: 'center',
     alignItems: 'center',
-
-    // backgroundColor: '#ccc',
-    shadowOpacity: 1,
-    textShadowRadius: 1,
+    flex: 0,
   },
 })

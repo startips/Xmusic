@@ -23,7 +23,8 @@ const styles = createStyle({
     flexShrink: 0,
     flexGrow: 1,
     marginLeft: marginLeftRaw,
-    // paddingRight: 15,
+    marginRight: marginLeftRaw,
+    paddingTop: 4,
     // backgroundColor: 'rgba(0,0,0,0.1)',
   },
 })

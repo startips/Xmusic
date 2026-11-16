@@ -79,11 +79,12 @@ const styles = createStyle({
   container: {
     flex: 1,
     flexDirection: 'row',
+    paddingHorizontal: 8,
   },
   left: {
     flex: 1,
     width: '45%',
-    paddingBottom: 10,
+    paddingBottom: 18,
     // backgroundColor: 'rgba(0,0,0,0.1)',
   },
   leftContent: {

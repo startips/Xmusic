@@ -14,8 +14,8 @@ import Text from '@/components/common/Text'
 type FlatListType = FlatListProps<ListInfoItem>
 
 // const MAX_WIDTH = scaleSizeW(110)
-const MIN_WIDTH = scaleSizeW(110)
-const GAP = scaleSizeW(20)
+const MIN_WIDTH = Math.min(scaleSizeW(110), 118)
+const GAP = Math.min(scaleSizeW(20), 20)
 
 export interface ListProps {
   onRefresh: () => void
@@ -207,8 +207,8 @@ const styles = createStyle({
   },
   list: {
     flex: 1,
-    paddingLeft: 10,
-    paddingRight: 10,
+    paddingLeft: 8,
+    paddingRight: 8,
   },
   footer: {
     textAlign: 'center',

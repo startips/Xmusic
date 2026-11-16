@@ -9,7 +9,7 @@ import { useTheme } from '@/store/theme/hook'
 import Image from '@/components/common/Image'
 import { M3Radius } from '@/theme/m3'
 
-const gap = scaleSizeW(15)
+const gap = Math.min(scaleSizeW(15), 14)
 export default memo(({ item, index, width, showSource, onPress }: {
   item: ListInfoItem
   index: number
@@ -45,7 +45,8 @@ export default memo(({ item, index, width, showSource, onPress }: {
 const styles = createStyle({
   listItem: {
     // width: 90,
-    margin: 10,
+    marginTop: 8,
+    marginBottom: 10,
   },
   listItemImg: {
     borderRadius: M3Radius.md,

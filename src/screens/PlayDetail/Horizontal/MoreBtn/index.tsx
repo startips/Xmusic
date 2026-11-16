@@ -26,7 +26,7 @@ const styles = createStyle({
     position: 'absolute',
     height: '100%',
     left: 0,
-    gap: 16,
+    gap: 10,
     zIndex: 1,
   },
 })

@@ -1,74 +1,75 @@
-<p align="center"><a href="https://github.com/lyswhut/lx-music-mobile"><img width="200" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/icon.png" alt="lx-music logo"></a></p>
+<p align="center"><a href="https://github.com/startips/Xmusic"><img width="160" src="./doc/images/icon.png" alt="Xmusic logo"></a></p>
 
-<h1 align="center">LX Music 移动版</h1>
+<h1 align="center">Xmusic</h1>
 
 <p align="center">
-  <a href="https://github.com/lyswhut/lx-music-mobile/releases"><img src="https://img.shields.io/github/release/lyswhut/lx-music-mobile" alt="Release version"></a>
-  <a href="https://github.com/lyswhut/lx-music-mobile/actions/workflows/release.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/lyswhut/lx-music-mobile/actions/workflows/beta-pack.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build%20Beta/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/lyswhut/lx-music-mobile/react-native/master" alt="React native version"></a>
-  <!-- <a href="https://github.com/lyswhut/lx-music-mobile/releases"><img src="https://img.shields.io/github/downloads/lyswhut/lx-music-mobile/latest/total" alt="Downloads"></a> -->
-  <a href="https://github.com/lyswhut/lx-music-mobile/tree/dev"><img src="https://img.shields.io/github/package-json/v/lyswhut/lx-music-mobile/dev" alt="Dev branch version"></a>
-  <!-- <a href="https://github.com/lyswhut/lx-music-mobile/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lyswhut/lx-music-mobile" alt="License"></a> -->
+  <a href="https://github.com/startips/Xmusic/releases"><img src="https://img.shields.io/github/release/startips/Xmusic" alt="Release version"></a>
+  <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/startips/Xmusic/react-native/master" alt="React Native version"></a>
+  <a href="https://github.com/startips/Xmusic/blob/master/LICENSE"><img src="https://img.shields.io/github/license/startips/Xmusic" alt="License"></a>
 </p>
 
-<p align="center">一个基于 React Native 开发的音乐软件</p>
+<p align="center">一个基于 LX Music 移动版二次重构的 Android 音乐播放器，采用 Material 3 Expressive 视觉体系与全新 Xmusic 品牌设计</p>
+
+## 界面与改动亮点
+
+- **Material 3 Expressive 界面重设计**：引入统一的 M3E 语义色系与圆角规范（`src/theme/m3.ts`），重构了悬浮底部导航栏、迷你播放条、竖屏与横屏播放详情页、歌单详情、评论页、侧边栏以及各类弹窗与菜单组件，并支持系统状态栏/底部导航栏沉浸配色同步。
+- **全新 Xmusic 品牌与图标体系**：启用丝带音符「X♪」视觉标识，提供全密度启动图标、Android 8.0+ 自适应图标、Android 13+ 单色桌面主题图标、状态栏单色通知小图标及对应启动页。
+- **多尺寸屏幕自适应**：结合 `375×667` 动态缩放基线与系统字体缩放限制，兼顾窄屏手机、横屏播放详情以及平板/折叠屏多列歌单排布。
+- **独立应用配置**：使用独立 Android 包名 `com.startips.xmusic`，可与原版应用同机共存互不覆盖。
 
 ## 说明
 
-所用技术栈：
+所用主要技术栈：
 
-- React Native
-- Redux
+- React Native（`0.73`）
+- TypeScript
+- react-native-navigation
+- react-native-track-player
 
 已支持的平台：
 
-- Android 5 及以上
+- Android 5.0 及以上（`minSdkVersion = 21`）
 
-***注：目前没有计划支持 iOS 和 HarmonyOS NEXT**。*<br>
-*桌面版项目地址：<https://github.com/lyswhut/lx-music-desktop>*<br>
-*LX Music 项目发展调整与新项目计划：https://github.com/lyswhut/lx-music-desktop/issues/1912*
+***注：本项目专注于 Android 端，没有计划支持 iOS 和 HarmonyOS NEXT。***
 
-软件变化请查看[更新日志](https://github.com/lyswhut/lx-music-mobile/blob/master/CHANGELOG.md)。
+- 安装包下载：[GitHub Releases](https://github.com/startips/Xmusic/releases)
+- 问题反馈：[GitHub Issues](https://github.com/startips/Xmusic/issues)
+- 变更记录：[CHANGELOG.md](./CHANGELOG.md)
+- 使用常见问题请参阅原版文档：[移动版常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq) 与 [音乐播放列表机制](https://lyswhut.github.io/lx-music-doc/mobile/faq/playlist)。
 
-软件下载请查看 [GitHub Releases](https://github.com/lyswhut/lx-music-mobile/releases)。
+### 本地开发与构建
 
-使用常见问题请参阅[移动版常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq)。
+环境搭建可先参考原版[源码使用方法](https://lyswhut.github.io/lx-music-doc/mobile/use-source-code)：
 
-目前本项目的原始发布地址只有 [**GitHub**](https://github.com/lyswhut/lx-music-mobile/releases)，其他渠道均为第三方转载发布，与本项目无关！
+```bash
+# 安装依赖
+npm ci
 
-为了提高使用门槛，本软件内的默认设置、UI 操作不以新手友好为目标，所以使用前建议先根据你的喜好浏览调整一遍软件设置，阅读一遍[音乐播放列表机制](https://lyswhut.github.io/lx-music-doc/mobile/faq/playlist)。
+# 代码检查
+npm run lint
+
+# 构建 Android Release 安装包
+cd android && ./gradlew assembleRelease
+```
 
 ### 数据同步服务
 
-从 v1.0.0 起，我们发布了一个独立的[数据同步服务](https://github.com/lyswhut/lx-music-sync-server#readme)。如果你有服务器，可以将其部署到服务器上作为私人多端同步服务使用，详情看该项目说明。
+如需跨设备同步本地歌单，可部署原版独立的[数据同步服务](https://github.com/lyswhut/lx-music-sync-server#readme)作为私人多端同步服务端使用。
 
 ## 贡献代码
 
-本项目欢迎 PR，但为了 PR 能顺利合并，需要注意以下几点：
+欢迎提交 PR 或 Issue：
 
-- 对于添加新功能的 PR，建议在提交 PR 前先创建 Issue 进行说明，以确认该功能是否确实需要；
-- 对于修复 bug 的 PR，请提供修复前后的说明及重现方式；
-- 对于其他类型的 PR，则适当附上说明。
-
-贡献代码步骤：
-
-1. 参照[源码使用方法](https://lyswhut.github.io/lx-music-doc/mobile/use-source-code)设置开发环境；
-2. 克隆本仓库代码并切换至 `dev` 分支进行开发；
-3. 提交 PR 至 `dev` 分支。
-
-<!--
-## 用户界面
-
-<p><img width="100%" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/app.png" alt="lx-music mobile UI"></p> -->
+- 提交新功能建议或较大界面改动前，建议先在 [Issues](https://github.com/startips/Xmusic/issues) 中说明想法；
+- 修复 Bug 时，请尽量附上机型、Android 版本、复现步骤与前后对比截图。
 
 ## 项目协议
 
-本项目基于 [Apache License 2.0](https://github.com/lyswhut/lx-music-mobile/blob/master/LICENSE) 许可证发行，以下协议是对于 Apache License 2.0 的补充，如有冲突，以以下协议为准。
+本项目基于 [Apache License 2.0](./LICENSE) 许可证发行，延续原项目对 Apache License 2.0 的补充协议条款；如有冲突，以以下协议为准。
 
 ---
 
-*词语约定：本协议中的“本项目”指 LX Music（洛雪音乐）移动版项目；“使用者”指签署本协议的使用者；“官方音乐平台”指对本项目内置的包括酷我、酷狗、咪咕等音乐源的官方平台统称；“版权数据”指包括但不限于图像、音频、名字等在内的他人拥有所属版权的数据。*
+*词语约定：本协议中的“本项目”指 Xmusic 及其上游项目 LX Music（洛雪音乐）移动版；“使用者”指签署本协议的使用者；“官方音乐平台”指对本项目内置的包括酷我、酷狗、咪咕等音乐源的官方平台统称；“版权数据”指包括但不限于图像、音频、名字等在内的他人拥有所属版权的数据。*
 
 ### 一、数据来源
 
@@ -114,4 +115,11 @@
 
 ---
 
-若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
+## 原作者与上游仓库
+
+本项目基于 **lyswhut** 开发的开源项目二次修改而来，感谢原作者的长期维护与开源贡献：
+
+- 原项目仓库（LX Music 移动版）：<https://github.com/lyswhut/lx-music-mobile>
+- 桌面版项目仓库（LX Music Desktop）：<https://github.com/lyswhut/lx-music-desktop>
+- 原项目说明与发展动态：<https://github.com/lyswhut/lx-music-desktop/issues/1912>
+- 若对原项目协议有疑问请 mail to: `lyswhut+qq.com`（请将 `+` 替换成 `@`）
