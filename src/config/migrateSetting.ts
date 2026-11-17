@@ -34,15 +34,13 @@ export default (setting: any): Partial<LX.AppSetting> => {
     setting['list.isShowSource'] = setting.list?.isShowSource
     setting['list.isSaveScrollLocation'] = setting.list?.isSaveScrollLocation
     setting['list.addMusicLocationType'] = setting.list?.addMusicLocationType
-    setting['common.themeId'] = setting.themeId
-    setting['common.isAutoTheme'] = setting.isAutoTheme
+    setting['common.themeMode'] = setting.isAutoTheme === false ? 'light' : 'system'
     setting['common.langId'] = setting.langId
     setting['common.apiSource'] = setting.apiSource
     setting['common.sourceNameType'] = setting.sourceNameType
     setting['common.shareType'] = setting.shareType
     setting['common.isAgreePact'] = setting.isAgreePact
     setting['sync.enable'] = setting.sync?.enable
-    setting['theme.id'] = setting.themeId
   }
   if (setting.version == '2.0') {
     if (setting['player.isEnableAudioOffload']) setting['player.isEnableAudioOffload'] = false

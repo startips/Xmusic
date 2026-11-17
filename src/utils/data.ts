@@ -8,7 +8,6 @@ import { throttle } from './common'
 // import musicSdk from '@/utils/musicSdk'
 
 const fontSizeKey = storageDataPrefix.fontSize
-const themeKey = storageDataPrefix.theme
 const playInfoStorageKey = storageDataPrefix.playInfo
 const userListKey = storageDataPrefix.userList
 const viewPrevStateKey = storageDataPrefix.viewPrevState
@@ -65,12 +64,6 @@ export const getFontSize = async() => (await getData<number>(fontSizeKey) ?? 1)
 export const saveFontSize = async(size: number) => {
   await saveData(fontSizeKey, size)
 }
-
-export const getUserTheme = async() => (await getData<LX.Theme[]>(themeKey) ?? [])
-export const saveUserTheme = async(themes: LX.Theme[]) => {
-  await saveData(themeKey, themes)
-}
-
 
 const initPosition = async() => {
   // eslint-disable-next-line require-atomic-updates

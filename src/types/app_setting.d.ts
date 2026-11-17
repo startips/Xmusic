@@ -7,9 +7,9 @@ declare global {
     interface AppSetting {
       version: string
       /**
-       * 是否跟随系统切换亮暗主题
+       * 主题模式：跟随系统 / 浅色 / 深色
        */
-      'common.isAutoTheme': boolean
+      'common.themeMode': LX.ThemeMode
 
       /**
        * 语言id
@@ -75,26 +75,6 @@ declare global {
        * 总是保留状态栏高度
        */
       'common.alwaysKeepStatusbarHeight': boolean
-
-      /**
-       * 主题id
-       */
-      'theme.id': string
-
-      /**
-       * 亮色主题id
-       */
-      'theme.lightId': string
-
-      /**
-       * 暗色主题id
-       */
-      'theme.darkId': string
-
-      /**
-       * 隐藏黑色主题背景
-       */
-      'theme.hideBgDark': boolean
 
       /**
        * 动态背景

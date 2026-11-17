@@ -4,6 +4,7 @@
   "versionCode": 79,
   "private": true,
   "scripts": {
+    "postinstall": "node dependencies-patch.js",
     "dev": "react-native run-android --active-arch-only",
     "ios": "react-native run-ios",
     "start": "react-native start",
@@ -19,7 +20,6 @@
     "pack:android": "cd android && gradlew.bat assembleRelease",
     "clear": "cd android && gradlew.bat clean",
     "clear:full": "git clean -fdx -e android/keystore.properties -e android/app/*.keystore",
-    "build:theme": "node src/theme/themes/createThemes.js",
     "publish": "node publish"
   },
   "engines": {
