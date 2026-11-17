@@ -6,6 +6,25 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.0.0](https://github.com/startips/Xmusic/compare/v1.9.2...v2.0.0) - 2026-11-17
+
+### 新增
+
+- 全新 Xmusic 品牌视觉：丝带音符「X♪」标识、全密度自适应图标、单色通知图标与启动页
+- 重构为 Material 3 Expressive 界面：统一 M3 语义色、圆角与动效，重设计底部导航、播放栏、播放详情、歌单详情、评论页与各类弹窗
+- 新增明暗模式设置：支持跟随系统、浅色、深色三种模式
+- 适配小米澎湃 OS 超级岛媒体卡片：高清封面、展开态完整布局与模糊封面背景
+
+### 优化
+
+- 优化横屏播放详情页布局与安全边距，补齐 M3E 进度条和圆形操作按钮
+- 优化平板、折叠屏等大屏设备上的歌单多列排布
+
+### 变更
+
+- 移除旧主题体系与自定义主题，应用统一使用单一 Xmusic M3 主题
+- 使用独立 Android 包名 `com.startips.xmusic`，可与原版应用共存
+
 ## [1.9.2](https://github.com/lyswhut/lx-music-mobile/compare/v1.9.1...v1.9.2) - 2026-10-30
 
 ### 修复
