@@ -10,6 +10,10 @@ const playerMetadata = path.join(
   rootPath,
   'node_modules/react-native-track-player/android/src/main/java/com/guichaguri/trackplayer/service/metadata/MetadataManager.java',
 )
+const playerMusicService = path.join(
+  rootPath,
+  'node_modules/react-native-track-player/android/src/main/java/com/guichaguri/trackplayer/service/MusicService.java',
+)
 
 const patchs = [
   // 1. 同时写入 MEDIA_METADATA_KEY_ART，部分系统（含 HyperOS 超级岛）只读取该字段
@@ -47,6 +51,12 @@ const patchs = [
     playerMetadata,
     '      session.setMetadata(prevMetadata.build());\n      updatePlaybackState(manager.getPlayback());',
     '      if (prevArtResource != null) {\n        prevMetadata.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, prevArtResource);\n        prevMetadata.putBitmap(METADATA_KEY_ART, prevArtResource);\n      }\n      session.setMetadata(prevMetadata.build());\n      updatePlaybackState(manager.getPlayback());',
+  ],
+  // 7. 划掉多任务触发 onTaskRemoved 且 stopWithApp 为 true 时终止进程，避免旧 MusicBinder 持有已释放的 ExoPlayer 导致立即重开无法播放
+  [
+    playerMusicService,
+    '            destroy();\n            stopSelf();\n        }',
+    '            destroy();\n            stopSelf();\n            android.os.Process.killProcess(android.os.Process.myPid());\n        }',
   ],
 ]
 

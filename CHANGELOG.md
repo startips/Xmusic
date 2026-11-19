@@ -6,6 +6,15 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.0.1](https://github.com/startips/Xmusic/compare/v2.0.0...v2.0.1) - 2026-11-19
+
+### 修复
+
+- 修复 Android 17 / Pixel 等设备在使用系统文件选择器导入自定义源（`.js`）或备份文件（`.lxmc` / `.json` / `.bin`）时文件被置灰不可选的问题
+- 修复桌面歌词悬浮窗无权限时状态同步及 Activity 为空时的潜在空指针问题
+- 修复列表导出失败时错误吞掉异常导致仍提示导出成功的问题
+- 修复划掉多任务卡片退出应用时后台继续播放的问题，并在停止服务后清理进程避免立即重开无法播放
+
 ## [2.0.0](https://github.com/startips/Xmusic/compare/v1.9.2...v2.0.0) - 2026-11-17
 
 ### 新增

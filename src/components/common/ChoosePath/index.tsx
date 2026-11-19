@@ -21,6 +21,12 @@ export interface ReadOptions {
 }
 const initReadOptions = {}
 
+const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'])
+const getOpenDocumentMimeTypes = (filter?: string[]) => {
+  if (!filter?.length) return ['*/*']
+  return filter.every(ext => IMAGE_EXTS.has(ext.toLowerCase())) ? ['image/*'] : ['*/*']
+}
+
 interface ChoosePathProps {
   onConfirm: (path: string) => void
 }
@@ -63,7 +69,10 @@ export default forwardRef<ChoosePathType, ChoosePathProps>(({
         // }
       } else {
         void selectFile({
-          extTypes: options.filter,
+          // Android DocumentsUI filters strictly by a single MimeTypeMap entry when extTypes is used
+          // (e.g. .js maps to application/javascript while MediaStore tags it text/javascript),
+          // so allow */* in the picker and validate the extension below.
+          mimeTypes: getOpenDocumentMimeTypes(options.filter),
           toPath: TEMP_FILE_PATH,
         }).then((file) => {
           // console.log(file)

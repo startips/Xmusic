@@ -41,7 +41,7 @@ export default forwardRef<DesktopLyricEnableType, {}>((props, ref) => {
       } catch (err) {
         console.log(err)
         handleShowModal()
-        // return false
+        return
       }
     } else await hideDesktopLyric()
     // return true
