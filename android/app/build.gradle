@@ -203,3 +203,9 @@ dependencies {
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+
+// Ensure changes to package.json (app version) or JSON resources invalidate the RN JS bundle task
+tasks.withType(com.facebook.react.tasks.BundleHermesCTask).configureEach {
+    inputs.file(file("../../package.json"))
+    inputs.files(fileTree(dir: "../../src", include: ["**/*.json"]))
+}
