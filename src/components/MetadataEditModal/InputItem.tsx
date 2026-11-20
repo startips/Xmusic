@@ -5,6 +5,7 @@ import type { InputProps } from '@/components/common/Input'
 import Input from '@/components/common/Input'
 import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
+import { M3Radius } from '@/theme/m3'
 
 
 export interface InputItemProps extends InputProps {
@@ -17,11 +18,15 @@ export default memo(({ value, label, onChanged, ...props }: InputItemProps) => {
   const theme = useTheme()
   return (
     <View style={styles.container}>
-      <Text style={styles.label} size={14}>{label}</Text>
+      <Text style={styles.label} size={13} color={theme['m3-on-surface-variant']}>{label}</Text>
       <Input
         value={value}
         onChangeText={onChanged}
-        style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}
+        style={{
+          ...styles.input,
+          backgroundColor: theme['m3-surface-container-lowest'],
+          borderColor: theme['m3-outline-variant'],
+        }}
         {...props}
        />
     </View>
@@ -30,18 +35,18 @@ export default memo(({ value, label, onChanged, ...props }: InputItemProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    // paddingLeft: 25,
-    marginBottom: 15,
+    marginBottom: 14,
   },
   label: {
-    marginBottom: 2,
+    marginBottom: 5,
   },
   input: {
     flexGrow: 1,
     flexShrink: 1,
-    // borderRadius: 4,
-    // paddingTop: 3,
-    // paddingBottom: 3,
-    // maxWidth: 300,
+    borderRadius: M3Radius.sm,
+    borderWidth: 0.8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minHeight: 38,
   },
 })

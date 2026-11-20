@@ -1,62 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
-import { View } from 'react-native'
-// import { useLayout } from '@/utils/hooks'
-import { createStyle } from '@/utils/tools'
-import { usePlayerMusicInfo } from '@/store/player/hook'
+import { useMemo } from 'react'
 import { useWindowSize } from '@/utils/hooks'
-import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
-import { useNavigationComponentDidAppear } from '@/navigation'
-import { HEADER_HEIGHT } from './components/Header'
-import Image from '@/components/common/Image'
 import { useStatusbarHeight } from '@/store/common/hook'
-import commonState from '@/store/common/state'
-
+import { HEADER_HEIGHT } from './components/Header'
+import ArtworkCard from '../components/ArtworkCard'
 
 export default ({ componentId }: { componentId: string }) => {
-  const musicInfo = usePlayerMusicInfo()
   const { width: winWidth, height: winHeight } = useWindowSize()
   const statusBarHeight = useStatusbarHeight()
 
-  const [animated, setAnimated] = useState(!!commonState.componentIds.playDetail)
-  const [pic, setPic] = useState(musicInfo.pic)
-  useEffect(() => {
-    if (animated) setPic(musicInfo.pic)
-  }, [musicInfo.pic, animated])
-
-  useNavigationComponentDidAppear(componentId, () => {
-    setAnimated(true)
-  })
-  // console.log('render pic')
-
-  const style = useMemo(() => {
-    const imgWidth = Math.min(winWidth * 0.82, (winHeight - statusBarHeight - HEADER_HEIGHT) * 0.48)
-    return {
-      width: imgWidth,
-      height: imgWidth,
-      borderRadius: 24,
-      overflow: 'hidden' as const,
-    }
+  const size = useMemo(() => {
+    return Math.min(winWidth * 0.82, (winHeight - statusBarHeight - HEADER_HEIGHT) * 0.48)
   }, [statusBarHeight, winHeight, winWidth])
 
   return (
-    <View style={styles.container}>
-      <View style={{ ...styles.content, elevation: animated ? 10 : 0 }}>
-        <Image url={pic} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_pic} style={style} />
-      </View>
-    </View>
+    <ArtworkCard
+      componentId={componentId}
+      size={size}
+      activeElevation={10}
+      pausedElevation={3}
+    />
   )
 }
-
-const styles = createStyle({
-  container: {
-    flexGrow: 1,
-    flexShrink: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    backgroundColor: 'rgba(0,0,0,0)',
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-})

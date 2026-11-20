@@ -4,6 +4,7 @@ import type { M3SemanticColors } from '../theme/m3'
 declare global {
   namespace LX {
     type ThemeMode = 'system' | 'light' | 'dark'
+    type ThemeSeedId = 'xmusic' | 'ocean' | 'iris' | 'coral' | 'amber' | 'slate'
 
     /**
      * Compatibility aliases for components that have not been migrated to the

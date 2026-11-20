@@ -10,6 +10,7 @@ import ModalContent from './ModalContent'
 import syncState from '@/store/sync/state'
 import CheckBox from '@/components/common/CheckBox'
 import { setSyncModeComponentId } from '@/core/sync'
+import { M3Radius } from '@/theme/m3'
 
 
 const styles = createStyle({
@@ -26,31 +27,26 @@ const styles = createStyle({
   },
   title: {
     textAlign: 'center',
-    marginBottom: 10,
+    fontWeight: '700',
+    marginBottom: 12,
     marginRight: 15,
   },
   btnGroup: {
-    marginTop: 10,
+    marginTop: 12,
   },
   btns: {
     flexDirection: 'row',
-    // justifyContent: 'center',
     justifyContent: 'flex-start',
-    marginTop: 5,
-    marginBottom: 5,
-    // paddingBottom: 15,
-    // paddingLeft: 15,
-    // paddingRight: 15,
+    marginTop: 6,
+    marginBottom: 6,
+    gap: 10,
   },
   btn: {
-    // flex: 1,
-    paddingTop: 9,
-    paddingBottom: 9,
-    paddingLeft: 8,
-    paddingRight: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    borderRadius: 4,
-    marginRight: 15,
+    justifyContent: 'center',
+    borderRadius: M3Radius.full,
     minWidth: 100,
   },
   tips: {

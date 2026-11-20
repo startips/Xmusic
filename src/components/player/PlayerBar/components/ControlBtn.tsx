@@ -1,12 +1,12 @@
-import { useRef } from 'react'
-import { Animated, Pressable, TouchableOpacity } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Icon } from '@/components/common/Icon'
 import { useIsPlay } from '@/store/player/hook'
 import { useTheme } from '@/store/theme/hook'
 import { playNext, playPrev, togglePlay } from '@/core/player/player'
 import { createStyle } from '@/utils/tools'
 import { useHorizontalMode } from '@/utils/hooks'
-import { M3Motion, M3Radius } from '@/theme/m3'
+import { M3Radius, withAlpha } from '@/theme/m3'
+import { SpringTogglePlayButton } from '@/components/player/SpringControlButton'
 
 const BTN_SIZE = 20
 const PLAY_ICON_SIZE = 18
@@ -21,9 +21,15 @@ const PlayPrevBtn = () => {
   const theme = useTheme()
 
   return (
-    <TouchableOpacity style={styles.controlBtn} activeOpacity={0.65} onPress={handlePlayPrev}>
-      <Icon name='prevMusic' color={theme['m3-on-surface']} size={BTN_SIZE} />
-    </TouchableOpacity>
+    <View style={styles.controlBtnWrap}>
+      <Pressable
+        style={styles.controlBtn}
+        android_ripple={{ color: withAlpha(theme['m3-primary'], 0.16), borderless: true }}
+        onPress={handlePlayPrev}
+      >
+        <Icon name="prevMusic" color={theme['m3-on-surface']} size={BTN_SIZE} />
+      </Pressable>
+    </View>
   )
 }
 
@@ -31,34 +37,34 @@ const PlayNextBtn = () => {
   const theme = useTheme()
 
   return (
-    <TouchableOpacity style={styles.controlBtn} activeOpacity={0.65} onPress={handlePlayNext}>
-      <Icon name='nextMusic' color={theme['m3-on-surface']} size={BTN_SIZE} />
-    </TouchableOpacity>
+    <View style={styles.controlBtnWrap}>
+      <Pressable
+        style={styles.controlBtn}
+        android_ripple={{ color: withAlpha(theme['m3-primary'], 0.16), borderless: true }}
+        onPress={handlePlayNext}
+      >
+        <Icon name="nextMusic" color={theme['m3-on-surface']} size={BTN_SIZE} />
+      </Pressable>
+    </View>
   )
 }
 
 const TogglePlayBtn = () => {
   const isPlay = useIsPlay()
   const theme = useTheme()
-  const pressScale = useRef(new Animated.Value(1)).current
 
   return (
-    <Pressable
+    <SpringTogglePlayButton
+      width={38}
+      height={38}
+      playRadius={M3Radius.sm}
+      pauseRadius={M3Radius.full}
+      isPlay={isPlay}
+      backgroundColor={theme['m3-primary-container']}
+      iconColor={theme['m3-on-primary-container']}
+      iconSize={PLAY_ICON_SIZE}
       onPress={togglePlay}
-      onPressIn={() => { M3Motion.pressSpring(pressScale, 0.88).start() }}
-      onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
-    >
-      <Animated.View
-        style={{
-          ...styles.playBtn,
-          backgroundColor: theme['m3-primary-container'],
-          borderRadius: isPlay ? M3Radius.sm : M3Radius.full,
-          transform: [{ scale: pressScale }],
-        }}
-      >
-        <Icon name={isPlay ? 'pause' : 'play'} color={theme['m3-on-primary-container']} size={PLAY_ICON_SIZE} />
-      </Animated.View>
-    </Pressable>
+    />
   )
 }
 
@@ -74,16 +80,15 @@ export default () => {
 }
 
 const styles = createStyle({
-  controlBtn: {
+  controlBtnWrap: {
     width: 38,
     height: 38,
     borderRadius: M3Radius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
   },
-  playBtn: {
-    width: 38,
-    height: 38,
+  controlBtn: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },

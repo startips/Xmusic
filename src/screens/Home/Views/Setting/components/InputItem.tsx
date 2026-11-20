@@ -5,6 +5,7 @@ import type { InputType, InputProps } from '@/components/common/Input'
 import Input from '@/components/common/Input'
 import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
+import { M3Radius } from '@/theme/m3'
 
 
 export interface InputItemProps extends InputProps {
@@ -63,12 +64,16 @@ export default memo(({ value, label, onChanged, ...props }: InputItemProps) => {
   }
   return (
     <View style={styles.container}>
-      <Text style={styles.label} size={14}>{label}</Text>
+      <Text style={styles.label} size={13} color={theme['m3-on-surface-variant']}>{label}</Text>
       <Input
         value={text}
         ref={inputRef}
         onChangeText={handleSetSelectMode}
-        style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}
+        style={{
+          ...styles.input,
+          backgroundColor: theme['m3-surface-container-high'],
+          borderColor: theme['m3-outline-variant'],
+        }}
         {...props}
         onBlur={saveValue}
        />
@@ -79,18 +84,20 @@ export default memo(({ value, label, onChanged, ...props }: InputItemProps) => {
 const styles = StyleSheet.create({
   container: {
     paddingLeft: 25,
+    paddingRight: 25,
     marginBottom: 15,
   },
   label: {
-    marginBottom: 2,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
     flexGrow: 1,
     flexShrink: 1,
-    borderRadius: 4,
-    // paddingTop: 3,
-    // paddingBottom: 3,
+    borderRadius: M3Radius.sm,
+    borderWidth: 0.8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minHeight: 40,
     maxWidth: 300,
   },
 })

@@ -1,7 +1,5 @@
 import { memo, useRef, useState } from 'react'
-import { View, TouchableOpacity, FlatList, type FlatListProps } from 'react-native'
-
-import { Icon } from '@/components/common/Icon'
+import { View, Pressable, FlatList, type FlatListProps } from 'react-native'
 
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
@@ -9,10 +7,11 @@ import Text from '@/components/common/Text'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { SETTING_SCREENS, type SettingScreenIds } from '../Main'
 import { useI18n } from '@/lang'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 type FlatListType = FlatListProps<SettingScreenIds>
 
-const ITEM_HEIGHT = scaleSizeH(40)
+const ITEM_HEIGHT = scaleSizeH(44)
 
 const ListItem = memo(({ id, activeId, onPress }: {
   onPress: (item: SettingScreenIds) => void
@@ -30,14 +29,27 @@ const ListItem = memo(({ id, activeId, onPress }: {
 
   return (
     <View style={{ ...styles.listItem, height: ITEM_HEIGHT }}>
-      {
-        active
-          ? <Icon style={styles.listActiveIcon} name="chevron-right" size={12} color={theme['c-primary-font']} />
-          : null
-      }
-      <TouchableOpacity style={styles.listName} onPress={handlePress}>
-        <Text numberOfLines={1} size={16} color={active ? theme['c-primary-font'] : theme['c-font']}>{t(`setting_${id}`)}</Text>
-      </TouchableOpacity>
+      <View
+        style={{
+          ...styles.listItemInner,
+          backgroundColor: active ? theme['m3-secondary-container'] : 'transparent',
+        }}
+      >
+        <Pressable
+          style={styles.listName}
+          android_ripple={{ color: withAlpha(theme['m3-primary'], 0.14) }}
+          onPress={handlePress}
+        >
+          <Text
+            numberOfLines={1}
+            size={14}
+            style={active ? styles.listNameActive : styles.listNameText}
+            color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
+          >
+            {t(`setting_${id}`)}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   )
 }, (prevProps, nextProps) => {
@@ -77,15 +89,14 @@ export default ({ onChangeId }: {
     <FlatList
       ref={flatListRef}
       style={styles.container}
+      contentContainerStyle={styles.listContent}
       data={SETTING_SCREENS}
       maxToRenderPerBatch={9}
-      // updateCellsBatchingPeriod={80}
       windowSize={9}
       removeClippedSubviews={true}
       initialNumToRender={18}
       renderItem={renderItem}
       keyExtractor={getkey}
-      // extraData={activeIndex}
       getItemLayout={getItemLayout}
     />
   )
@@ -97,34 +108,30 @@ const styles = createStyle({
     flexShrink: 1,
     flexGrow: 0,
   },
-  // listContainer: {
-  //   // borderBottomWidth: BorderWidths.normal2,
-  // },
-
-  listItem: {
-    height: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: 10,
-    paddingLeft: 10,
-    // borderBottomWidth: BorderWidths.normal,
+  listContent: {
+    paddingVertical: 8,
   },
-  listActiveIcon: {
-    // width: 18,
-    marginLeft: 3,
-    // paddingRight: 5,
-    textAlign: 'center',
+  listItem: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  listItemInner: {
+    flex: 1,
+    borderRadius: M3Radius.full,
+    overflow: 'hidden',
   },
   listName: {
     height: '100%',
-    // height: 46,
-    // paddingTop: 12,
-    // paddingBottom: 12,
     justifyContent: 'center',
     flexGrow: 1,
     flexShrink: 1,
-    paddingLeft: 5,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+    paddingHorizontal: 14,
+  },
+  listNameText: {
+    fontWeight: '400',
+  },
+  listNameActive: {
+    fontWeight: '600',
   },
 })
 

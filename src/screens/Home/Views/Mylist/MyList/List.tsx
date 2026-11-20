@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from 'react'
-import { View, TouchableOpacity, FlatList, type NativeScrollEvent, type NativeSyntheticEvent, type FlatListProps } from 'react-native'
+import { View, Pressable, FlatList, type NativeScrollEvent, type NativeSyntheticEvent, type FlatListProps } from 'react-native'
 
 import { Icon } from '@/components/common/Icon'
 
@@ -13,10 +13,11 @@ import Text from '@/components/common/Text'
 import { type Position } from './ListMenu'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import Loading from '@/components/common/Loading'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 type FlatListType = FlatListProps<LX.List.MyListInfo>
 
-const ITEM_HEIGHT = scaleSizeH(40)
+const ITEM_HEIGHT = scaleSizeH(48)
 
 const ListItem = memo(({ item, index, activeId, onPress, onShowMenu }: {
   onPress: (item: LX.List.MyListInfo) => void
@@ -26,7 +27,7 @@ const ListItem = memo(({ item, index, activeId, onPress, onShowMenu }: {
   onShowMenu: (item: LX.List.MyListInfo, index: number, position: { x: number, y: number, w: number, h: number }) => void
 }) => {
   const theme = useTheme()
-  const moreButtonRef = useRef<TouchableOpacity>(null)
+  const moreButtonRef = useRef<View>(null)
   const fetching = useListFetching(item.id)
 
   const active = activeId == item.id
@@ -34,7 +35,6 @@ const ListItem = memo(({ item, index, activeId, onPress, onShowMenu }: {
   const handleShowMenu = () => {
     if (moreButtonRef.current?.measure) {
       moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
-        // console.log(fx, fy, width, height, px, py)
         onShowMenu(item, index, { x: Math.ceil(px), y: Math.ceil(py), w: Math.ceil(width), h: Math.ceil(height) })
       })
     }
@@ -44,20 +44,46 @@ const ListItem = memo(({ item, index, activeId, onPress, onShowMenu }: {
     onPress(item)
   }
 
+  const rippleColor = withAlpha(theme['m3-primary'], 0.14)
+
   return (
     <View style={{ ...styles.listItem, height: ITEM_HEIGHT }}>
-      {
-        active
-          ? <Icon style={styles.listActiveIcon} name="chevron-right" size={12} color={theme['c-primary-font']} />
-          : null
-      }
-      { fetching ? <Loading color={active ? theme['c-primary-font'] : theme['c-font']} style={styles.loading} /> : null }
-      <TouchableOpacity style={styles.listName} onPress={handlePress}>
-        <Text numberOfLines={1} color={active ? theme['c-primary-font'] : theme['c-font']}>{item.name}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.listMoreBtn}>
-        <Icon name="dots-vertical" color={theme['c-350']} size={12} />
-      </TouchableOpacity>
+      <View
+        style={{
+          ...styles.listItemInner,
+          backgroundColor: active ? theme['m3-secondary-container'] : 'transparent',
+        }}
+      >
+        <Pressable
+          style={styles.listName}
+          android_ripple={{ color: rippleColor }}
+          onPress={handlePress}
+        >
+          {
+            active
+              ? <Icon style={styles.listActiveIcon} name="chevron-right" size={12} color={theme['m3-on-secondary-container']} />
+              : null
+          }
+          { fetching ? <Loading color={active ? theme['m3-on-secondary-container'] : theme['m3-primary']} style={styles.loading} /> : null }
+          <Text
+            style={active ? styles.listNameTextActive : styles.listNameText}
+            size={14}
+            numberOfLines={1}
+            color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface']}
+          >
+            {item.name}
+          </Text>
+        </Pressable>
+        <View ref={moreButtonRef} collapsable={false} style={styles.listMoreWrap}>
+          <Pressable
+            onPress={handleShowMenu}
+            android_ripple={{ color: withAlpha(theme['m3-on-surface'], 0.12), borderless: true }}
+            style={styles.listMoreBtn}
+          >
+            <Icon name="dots-vertical" color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']} size={13} />
+          </Pressable>
+        </View>
+      </View>
     </View>
   )
 }, (prevProps, nextProps) => {
@@ -120,15 +146,14 @@ export default ({ onShowMenu }: {
       ref={flatListRef}
       onScroll={handleScroll}
       style={styles.container}
+      contentContainerStyle={styles.listContent}
       data={allList}
       maxToRenderPerBatch={9}
-      // updateCellsBatchingPeriod={80}
       windowSize={9}
       removeClippedSubviews={true}
       initialNumToRender={18}
       renderItem={renderItem}
       keyExtractor={getkey}
-      // extraData={activeIndex}
       getItemLayout={getItemLayout}
     />
   )
@@ -140,51 +165,57 @@ const styles = createStyle({
     flexShrink: 1,
     flexGrow: 0,
   },
-  // listContainer: {
-  //   // borderBottomWidth: BorderWidths.normal2,
-  // },
-
+  listContent: {
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
   listItem: {
-    height: 'auto',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  listItemInner: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 5,
-    paddingLeft: 5,
-    // borderBottomWidth: BorderWidths.normal,
+    borderRadius: M3Radius.full,
+    overflow: 'hidden',
   },
   listActiveIcon: {
-    // width: 18,
-    marginLeft: 3,
-    // paddingRight: 5,
-    textAlign: 'center',
+    marginRight: 8,
   },
   loading: {
-    marginLeft: 5,
+    marginRight: 8,
   },
   listName: {
     height: '100%',
-    // height: 46,
-    // paddingTop: 12,
-    // paddingBottom: 12,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     flexGrow: 1,
     flexShrink: 1,
-    paddingLeft: 5,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+    paddingLeft: 14,
+    paddingRight: 8,
   },
-  // listNameText: {
-  //   // height: 46,
-  //   fontSize: 14,
-  // },
-  listMoreBtn: {
+  listNameText: {
+    flexShrink: 1,
+    fontWeight: '400',
+  },
+  listNameTextActive: {
+    flexShrink: 1,
+    fontWeight: '600',
+  },
+  listMoreWrap: {
     height: '100%',
-    width: 36,
-    // height: 46,
-    // paddingTop: 12,
-    // paddingBottom: 12,
+    width: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.1)',
+    marginRight: 2,
+  },
+  listMoreBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: M3Radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })
 

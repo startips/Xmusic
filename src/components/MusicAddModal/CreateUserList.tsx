@@ -5,6 +5,8 @@ import { confirmDialog, createStyle } from '@/utils/tools'
 import { useI18n } from '@/lang'
 import { createUserList } from '@/core/list'
 import listState from '@/store/list/state'
+import { useTheme } from '@/store/theme/hook'
+import { M3Radius } from '@/theme/m3'
 
 export default ({ isEdit, onHide }: {
   isEdit: boolean
@@ -13,6 +15,7 @@ export default ({ isEdit, onHide }: {
   const [text, setText] = useState('')
   const inputRef = useRef<InputType>(null)
   const t = useI18n()
+  const theme = useTheme()
 
   useEffect(() => {
     if (isEdit) {
@@ -42,7 +45,11 @@ export default ({ isEdit, onHide }: {
           ref={inputRef}
           onBlur={handleSubmitEditing}
           onSubmitEditing={handleSubmitEditing}
-          style={styles.input}
+          style={{
+            ...styles.input,
+            backgroundColor: theme['m3-surface-container-high'],
+            borderColor: theme['m3-outline-variant'],
+          }}
         />
       </View>
       )
@@ -57,12 +64,13 @@ const styles = createStyle({
     width: '100%',
     height: '100%',
     paddingBottom: 10,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
   },
   input: {
     flex: 1,
     fontSize: 14,
-    borderRadius: 4,
+    borderRadius: M3Radius.full,
+    borderWidth: 0.8,
+    paddingHorizontal: 14,
     textAlign: 'center',
     height: '100%',
   },

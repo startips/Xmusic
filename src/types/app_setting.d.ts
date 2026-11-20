@@ -77,6 +77,11 @@ declare global {
       'common.alwaysKeepStatusbarHeight': boolean
 
       /**
+       * 主题种子色 id
+       */
+      'theme.id': LX.ThemeSeedId
+
+      /**
        * 动态背景
        */
       'theme.dynamicBg': boolean

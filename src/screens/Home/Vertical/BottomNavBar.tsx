@@ -118,11 +118,10 @@ const styles = createStyle({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 10,
+    paddingBottom: 8,
     paddingHorizontal: 8,
-    borderTopWidth: 0.6,
-    elevation: 4,
+    borderTopWidth: 0.5,
   },
   tab: {
     flex: 1,

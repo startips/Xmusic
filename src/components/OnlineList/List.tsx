@@ -8,7 +8,7 @@ import type { Position } from './ListMenu'
 import type { SelectMode } from './MultipleModeBar'
 import { useTheme } from '@/store/theme/hook'
 import settingState from '@/store/setting/state'
-import { MULTI_SELECT_BAR_HEIGHT } from './MultipleModeBar'
+import { MULTI_SELECT_BAR_OFFSET } from './MultipleModeBar'
 import { useI18n } from '@/lang'
 import Text from '@/components/common/Text'
 import { handlePlay } from './listAction'
@@ -223,7 +223,7 @@ const List = forwardRef<ListType, ListProps>(({
         break
     }
     return (
-      <View style={{ width: '100%', paddingBottom: visibleMultiSelect ? MULTI_SELECT_BAR_HEIGHT : 0 }} >
+      <View style={{ width: '100%', paddingBottom: visibleMultiSelect ? MULTI_SELECT_BAR_OFFSET : 0 }} >
         <Footer label={label} onLoadMore={onLoadMore} />
       </View>
     )

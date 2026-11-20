@@ -6,48 +6,42 @@ import { createStyle } from '@/utils/tools'
 import { useI18n } from '@/lang/index'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
+import { M3Radius } from '@/theme/m3'
 
 const styles = createStyle({
   main: {
-    // flexGrow: 0,
     flexShrink: 1,
-    marginTop: 15,
-    marginLeft: 5,
-    marginRight: 5,
-    marginBottom: 25,
+    marginTop: 14,
+    marginHorizontal: 6,
+    marginBottom: 22,
   },
   content: {
     flexGrow: 0,
-    paddingLeft: 10,
-    paddingRight: 10,
+    paddingHorizontal: 14,
+  },
+  messageText: {
+    lineHeight: 21,
   },
   btns: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingBottom: 15,
-    // paddingRight: 15,
-  },
-  btnsDirection: {
-    paddingLeft: 15,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   btnsReversedDirection: {
-    paddingLeft: 15,
     flexDirection: 'row-reverse',
   },
   btn: {
     flex: 1,
-    paddingTop: 9,
-    paddingBottom: 9,
-    paddingLeft: 10,
-    paddingRight: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    borderRadius: 4,
+    justifyContent: 'center',
+    borderRadius: M3Radius.full,
   },
-  btnDirection: {
-    marginRight: 15,
-  },
-  btnReversedDirection: {
-    marginLeft: 15,
+  btnLabel: {
+    fontWeight: '600',
   },
 })
 
@@ -108,16 +102,16 @@ export default forwardRef<ConfirmAlertType, ConfirmAlertProps>(({
     <Dialog onHide={onHide} keyHide={keyHide} bgHide={bgHide} closeBtn={closeBtn} title={title} ref={dialogRef}>
       <View style={styles.main}>
         <ScrollView style={styles.content} keyboardShouldPersistTaps={'always'}>
-          {children ?? <Text>{text}</Text>}
+          {children ?? <Text style={styles.messageText} color={theme['m3-on-surface-variant']}>{text}</Text>}
         </ScrollView>
       </View>
-      <View style={{ ...styles.btns, ...(reverseBtn ? styles.btnsReversedDirection : styles.btnsDirection) }}>
-        <Button style={{ ...styles.btn, ...(reverseBtn ? styles.btnReversedDirection : styles.btnDirection), backgroundColor: theme['c-button-background'] }} onPress={handleCancel}>
-          <Text color={theme['c-button-font']}>{cancelText || t('cancel')}</Text>
+      <View style={{ ...styles.btns, ...(reverseBtn ? styles.btnsReversedDirection : null) }}>
+        <Button style={{ ...styles.btn, backgroundColor: theme['m3-surface-container-highest'] }} onPress={handleCancel}>
+          <Text style={styles.btnLabel} color={theme['m3-on-surface']}>{cancelText || t('cancel')}</Text>
         </Button>
         {showConfirm
-          ? <Button style={{ ...styles.btn, ...(reverseBtn ? styles.btnReversedDirection : styles.btnDirection), backgroundColor: theme['c-button-background'] }} onPress={onConfirm} disabled={disabledConfirm}>
-              <Text color={theme['c-button-font']}>{confirmText || t('confirm')}</Text>
+          ? <Button style={{ ...styles.btn, backgroundColor: theme['m3-primary-container'] }} onPress={onConfirm} disabled={disabledConfirm}>
+              <Text style={styles.btnLabel} color={theme['m3-on-primary-container']}>{confirmText || t('confirm')}</Text>
             </Button>
           : null}
       </View>

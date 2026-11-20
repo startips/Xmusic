@@ -1,8 +1,6 @@
 import { View } from 'react-native'
-// import Button from '@/components/common/Button'
-// import { navigations } from '@/navigation'
-// import { BorderWidths } from '@/theme'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
+import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
@@ -19,15 +17,9 @@ const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNo
 
 const HEADER_HEIGHT = _HEADER_HEIGHT * 0.8
 
-
-// const LeftTitle = () => {
-//   const id = useNavActiveId()
-//   const t = useI18n()
-
-//   return <Text style={styles.leftTitle} size={18}>{t(id)}</Text>
-// }
 const LeftHeader = () => {
   const id = useNavActiveId()
+  const theme = useTheme()
   const t = useI18n()
   const statusBarHeight = useStatusbarHeight()
 
@@ -38,27 +30,17 @@ const LeftHeader = () => {
       paddingTop: statusBarHeight,
     }}>
       <View style={styles.left}>
-        <Text style={styles.leftTitle} size={18}>{t(id)}</Text>
+        <Text style={styles.leftTitle} size={18} color={theme['m3-on-surface']}>{t(id)}</Text>
       </View>
       {headerComponents[id] ?? null}
-
-      {/* <TouchableOpacity style={styles.btn} onPress={openSetting}>
-        <Icon style={{ ...styles.btnText, color: theme['c-font'] }} name="setting" size={styles.btnText.fontSize} />
-      </TouchableOpacity> */}
     </View>
   )
 }
 
-
-// const RightTitle = () => {
-//   const id = useNavActiveId()
-//   const t = useI18n()
-
-//   return <Text style={styles.rightTitle} size={18}>{t(id)}</Text>
-// }
 const RightHeader = () => {
   const t = useI18n()
   const id = useNavActiveId()
+  const theme = useTheme()
   const statusBarHeight = useStatusbarHeight()
 
   return (
@@ -68,12 +50,9 @@ const RightHeader = () => {
       paddingTop: statusBarHeight,
     }}>
       <View style={styles.left}>
-        <Text style={styles.rightTitle} size={18}>{t(id)}</Text>
+        <Text style={styles.rightTitle} size={18} color={theme['m3-on-surface']}>{t(id)}</Text>
       </View>
       {headerComponents[id] ?? null}
-      {/* <TouchableOpacity style={styles.btn} onPress={openSetting}>
-        <Icon style={{ ...styles.btnText, color: theme['c-font'] }} name="setting" size={styles.btnText.fontSize} />
-      </TouchableOpacity> */}
     </View>
   )
 }
@@ -130,10 +109,12 @@ const styles = createStyle({
   leftTitle: {
     paddingLeft: 10,
     paddingRight: 16,
+    fontWeight: '700',
   },
   rightTitle: {
     paddingLeft: 16,
     paddingRight: 16,
+    fontWeight: '700',
   },
 })
 

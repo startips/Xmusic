@@ -1,19 +1,19 @@
 import themeActions from '@/store/theme/action'
 import themeState from '@/store/theme/state'
 import settingState from '@/store/setting/state'
-import { createActiveTheme, XMUSIC_THEME_ID } from '@/theme/palette'
+import { createActiveTheme, getThemeSeedOption } from '@/theme/palette'
 import { updateSetting } from './common'
 
 /**
- * Resolve the active theme from the user's mode choice and the system
- * light/dark appearance. The app only ships one Xmusic M3 theme; dark mode is
- * simply the dark tonal variation of that same theme.
+ * Resolve the active theme from the user's mode + seed choice and the system
+ * light/dark appearance.
  */
 export const applyThemeByMode = () => {
   const mode = settingState.setting['common.themeMode'] ?? 'system'
+  const seedOption = getThemeSeedOption(settingState.setting['theme.id'])
   const isDark = mode == 'dark' || (mode == 'system' && themeState.shouldUseDarkColors)
-  if (themeState.theme.id == XMUSIC_THEME_ID && themeState.theme.isDark == isDark) return
-  themeActions.setTheme(createActiveTheme(isDark))
+  if (themeState.theme.id == seedOption.id && themeState.theme.isDark == isDark) return
+  themeActions.setTheme(createActiveTheme(isDark, seedOption.id))
 }
 
 export const setShouldUseDarkColors = (shouldUseDarkColors: boolean) => {
@@ -23,5 +23,10 @@ export const setShouldUseDarkColors = (shouldUseDarkColors: boolean) => {
 
 export const setThemeMode = (mode: LX.ThemeMode) => {
   updateSetting({ 'common.themeMode': mode })
+  applyThemeByMode()
+}
+
+export const setThemeId = (id: LX.ThemeSeedId) => {
+  updateSetting({ 'theme.id': id })
   applyThemeByMode()
 }

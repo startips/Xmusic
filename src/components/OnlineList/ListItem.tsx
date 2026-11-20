@@ -1,6 +1,5 @@
 import { memo, useRef } from 'react'
-import { View, TouchableOpacity } from 'react-native'
-// import Button from '@/components/common/Button'
+import { View, Pressable } from 'react-native'
 import Text from '@/components/common/Text'
 import Badge, { type BadgeType } from '@/components/common/Badge'
 import { Icon } from '@/components/common/Icon'
@@ -9,7 +8,7 @@ import { useTheme } from '@/store/theme/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
 import { createStyle, type RowInfo } from '@/utils/tools'
-import { M3Radius } from '@/theme/m3'
+import { M3Radius, withAlpha } from '@/theme/m3'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
 
@@ -46,7 +45,7 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
 
   const isSelected = selectedList.includes(item)
 
-  const moreButtonRef = useRef<TouchableOpacity>(null)
+  const moreButtonRef = useRef<View>(null)
   const handleShowMenu = () => {
     if (moreButtonRef.current?.measure) {
       moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
@@ -68,7 +67,12 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
           backgroundColor: isSelected ? theme['m3-primary-container'] : 'transparent',
         }}
       >
-        <TouchableOpacity style={styles.listItemLeft} activeOpacity={0.65} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
+        <Pressable
+          style={styles.listItemLeft}
+          android_ripple={{ color: withAlpha(theme['m3-primary'], 0.14) }}
+          onPress={() => { onPress(item, index) }}
+          onLongPress={() => { onLongPress(item, index) }}
+        >
           <Text
             style={isTopRank ? styles.snTop : styles.sn}
             size={13}
@@ -103,10 +107,16 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
               <Text size={12} color={theme['m3-on-surface-variant']} numberOfLines={1}>{item.interval}</Text>
             ) : null
           }
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
-          <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
-        </TouchableOpacity>
+        </Pressable>
+        <View ref={moreButtonRef} collapsable={false} style={styles.moreButtonWrap}>
+          <Pressable
+            onPress={handleShowMenu}
+            android_ripple={{ color: withAlpha(theme['m3-on-surface'], 0.12), borderless: true }}
+            style={styles.moreButton}
+          >
+            <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
+          </Pressable>
+        </View>
       </View>
     </View>
   )
@@ -128,9 +138,8 @@ const styles = createStyle({
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    paddingLeft: 4,
-    paddingRight: 2,
     borderRadius: M3Radius.md,
+    overflow: 'hidden',
     alignItems: 'center',
   },
   listItemLeft: {
@@ -139,6 +148,8 @@ const styles = createStyle({
     flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingLeft: 4,
+    paddingRight: 4,
     height: '100%',
   },
   sn: {
@@ -188,11 +199,20 @@ const styles = createStyle({
     flexBasis: 'auto',
     justifyContent: 'center',
   },
-  moreButton: {
-    height: '80%',
-    paddingLeft: 14,
-    paddingRight: 12,
+  moreButtonWrap: {
+    width: 38,
+    height: 38,
+    marginRight: 2,
+    borderRadius: M3Radius.full,
+    overflow: 'hidden',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })
 

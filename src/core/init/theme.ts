@@ -10,7 +10,7 @@ export default async(setting: LX.AppSetting) => {
   })
 
   global.state_event.on('configUpdated', (keys) => {
-    if (keys.includes('common.themeMode')) applyThemeByMode()
+    if (keys.includes('common.themeMode') || keys.includes('theme.id')) applyThemeByMode()
   })
 
   if (getIsSupportedAutoTheme()) {

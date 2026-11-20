@@ -7,6 +7,7 @@ import { createUserList, updateUserList } from '@/core/list'
 import { confirmDialog, createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import listState from '@/store/list/state'
+import { M3Radius } from '@/theme/m3'
 
 interface NameInputType {
   setName: (text: string) => void
@@ -38,7 +39,11 @@ const NameInput = forwardRef<NameInputType, {}>((props, ref) => {
       placeholder={placeholder}
       value={text}
       onChangeText={setText}
-      style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}
+      style={{
+        ...styles.input,
+        backgroundColor: theme['m3-surface-container-lowest'],
+        borderColor: theme['m3-outline-variant'],
+      }}
     />
   )
 })
@@ -136,9 +141,11 @@ const styles = createStyle({
     flexGrow: 1,
     flexShrink: 1,
     minWidth: 290,
-    borderRadius: 4,
-    // paddingTop: 2,
-    // paddingBottom: 2,
+    borderRadius: M3Radius.sm,
+    borderWidth: 0.8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minHeight: 38,
   },
 })
 

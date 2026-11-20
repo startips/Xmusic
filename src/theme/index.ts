@@ -9,7 +9,15 @@ export {
   toOpaqueColor,
   buildM3ThemeColors,
 } from './m3'
-export { createActiveTheme, XMUSIC_THEME_ID, XMUSIC_THEME_NAME, XMUSIC_THEME_SEED } from './palette'
+export {
+  createActiveTheme,
+  getThemeSeedOption,
+  XMUSIC_THEME_ID,
+  XMUSIC_THEME_NAME,
+  XMUSIC_THEME_SEED,
+  XMUSIC_THEME_SEEDS,
+  type ThemeSeedOption,
+} from './palette'
 
 // Legacy shape/width aliases kept for existing components.
 export { M3BorderWidths as BorderWidths, M3Radius as BorderRadius } from './m3'

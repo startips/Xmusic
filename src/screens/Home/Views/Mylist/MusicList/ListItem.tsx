@@ -1,7 +1,6 @@
 import { memo, useRef } from 'react'
-import { View, TouchableOpacity } from 'react-native'
+import { View, Pressable } from 'react-native'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
-// import { BorderWidths } from '@/theme'
 import { Icon } from '@/components/common/Icon'
 import { createStyle, type RowInfo } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
@@ -29,13 +28,11 @@ export default memo(({ item, index, activeIndex, onPress, onShowMenu, onLongPres
   const theme = useTheme()
 
   const isSelected = selectedList.includes(item)
-  // console.log(item.name, selectedList, selectedList.includes(item))
   const isSupported = useAssertApiSupport(item.source)
-  const moreButtonRef = useRef<TouchableOpacity>(null)
+  const moreButtonRef = useRef<View>(null)
   const handleShowMenu = () => {
     if (moreButtonRef.current?.measure) {
       moreButtonRef.current.measure((fx, fy, width, height, px, py) => {
-        // console.log(fx, fy, width, height, px, py)
         onShowMenu(item, index, { x: Math.ceil(px), y: Math.ceil(py), w: Math.ceil(width), h: Math.ceil(height) })
       })
     }
@@ -52,7 +49,12 @@ export default memo(({ item, index, activeIndex, onPress, onShowMenu, onLongPres
   return (
     <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT, opacity: isSupported ? 1 : 0.5 }}>
       <View style={{ ...styles.rowInner, backgroundColor: rowBg }}>
-        <TouchableOpacity style={styles.listItemLeft} activeOpacity={0.65} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
+        <Pressable
+          style={styles.listItemLeft}
+          android_ripple={{ color: withAlpha(theme['m3-primary'], 0.14) }}
+          onPress={() => { onPress(item, index) }}
+          onLongPress={() => { onLongPress(item, index) }}
+        >
           {
             active
               ? <Icon style={styles.sn} name="play-outline" size={14} color={theme['m3-primary']} />
@@ -84,10 +86,16 @@ export default memo(({ item, index, activeIndex, onPress, onShowMenu, onLongPres
               <Text size={12} color={active ? theme['m3-on-primary-container'] : theme['m3-on-surface-variant']} numberOfLines={1}>{item.interval}</Text>
             ) : null
           }
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleShowMenu} ref={moreButtonRef} style={styles.moreButton}>
-          <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
-        </TouchableOpacity>
+        </Pressable>
+        <View ref={moreButtonRef} collapsable={false} style={styles.moreButtonWrap}>
+          <Pressable
+            onPress={handleShowMenu}
+            android_ripple={{ color: withAlpha(theme['m3-on-surface'], 0.12), borderless: true }}
+            style={styles.moreButton}
+          >
+            <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
+          </Pressable>
+        </View>
       </View>
     </View>
   )
@@ -112,9 +120,8 @@ const styles = createStyle({
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    paddingLeft: 4,
-    paddingRight: 2,
     borderRadius: M3Radius.md,
+    overflow: 'hidden',
     alignItems: 'center',
   },
   listItemLeft: {
@@ -123,6 +130,8 @@ const styles = createStyle({
     flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingLeft: 4,
+    paddingRight: 4,
     height: '100%',
   },
   sn: {
@@ -159,11 +168,19 @@ const styles = createStyle({
     flexBasis: 'auto',
     justifyContent: 'center',
   },
-
-  moreButton: {
-    height: '80%',
-    paddingLeft: 14,
-    paddingRight: 12,
+  moreButtonWrap: {
+    width: 38,
+    height: 38,
+    marginRight: 2,
+    borderRadius: M3Radius.full,
+    overflow: 'hidden',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })

@@ -1,19 +1,43 @@
 import { buildM3ThemeColors, withAlpha } from './m3'
 
+export interface ThemeSeedOption {
+  id: LX.ThemeSeedId
+  seed: string
+  nameKey:
+  | 'setting_basic_theme_seed_xmusic'
+  | 'setting_basic_theme_seed_ocean'
+  | 'setting_basic_theme_seed_iris'
+  | 'setting_basic_theme_seed_coral'
+  | 'setting_basic_theme_seed_amber'
+  | 'setting_basic_theme_seed_slate'
+}
+
 /**
  * Xmusic Material 3 Expressive theme.
  *
- * The whole app now derives its colors from this single seed color. The old
- * multi-palette theme system (`theme/themes`) has been removed; the legacy
- * `c-*` tokens below are thin aliases over M3 roles so screens that have not
- * been migrated to M3 tokens yet still follow the new theme.
+ * The whole app derives its full tonal color system from a single selected
+ * seed color. Legacy `c-*` tokens below are thin aliases over M3 roles so
+ * unmigrated components automatically follow the active seed and dark mode.
  */
-export const XMUSIC_THEME_ID = 'xmusic'
+export const XMUSIC_THEME_ID: LX.ThemeSeedId = 'xmusic'
 export const XMUSIC_THEME_NAME = 'Xmusic'
 export const XMUSIC_THEME_SEED = 'rgb(77, 175, 124)'
 
-const buildLegacyAliases = (isDark: boolean): LX.LegacyThemeColors => {
-  const m3 = buildM3ThemeColors(XMUSIC_THEME_SEED, isDark)
+export const XMUSIC_THEME_SEEDS: readonly ThemeSeedOption[] = [
+  { id: 'xmusic', seed: XMUSIC_THEME_SEED, nameKey: 'setting_basic_theme_seed_xmusic' },
+  { id: 'ocean', seed: 'rgb(59, 130, 206)', nameKey: 'setting_basic_theme_seed_ocean' },
+  { id: 'iris', seed: 'rgb(124, 92, 204)', nameKey: 'setting_basic_theme_seed_iris' },
+  { id: 'coral', seed: 'rgb(218, 92, 114)', nameKey: 'setting_basic_theme_seed_coral' },
+  { id: 'amber', seed: 'rgb(212, 132, 42)', nameKey: 'setting_basic_theme_seed_amber' },
+  { id: 'slate', seed: 'rgb(92, 118, 130)', nameKey: 'setting_basic_theme_seed_slate' },
+]
+
+export const getThemeSeedOption = (seedId?: string): ThemeSeedOption => {
+  return XMUSIC_THEME_SEEDS.find(item => item.id === seedId) ?? XMUSIC_THEME_SEEDS[0]
+}
+
+const buildLegacyAliases = (isDark: boolean, seed: string): LX.LegacyThemeColors => {
+  const m3 = buildM3ThemeColors(seed, isDark)
   const primary = m3['m3-primary']
 
   const surface = m3['m3-surface']
@@ -122,13 +146,14 @@ const buildLegacyAliases = (isDark: boolean): LX.LegacyThemeColors => {
   }
 }
 
-export const createActiveTheme = (isDark: boolean): LX.ActiveTheme => {
+export const createActiveTheme = (isDark: boolean, seedId: LX.ThemeSeedId = XMUSIC_THEME_ID): LX.ActiveTheme => {
+  const seedOption = getThemeSeedOption(seedId)
   return {
-    id: XMUSIC_THEME_ID,
+    id: seedOption.id,
     name: XMUSIC_THEME_NAME,
     isDark,
-    ...buildM3ThemeColors(XMUSIC_THEME_SEED, isDark),
-    ...buildLegacyAliases(isDark),
+    ...buildM3ThemeColors(seedOption.seed, isDark),
+    ...buildLegacyAliases(isDark, seedOption.seed),
     'bg-image-position': 'center',
     'bg-image-size': 'cover',
   }

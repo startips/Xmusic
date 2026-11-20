@@ -6,6 +6,7 @@ import Input from '@/components/common/Input'
 import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
 import { createStyle } from '@/utils/tools'
+import { M3Radius } from '@/theme/m3'
 
 
 export interface TextAreaItemProps extends InputProps {
@@ -44,7 +45,11 @@ export default memo(({ value, label, onOnlineMatch, onChanged, style, ...props }
         scrollEnabled={false}
         textAlignVertical='top'
         multiline
-        style={StyleSheet.compose({ ...styles.textarea, backgroundColor: theme['c-primary-input-background'] }, style)}
+        style={StyleSheet.compose({
+          ...styles.textarea,
+          backgroundColor: theme['m3-surface-container-lowest'],
+          borderColor: theme['m3-outline-variant'],
+        }, style)}
         {...props}
        />
     </View>
@@ -53,7 +58,6 @@ export default memo(({ value, label, onOnlineMatch, onChanged, style, ...props }
 
 const styles = createStyle({
   container: {
-    // paddingLeft: 25,
     marginBottom: 15,
   },
   header: {
@@ -63,7 +67,7 @@ const styles = createStyle({
     gap: 30,
   },
   label: {
-    marginBottom: 2,
+    marginBottom: 5,
   },
   btns: {
     flexDirection: 'row',
@@ -72,10 +76,10 @@ const styles = createStyle({
   textarea: {
     flexGrow: 1,
     flexShrink: 1,
-    paddingTop: 3,
-    paddingBottom: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: M3Radius.sm,
+    borderWidth: 0.8,
     height: 'auto',
-    // height: 300,
-    // maxWidth: 300,
   },
 })

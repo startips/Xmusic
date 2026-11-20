@@ -72,6 +72,7 @@ const defaultSetting: LX.AppSetting = {
 
   'sync.enable': false,
 
+  'theme.id': 'xmusic',
   'theme.dynamicBg': false,
   'theme.fontShadow': false,
 }

@@ -1,56 +1,13 @@
-import { useMemo, useRef } from 'react'
-import { Animated, Pressable, View } from 'react-native'
-import { Icon } from '@/components/common/Icon'
+import { useMemo } from 'react'
+import { View } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { playNext, playPrev, togglePlay } from '@/core/player/player'
 import { useIsPlay } from '@/store/player/hook'
 import { createStyle } from '@/utils/tools'
 import { useWindowSize } from '@/utils/hooks'
 import { BTN_WIDTH } from './MoreBtn/Btn'
-import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
-
-const SpringActionButton = ({
-  width,
-  height,
-  borderRadius,
-  backgroundColor,
-  iconName,
-  iconColor,
-  iconSize,
-  onPress,
-}: {
-  width: number
-  height: number
-  borderRadius: number
-  backgroundColor: string
-  iconName: string
-  iconColor: string
-  iconSize: number
-  onPress: () => void
-}) => {
-  const pressScale = useRef(new Animated.Value(1)).current
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => { M3Motion.pressSpring(pressScale, 0.9).start() }}
-      onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
-    >
-      <Animated.View
-        style={{
-          ...styles.controlBtn,
-          width,
-          height,
-          borderRadius,
-          backgroundColor,
-          transform: [{ scale: pressScale }],
-        }}
-      >
-        <Icon name={iconName} color={iconColor} rawSize={iconSize} />
-      </Animated.View>
-    </Pressable>
-  )
-}
+import { M3Radius, withAlpha } from '@/theme/m3'
+import { SpringActionButton, SpringTogglePlayButton } from '@/components/player/SpringControlButton'
 
 const PrevBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
@@ -90,12 +47,13 @@ const TogglePlayBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
   const isPlay = useIsPlay()
   return (
-    <SpringActionButton
+    <SpringTogglePlayButton
       width={size * 1.18}
       height={size}
-      borderRadius={isPlay ? M3Radius.lg : M3Radius.full}
+      playRadius={M3Radius.lg}
+      pauseRadius={M3Radius.full}
+      isPlay={isPlay}
       backgroundColor={theme['m3-primary-container']}
-      iconName={isPlay ? 'pause' : 'play'}
       iconColor={theme['m3-on-primary-container']}
       iconSize={size * 0.5}
       onPress={togglePlay}
@@ -126,7 +84,6 @@ export default () => {
   )
 }
 
-
 const styles = createStyle({
   conatiner: {
     flexDirection: 'row',
@@ -137,9 +94,5 @@ const styles = createStyle({
     flexShrink: 1,
     paddingHorizontal: '4%',
     paddingVertical: 18,
-  },
-  controlBtn: {
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 })

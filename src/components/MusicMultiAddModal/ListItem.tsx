@@ -1,7 +1,7 @@
 import { View } from 'react-native'
 import Button from '@/components/common/Button'
 import Text from '@/components/common/Text'
-import { BorderWidths } from '@/theme'
+import { M3Radius } from '@/theme/m3'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 
@@ -19,10 +19,14 @@ export default ({ listInfo, onPress, width }: {
   return (
     <View style={{ ...styles.listItem, width }}>
       <Button
-        style={{ ...styles.button, backgroundColor: theme['c-button-background'], borderColor: theme['c-primary-light-200-alpha-700'] }}
+        style={{
+          ...styles.button,
+          backgroundColor: theme['m3-secondary-container'],
+          borderColor: theme['m3-outline-variant'],
+        }}
         onPress={handlePress}
       >
-        <Text numberOfLines={1} size={14} color={theme['c-button-font']}>{listInfo.name}</Text>
+        <Text numberOfLines={1} size={13.5} style={styles.label} color={theme['m3-on-secondary-container']}>{listInfo.name}</Text>
       </Button>
     </View>
   )
@@ -30,19 +34,19 @@ export default ({ listInfo, onPress, width }: {
 
 export const styles = createStyle({
   listItem: {
-    // width: '50%',
-    paddingRight: 13,
+    paddingRight: 10,
   },
   button: {
-    height: 36,
-    paddingLeft: 10,
-    paddingRight: 10,
-    marginRight: 10,
+    height: 38,
+    paddingHorizontal: 12,
     marginBottom: 10,
-    borderRadius: 4,
+    borderRadius: M3Radius.md,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: BorderWidths.normal1,
+    borderWidth: 0.6,
+  },
+  label: {
+    fontWeight: '500',
   },
 })
