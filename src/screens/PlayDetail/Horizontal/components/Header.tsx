@@ -2,7 +2,7 @@ import { memo, useRef } from 'react'
 
 import { View, StyleSheet } from 'react-native'
 
-import { pop } from '@/navigation'
+import { navigations } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
 import { usePlayerMusicInfo } from '@/store/player/hook'
 import Text from '@/components/common/Text'
@@ -33,7 +33,7 @@ export default memo(() => {
   const popupRef = useRef<SettingPopupType>(null)
 
   const back = () => {
-    void pop(commonState.componentIds.playDetail!)
+    navigations.popPlayDetailScreen(commonState.componentIds.playDetail!)
   }
   const showSetting = () => {
     popupRef.current?.show()

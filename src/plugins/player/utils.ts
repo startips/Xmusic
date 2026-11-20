@@ -1,3 +1,4 @@
+import { NativeModules } from 'react-native'
 import TrackPlayer, { Capability, Event, RepeatMode, State } from 'react-native-track-player'
 import BackgroundTimer from 'react-native-background-timer'
 import { playMusic as handlePlayMusic } from './playList'
@@ -247,6 +248,10 @@ export const onStateChange = async(listener: (state: PlayStatus) => void) => {
  * @returns remove event function
  */
 // export const playState = callback => TrackPlayer.addEventListener('playback-state', callback)
+
+export const setFavoriteNotificationState = (isFavorite: boolean) => {
+  void (NativeModules.TrackPlayerModule as { setFavoriteState?: (v: boolean) => Promise<void> } | undefined)?.setFavoriteState?.(isFavorite)
+}
 
 export const updateOptions = async(options = {
   // Whether the player should stop running when the app is closed on Android

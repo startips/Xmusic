@@ -4,6 +4,7 @@ import { defaultUrl } from '@/config'
 // import { action as playerAction } from '@/store/modules/player'
 import settingState from '@/store/setting/state'
 import playerState from '@/store/player/state'
+import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 
 
 const list: LX.Player.Track[] = []
@@ -222,6 +223,7 @@ const updateMetaInfo = async(mInfo: LX.Player.MusicInfo) => {
     title = playerState.lastLyric
     artist = `${mInfo.name}${mInfo.singer ? ` - ${mInfo.singer}` : ''}`
   }
+  await syncCurrentTrackFavoriteNotification()
   await TrackPlayer.updateNowPlayingMetadata({
     title,
     artist,

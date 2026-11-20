@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import state, { type InitState } from './state'
 import { getListMusics } from '@/core/list'
+import { LIST_IDS } from '@/config/constant'
 
 export const useMyList = () => {
   const [lists, setList] = useState(state.allList)
@@ -80,6 +81,38 @@ export const useMusicExistsList = (list: LX.List.MyListInfo, musicInfo: LX.Music
   }, [list.id, musicInfo.id])
 
   return isExists
+}
+
+/**
+ * Subscribe reactively to whether a track ID is currently inside the "My Love" list.
+ */
+export const useIsMusicInLoveList = (musicId?: string | null) => {
+  const [isLoved, setIsLoved] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!musicId) {
+      setIsLoved(false)
+      return
+    }
+    const checkLoved = () => {
+      void getListMusics(LIST_IDS.LOVE).then((musics) => {
+        if (cancelled) return
+        setIsLoved(musics.some(s => s.id == musicId))
+      })
+    }
+    checkLoved()
+    const handleListUpdate = (ids: string[]) => {
+      if (ids.includes(LIST_IDS.LOVE)) checkLoved()
+    }
+    global.app_event.on('myListMusicUpdate', handleListUpdate)
+    return () => {
+      cancelled = true
+      global.app_event.off('myListMusicUpdate', handleListUpdate)
+    }
+  }, [musicId])
+
+  return isLoved
 }
 
 export const useListFetching = (listId: string) => {

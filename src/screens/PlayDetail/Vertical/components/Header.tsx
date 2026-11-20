@@ -1,8 +1,8 @@
-import { memo, useRef } from 'react'
+import { memo, useMemo, useRef } from 'react'
 
 import { View, StyleSheet } from 'react-native'
 
-import { pop } from '@/navigation'
+import { navigations } from '@/navigation'
 import StatusBar from '@/components/common/StatusBar'
 import { useTheme } from '@/store/theme/hook'
 import { usePlayerMusicInfo } from '@/store/player/hook'
@@ -13,7 +13,8 @@ import commonState from '@/store/common/state'
 import SettingPopup, { type SettingPopupType } from '../../components/SettingPopup'
 import { useStatusbarHeight } from '@/store/common/hook'
 import Btn from './Btn'
-import TimeoutExitBtn from './TimeoutExitBtn'
+import LinearGradientOverlay from '@/components/common/LinearGradientOverlay'
+import { withAlpha } from '@/theme/m3'
 
 export const HEADER_HEIGHT = scaleSizeH(52)
 
@@ -34,21 +35,40 @@ const Title = () => {
 export default memo(() => {
   const popupRef = useRef<SettingPopupType>(null)
   const statusBarHeight = useStatusbarHeight()
+  const theme = useTheme()
 
   const back = () => {
-    void pop(commonState.componentIds.playDetail!)
+    navigations.popPlayDetailScreen(commonState.componentIds.playDetail!)
   }
   const showSetting = () => {
     popupRef.current?.show()
   }
 
+  const scrimColors = useMemo(() => {
+    const base = theme['m3-background']
+    return [withAlpha(base, 0.85), withAlpha(base, 0.42), withAlpha(base, 0)]
+  }, [theme])
+
   return (
-    <View style={{ height: HEADER_HEIGHT + statusBarHeight, paddingTop: statusBarHeight }} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_header}>
+    <View
+      style={{
+        ...styles.wrapper,
+        height: HEADER_HEIGHT + statusBarHeight,
+        paddingTop: statusBarHeight,
+      }}
+      nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_header}
+      pointerEvents="box-none"
+    >
+      <LinearGradientOverlay
+        pointerEvents="none"
+        colors={scrimColors}
+        locations={[0, 0.62, 1]}
+        style={{ ...styles.scrim, height: HEADER_HEIGHT + statusBarHeight + 20 }}
+      />
       <StatusBar />
       <View style={styles.container}>
         <Btn icon="chevron-left" onPress={back} />
         <Title />
-        <TimeoutExitBtn />
         <Btn icon="slider" onPress={showSetting} />
       </View>
       <SettingPopup ref={popupRef} direction="vertical" />
@@ -58,6 +78,19 @@ export default memo(() => {
 
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',

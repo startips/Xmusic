@@ -14,7 +14,7 @@ import settingState from '@/store/setting/state'
 
 const MAX_MIN = 1440
 const rxp = /([1-9]\d*)/
-const formatTime = (time: number) => {
+export const formatTime = (time: number) => {
   // let d = parseInt(time / 86400)
   // d = d ? d.toString() + ':' : ''
   // time = time % 86400

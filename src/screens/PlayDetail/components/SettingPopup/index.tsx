@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import Popup, { type PopupType, type PopupProps } from '@/components/common/Popup'
+import TimeoutExitEditModal, { type TimeoutExitEditModalType, useTimeInfo } from '@/components/TimeoutExitEditModal'
 import { useI18n } from '@/lang'
 
 import SettingLyricProgress from './settings/SettingLyricProgress'
@@ -8,6 +9,7 @@ import SettingVolume from './settings/SettingVolume'
 import SettingPlaybackRate from './settings/SettingPlaybackRate'
 import SettingLrcFontSize from './settings/SettingLrcFontSize'
 import SettingLrcAlign from './settings/SettingLrcAlign'
+import SettingTimeoutExit from './settings/SettingTimeoutExit'
 
 export interface SettingPopupProps extends Omit<PopupProps, 'children'> {
   direction: 'vertical' | 'horizontal'
@@ -20,6 +22,8 @@ export interface SettingPopupType {
 export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...props }, ref) => {
   const [visible, setVisible] = useState(false)
   const popupRef = useRef<PopupType>(null)
+  const timeoutModalRef = useRef<TimeoutExitEditModalType>(null)
+  const timeInfo = useTimeInfo()
   // console.log('render import export')
   const t = useI18n()
 
@@ -35,22 +39,32 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
     },
   }))
 
+  const handleOpenTimeoutModal = () => {
+    popupRef.current?.setVisible(false)
+    setTimeout(() => {
+      timeoutModalRef.current?.show()
+    }, 80)
+  }
 
   return (
-    visible
-      ? (
-        <Popup ref={popupRef} title={t('play_detail_setting_title')} {...props}>
-          <ScrollView>
-            <View onStartShouldSetResponder={() => true}>
-              <SettingLyricProgress />
-              <SettingVolume />
-              <SettingPlaybackRate />
-              <SettingLrcFontSize direction={direction} />
-              <SettingLrcAlign />
-            </View>
-          </ScrollView>
-        </Popup>
-        )
-      : null
+    <>
+      {visible
+        ? (
+          <Popup ref={popupRef} title={t('play_detail_setting_title')} {...props}>
+            <ScrollView>
+              <View onStartShouldSetResponder={() => true}>
+                <SettingLyricProgress />
+                <SettingTimeoutExit onOpenModal={handleOpenTimeoutModal} />
+                <SettingVolume />
+                <SettingPlaybackRate />
+                <SettingLrcFontSize direction={direction} />
+                <SettingLrcAlign />
+              </View>
+            </ScrollView>
+          </Popup>
+          )
+        : null}
+      <TimeoutExitEditModal ref={timeoutModalRef} timeInfo={timeInfo} />
+    </>
   )
 })

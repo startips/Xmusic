@@ -1,26 +1,24 @@
-import { useRef } from 'react'
-import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
-import playerState from '@/store/player/state'
-import Btn from './Btn'
+import { memo } from 'react'
+import MusicAddModal from '@/components/MusicAddModal'
+import SolidHeartIcon from '@/components/common/SolidHeartIcon'
+import { useTheme } from '@/store/theme/hook'
+import { useLoveMusicAction } from '../../../../components/actionHooks'
+import Btn, { BTN_ICON_SIZE } from './Btn'
 
-
-export default () => {
-  const musicAddModalRef = useRef<MusicAddModalType>(null)
-
-  const handleShowMusicAddModal = () => {
-    const musicInfo = playerState.playMusicInfo.musicInfo
-    if (!musicInfo) return
-    musicAddModalRef.current?.show({
-      musicInfo: 'progress' in musicInfo ? musicInfo.metadata.musicInfo : musicInfo,
-      isMove: false,
-      listId: playerState.playMusicInfo.listId!,
-    })
-  }
+export default memo(() => {
+  const theme = useTheme()
+  const { isLoved, musicAddModalRef, handleShowMusicAddModal } = useLoveMusicAction()
 
   return (
     <>
-      <Btn icon="add-music" onPress={handleShowMusicAddModal} />
+      <Btn
+        icon={isLoved ? undefined : 'love'}
+        active={isLoved}
+        onPress={handleShowMusicAddModal}
+      >
+        {isLoved ? <SolidHeartIcon size={BTN_ICON_SIZE} color={theme['m3-primary']} /> : undefined}
+      </Btn>
       <MusicAddModal ref={musicAddModalRef} />
     </>
   )
-}
+})

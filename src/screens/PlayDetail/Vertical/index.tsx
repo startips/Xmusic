@@ -126,7 +126,6 @@ export default memo(({ componentId }: { componentId: string }) => {
 
   return (
     <>
-      <Header />
       <View style={styles.container}>
         <PagerView
           ref={pagerViewRef}
@@ -143,6 +142,7 @@ export default memo(({ componentId }: { componentId: string }) => {
         <PageIndicator pageIndex={pageIndex} onSelectPage={handleSelectPage} />
         <Player />
       </View>
+      <Header />
     </>
   )
 })

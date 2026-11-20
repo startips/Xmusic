@@ -19,7 +19,7 @@ export default ({ icon, color, onPress }: {
       activeOpacity={0.75}
       style={{
         ...styles.button,
-        backgroundColor: withAlpha(theme['m3-surface-container-highest'], 0.72),
+        backgroundColor: withAlpha(theme['m3-surface-container-highest'], 0.8),
       }}
     >
       <Icon name={icon} color={color ?? theme['m3-on-surface']} size={17} />

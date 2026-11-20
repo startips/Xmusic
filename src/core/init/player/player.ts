@@ -1,3 +1,5 @@
+import { LIST_IDS } from '@/config/constant'
+import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
 import { pause, playNext } from '@/core/player/player'
 import { setStatusText, setIsPlay } from '@/core/player/playStatus'
@@ -54,11 +56,23 @@ export default async(setting: LX.AppSetting) => {
   }
 
 
+  const handleListMusicUpdate = (ids: string[]) => {
+    if (!ids.includes(LIST_IDS.LOVE)) return
+    void syncCurrentTrackFavoriteNotification()
+  }
+
+  const handlePlayMusicChanged = () => {
+    void syncCurrentTrackFavoriteNotification()
+  }
+
   global.app_event.on('play', setPlayStatus)
   global.app_event.on('pause', setPauseStatus)
   global.app_event.on('error', setPauseStatus)
   global.app_event.on('stop', setStopStatus)
   global.app_event.on('playerEnded', handleEnded)
   global.app_event.on('picUpdated', updatePic)
+  global.app_event.on('myListMusicUpdate', handleListMusicUpdate)
+  global.state_event.on('playMusicInfoChanged', handlePlayMusicChanged)
   global.state_event.on('configUpdated', handleConfigUpdated)
+  void syncCurrentTrackFavoriteNotification()
 }

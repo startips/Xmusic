@@ -5,7 +5,7 @@ import { playNext, playPrev, togglePlay } from '@/core/player/player'
 import { useIsPlay } from '@/store/player/hook'
 import { createStyle } from '@/utils/tools'
 import { useWindowSize } from '@/utils/hooks'
-import { BTN_WIDTH } from './MoreBtn/Btn'
+import { scaleSizeW } from '@/utils/pixelRatio'
 import { M3Radius, withAlpha } from '@/theme/m3'
 import { SpringActionButton, SpringTogglePlayButton } from '@/components/player/SpringControlButton'
 
@@ -61,8 +61,9 @@ const TogglePlayBtn = ({ size }: { size: number }) => {
   )
 }
 
-const MAX_SIZE = BTN_WIDTH * 1.75
-const MIN_SIZE = BTN_WIDTH * 1.35
+const BASE_PLAY_SIZE = scaleSizeW(42)
+const MAX_SIZE = BASE_PLAY_SIZE * 1.75
+const MIN_SIZE = BASE_PLAY_SIZE * 1.35
 
 export default () => {
   const winSize = useWindowSize()
@@ -93,6 +94,6 @@ const styles = createStyle({
     flexGrow: 1,
     flexShrink: 1,
     paddingHorizontal: '4%',
-    paddingVertical: 18,
+    paddingVertical: 12,
   },
 })

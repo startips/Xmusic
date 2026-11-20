@@ -12,6 +12,8 @@
 -keep class com.reactnativenavigation.views.element.animators.** { *; }
 # -keepclassmembers class com.reactnativenavigation.views.element.animators.** { *; }
 
+-keep class cn.toside.music.mobile.view.** { *; }
+
 
 -keep class org.jaudiotagger.tag.** { *; }
 

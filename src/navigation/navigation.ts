@@ -17,6 +17,7 @@ import { windowSizeTools } from '@/utils/windowSizeTools'
 import { isHorizontalMode } from '@/utils/tools'
 import { toOpaqueColor } from '@/theme/m3'
 import { type ListInfoItem } from '@/store/songlist/state'
+import { getPlayerBarPicRect, preparePlayDetailMinimize } from './playerBarTarget'
 
 const getScreenSurfaceBackground = (theme: LX.ActiveTheme) => {
   return toOpaqueColor(theme['c-main-background'] || theme['c-content-background'])
@@ -142,6 +143,73 @@ export async function pushHomeScreen() {
     },
   })
 }
+const buildPlayDetailPopAnimation = (winWidth: number, winHeight: number) => {
+  const safeW = Math.max(winWidth, 320)
+  const safeH = Math.max(winHeight, 480)
+  const horizontal = isHorizontalMode(safeW, safeH)
+  const measured = getPlayerBarPicRect()
+  const rect = measured && measured.width > 0 && measured.height > 0 && measured.y < safeH
+    ? measured
+    : {
+        x: horizontal ? 84 : 18,
+        y: safeH - (horizontal ? 76 : 126),
+        width: 44,
+        height: 44,
+      }
+
+  const targetCX = rect.x + rect.width / 2
+  const targetCY = rect.y + rect.height / 2
+  const tx = Math.round(targetCX - safeW / 2)
+  const ty = Math.round(targetCY - safeH / 2)
+  const targetScale = Math.max(0.09, Math.min(0.16, Number((rect.width / safeW).toFixed(3))))
+
+  return {
+    content: {
+      scaleX: {
+        from: 1,
+        to: targetScale,
+        duration: 460,
+        interpolation: { type: 'fastOutSlowIn' as const },
+      },
+      scaleY: {
+        from: 1,
+        to: targetScale,
+        duration: 460,
+        interpolation: { type: 'fastOutSlowIn' as const },
+      },
+      translationX: {
+        from: 0,
+        to: tx,
+        duration: 430,
+        interpolation: { type: 'decelerate' as const, factor: 1.35 },
+      },
+      translationY: {
+        from: 0,
+        to: ty,
+        duration: 460,
+        interpolation: { type: 'accelerate' as const, factor: 1.15 },
+      },
+      alpha: {
+        from: 1,
+        to: 0,
+        startDelay: 320,
+        duration: 140,
+        interpolation: { type: 'accelerate' as const },
+      },
+    },
+  }
+}
+
+export function popPlayDetailScreen(componentId: string) {
+  preparePlayDetailMinimize()
+  const { width, height } = windowSizeTools.getSize()
+  void Navigation.pop(componentId, {
+    animations: {
+      pop: buildPlayDetailPopAnimation(width, height),
+    },
+  })
+}
+
 export function pushPlayDetailScreen(componentId: string, skipAnimation = false) {
   /*
     Navigation.setDefaultOptions({
@@ -177,6 +245,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
   */
   requestAnimationFrame(() => {
     const theme = themeState.theme
+    const { width: winWidth, height: winHeight } = windowSizeTools.getSize()
 
     void Navigation.push(componentId, {
       component: {
@@ -241,15 +310,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
               //   },
               // },
             },
-            pop: {
-              content: {
-                translationX: {
-                  from: 0,
-                  to: windowSizeTools.getSize().width,
-                  duration: 300,
-                },
-              },
-            },
+            pop: buildPlayDetailPopAnimation(winWidth, winHeight),
           },
         },
       },
