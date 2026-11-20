@@ -6,6 +6,21 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.1.0](https://github.com/startips/Xmusic/compare/v2.0.1...v2.1.0) - 2026-11-21
+
+### 新增
+
+- 开放 6 套动态衍生 Material 3 主题种子色切换（翡翠绿、晴空蓝、鸢尾紫、珊瑚粉、琥珀金、岩青灰），支持持久化保存与多语言适配
+- 适配小米澎湃 OS 超级岛、下拉媒体面板与系统锁屏红心收藏按钮：点击免弹窗直接切换「我的收藏」，并在已收藏时自动切换实心图标
+- 播放详情页支持左右边缘向内滑动预览与类似 macOS Dock 最小化的等比例弧线收敛动画，精确落入底栏专辑封面位置
+
+### 优化
+
+- 播放详情页采用全宽沉浸式专辑封面搭配上下双向 Alpha 渐隐遮罩与悬浮顶栏渐变，完整避让状态栏、歌名与底部按钮
+- 放大播放详情页歌词、红心、播放模式、评论操作按钮并移至封面下方，歌曲在「我的收藏」时显示与当前主题一致的实心矢量红心
+- 将播放详情页右上角定时停止播放按钮收纳进「播放器设置」弹窗，并移除切换播放模式时的 Toast 弹窗干扰，保持画面简洁
+- 全面打磨 M3 Expressive 圆角、弹簧形变播放控件、列表水波纹与多选浮层，修复横屏播放页重复嵌套背景等细节问题
+
 ## [2.0.1](https://github.com/startips/Xmusic/compare/v2.0.0...v2.0.1) - 2026-11-19
 
 ### 修复
