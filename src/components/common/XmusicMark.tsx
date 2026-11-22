@@ -11,7 +11,7 @@ export interface XmusicMarkProps {
 }
 
 /**
- * Xmusic ribbon-note emblem sourced from generated multi-density monochrome assets and tinted with the active theme.
+ * Xmusic geometric X-note emblem sourced from generated multi-density monochrome assets and tinted with the active theme.
  */
 export const XmusicMark = memo(({ size }: XmusicMarkProps) => {
   const theme = useTheme()
