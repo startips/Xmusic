@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
+import { forwardRef, memo, useImperativeHandle, useState } from 'react'
 
 import Basic from './settings/Basic'
 import Player from './settings/Player'
@@ -28,6 +28,35 @@ export const normalizeSettingScreenId = (id?: string): SettingScreenIds => {
   return 'basic'
 }
 
+export const SettingGroupContent = memo(({ id }: { id: SettingScreenIds }) => {
+  switch (id) {
+    case 'player':
+      return <Player />
+    case 'lyric':
+      return <Lyric />
+    case 'list':
+      return <List />
+    case 'sync_backup':
+      return (
+        <>
+          <Sync />
+          <Backup />
+        </>
+      )
+    case 'about':
+      return (
+        <>
+          <Version />
+          <Other />
+          <About />
+        </>
+      )
+    case 'basic':
+    default:
+      return <Basic />
+  }
+})
+
 export interface MainType {
   setActiveId: (id: SettingScreenIds) => void
 }
@@ -43,36 +72,7 @@ const Main = forwardRef<MainType, {}>((props, ref) => {
     },
   }))
 
-  const component = useMemo(() => {
-    switch (id) {
-      case 'player':
-        return <Player />
-      case 'lyric':
-        return <Lyric />
-      case 'list':
-        return <List />
-      case 'sync_backup':
-        return (
-          <>
-            <Sync />
-            <Backup />
-          </>
-        )
-      case 'about':
-        return (
-          <>
-            <Other />
-            <Version />
-            <About />
-          </>
-        )
-      case 'basic':
-      default:
-        return <Basic />
-    }
-  }, [id])
-
-  return component
+  return <SettingGroupContent id={id} />
 })
 
 export default Main

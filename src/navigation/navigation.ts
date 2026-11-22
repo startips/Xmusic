@@ -262,8 +262,8 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
                 {
                   fromId: NAV_SHEAR_NATIVE_IDS.playDetail_pic,
                   toId: NAV_SHEAR_NATIVE_IDS.playDetail_pic,
-                  duration: 320,
-                  interpolation: { type: 'spring' },
+                  duration: 280,
+                  interpolation: { type: 'fastOutSlowIn' as const },
                 },
               ],
               elementTransitions: [
@@ -271,26 +271,26 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
                   id: NAV_SHEAR_NATIVE_IDS.playDetail_header,
                   alpha: {
                     from: 0,
-                    duration: 280,
-                    interpolation: { type: 'decelerate', factor: 1.4 },
+                    duration: 260,
+                    interpolation: { type: 'decelerate' as const, factor: 1.4 },
                   },
                   translationY: {
-                    from: -18,
+                    from: -14,
                     duration: 280,
-                    interpolation: { type: 'decelerate', factor: 1.4 },
+                    interpolation: { type: 'fastOutSlowIn' as const },
                   },
                 },
                 {
                   id: NAV_SHEAR_NATIVE_IDS.playDetail_player,
                   alpha: {
                     from: 0,
-                    duration: 280,
-                    interpolation: { type: 'decelerate', factor: 1.4 },
+                    duration: 260,
+                    interpolation: { type: 'decelerate' as const, factor: 1.4 },
                   },
                   translationY: {
-                    from: 20,
+                    from: 18,
                     duration: 280,
-                    interpolation: { type: 'decelerate', factor: 1.4 },
+                    interpolation: { type: 'fastOutSlowIn' as const },
                   },
                 },
               ],
@@ -299,8 +299,8 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
                   alpha: {
                     from: 0,
                     to: 1,
-                    duration: 260,
-                    interpolation: { type: 'decelerate', factor: 1.5 },
+                    duration: 180,
+                    interpolation: { type: 'decelerate' as const, factor: 1.8 },
                   },
                 },
               },

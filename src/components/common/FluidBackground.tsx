@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { processColor, requireNativeComponent, StyleSheet, type ViewProps } from 'react-native'
 
 import { useIsPlay } from '@/store/player/hook'
+import { useSettingValue } from '@/store/setting/hook'
 import { useCoverPalette, useTheme } from '@/store/theme/hook'
 import { blendRgb, parseColorToRgb, shiftColor } from '@/theme/m3'
 
@@ -24,6 +25,7 @@ const toNativeArgb = (r: number, g: number, b: number, alpha: number): number =>
 export default memo(({ style }: { style?: ViewProps['style'] }) => {
   const theme = useTheme()
   const coverPalette = useCoverPalette()
+  const isDynamicCoverColor = useSettingValue('theme.dynamicCoverColor')
   const isPlay = useIsPlay()
 
   const baseColor = useMemo(() => {
@@ -32,7 +34,8 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
 
   const orbColors = useMemo(() => {
     const surfaceRgb = parseColorToRgb(theme['m3-background'])
-    const rawPalette = (coverPalette && coverPalette.length >= 4)
+    const useCoverOrbs = isDynamicCoverColor && coverPalette != null && coverPalette.length >= 4
+    const rawPalette = useCoverOrbs
       ? coverPalette.slice(0, 4)
       : [
           theme['m3-primary'],
@@ -52,7 +55,7 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
       const harmonized = blendRgb(surfaceRgb, rgb, tintRatio)
       return toNativeArgb(harmonized.r, harmonized.g, harmonized.b, alphas[idx] ?? 0.25)
     })
-  }, [coverPalette, theme])
+  }, [coverPalette, isDynamicCoverColor, theme])
 
   return (
     <NativeFluidBgView

@@ -1,9 +1,10 @@
 
-import { memo } from 'react'
+import { memo, useCallback, useEffect } from 'react'
 
 import Slider, { type SliderProps } from '@react-native-community/slider'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
+import { setSettingPagerLocked } from '../pagerLock'
 
 export type {
   SliderProps,
@@ -11,6 +12,22 @@ export type {
 
 export default memo(({ value, minimumValue, maximumValue, onSlidingStart, onSlidingComplete, onValueChange, step }: SliderProps) => {
   const theme = useTheme()
+
+  useEffect(() => {
+    return () => {
+      setSettingPagerLocked(false)
+    }
+  }, [])
+
+  const handleSlidingStart = useCallback<NonNullable<SliderProps['onSlidingStart']>>((val) => {
+    setSettingPagerLocked(true)
+    onSlidingStart?.(val)
+  }, [onSlidingStart])
+
+  const handleSlidingComplete = useCallback<NonNullable<SliderProps['onSlidingComplete']>>((val) => {
+    setSettingPagerLocked(false)
+    onSlidingComplete?.(val)
+  }, [onSlidingComplete])
 
   return (
     <Slider
@@ -21,8 +38,8 @@ export default memo(({ value, minimumValue, maximumValue, onSlidingStart, onSlid
       minimumTrackTintColor={theme['m3-primary']}
       maximumTrackTintColor={theme['m3-surface-container-highest']}
       thumbTintColor={theme['m3-primary']}
-      onSlidingStart={onSlidingStart}
-      onSlidingComplete={onSlidingComplete}
+      onSlidingStart={handleSlidingStart}
+      onSlidingComplete={handleSlidingComplete}
       onValueChange={onValueChange}
       step={step}
     />

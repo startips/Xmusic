@@ -38,6 +38,10 @@ export const setThemeMode = (mode: LX.ThemeMode) => {
 }
 
 export const setThemeId = (id: LX.ThemeSeedId) => {
-  updateSetting({ 'theme.id': id })
+  if (settingState.setting['theme.dynamicCoverColor']) {
+    updateSetting({ 'theme.id': id, 'theme.dynamicCoverColor': false })
+  } else {
+    updateSetting({ 'theme.id': id })
+  }
   applyThemeByMode()
 }

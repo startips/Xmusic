@@ -146,6 +146,12 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
     <>
       <LinearGradientOverlay
         pointerEvents="none"
+        colors={topScrimColors}
+        locations={[0, 0.42, 0.78, 1]}
+        style={{ ...styles.topScrim, height: HEADER_HEIGHT + statusBarHeight + 44 }}
+      />
+      <LinearGradientOverlay
+        pointerEvents="none"
         colors={bottomScrimColors}
         locations={[0, 0.35, 0.75, 1]}
         style={styles.bottomScrim}
@@ -166,12 +172,6 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
         <PageIndicator pageIndex={pageIndex} onSelectPage={handleSelectPage} />
         <Player />
       </View>
-      <LinearGradientOverlay
-        pointerEvents="none"
-        colors={topScrimColors}
-        locations={[0, 0.42, 0.78, 1]}
-        style={{ ...styles.topScrim, height: HEADER_HEIGHT + statusBarHeight + 36 }}
-      />
       <Header onBack={onBack} />
       <LyricShareModal ref={lyricShareRef} />
     </>
@@ -188,7 +188,6 @@ const styles = createStyle({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 5,
   },
   bottomScrim: {
     position: 'absolute',

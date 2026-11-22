@@ -8,6 +8,7 @@ import { setThemeMode } from '@/core/theme'
 import { useSettingValue } from '@/store/setting/hook'
 import { useTheme } from '@/store/theme/hook'
 import { M3Radius } from '@/theme/m3'
+import { hapticTick } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
 
 const MODES: LX.ThemeMode[] = ['system', 'light', 'dark']
@@ -36,7 +37,10 @@ export default memo(() => {
                 ...styles.btn,
                 backgroundColor: active ? theme['m3-secondary-container'] : 'transparent',
               }}
-              onPress={() => { setThemeMode(mode) }}
+              onPress={() => {
+                hapticTick()
+                setThemeMode(mode)
+              }}
             >
               <Text
                 size={13}

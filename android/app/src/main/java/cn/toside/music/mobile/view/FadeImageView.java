@@ -44,6 +44,7 @@ public class FadeImageView extends ReactImageView {
   private boolean hasAnimatedClip = false;
   private boolean transitionComplete = false;
   private int initialClipWidth = 0;
+  private int initialClipHeight = 0;
 
   private int cachedTop = Integer.MIN_VALUE;
   private int cachedHeight = -1;
@@ -71,6 +72,7 @@ public class FadeImageView extends ReactImageView {
     hasAnimatedClip = false;
     transitionComplete = false;
     initialClipWidth = 0;
+    initialClipHeight = 0;
   }
 
   public void setTopFadeStart(float start) {
@@ -211,11 +213,11 @@ public class FadeImageView extends ReactImageView {
       return;
     }
 
-    boolean hasClip = canvas.getClipBounds(clipBoundsRect);
-    int drawLeft = hasClip ? clipBoundsRect.left : 0;
-    int drawTop = hasClip ? clipBoundsRect.top : 0;
-    int drawRight = hasClip ? clipBoundsRect.right : viewW;
-    int drawBottom = hasClip ? clipBoundsRect.bottom : viewH;
+    boolean hasClip = getClipBounds(clipBoundsRect);
+    int drawLeft = hasClip ? Math.max(0, clipBoundsRect.left) : 0;
+    int drawTop = hasClip ? Math.max(0, clipBoundsRect.top) : 0;
+    int drawRight = hasClip ? Math.min(viewW, clipBoundsRect.right) : viewW;
+    int drawBottom = hasClip ? Math.min(viewH, clipBoundsRect.bottom) : viewH;
     int drawW = drawRight - drawLeft;
     int drawH = drawBottom - drawTop;
     if (drawW <= 0 || drawH <= 0) {
@@ -225,20 +227,31 @@ public class FadeImageView extends ReactImageView {
 
     boolean withinTransitionWindow = (SystemClock.uptimeMillis() - attachTimeMs) <= TRANSITION_WINDOW_MS;
     float transitionProgress = 1f;
-    if (!transitionComplete && withinTransitionWindow && hasClip && drawW < viewW - 2) {
-      if (!hasAnimatedClip) {
-        hasAnimatedClip = true;
-        initialClipWidth = drawW;
+    float cornerProgress = 1f;
+    if (!transitionComplete && withinTransitionWindow) {
+      if (hasClip && (drawW < viewW - 2 || drawH < viewH - 2)) {
+        if (!hasAnimatedClip) {
+          hasAnimatedClip = true;
+          initialClipWidth = drawW;
+          initialClipHeight = drawH;
+        }
+        int denomW = Math.max(1, viewW - initialClipWidth);
+        int denomH = Math.max(1, viewH - initialClipHeight);
+        float progW = (drawW - initialClipWidth) / (float) denomW;
+        float progH = (drawH - initialClipHeight) / (float) denomH;
+        float rawProgress = Math.max(0f, Math.min(1f, Math.min(progW, progH)));
+        cornerProgress = rawProgress;
+        transitionProgress = rawProgress * rawProgress * (3f - 2f * rawProgress);
+      } else if (hasAnimatedClip) {
+        transitionComplete = true;
       }
-      int denom = Math.max(1, viewW - initialClipWidth);
-      transitionProgress = Math.max(0f, Math.min(1f, (drawW - initialClipWidth) / (float) denom));
     } else {
       transitionComplete = true;
     }
 
     boolean hasTop = (topFadeEnd - topFadeStart) > 0.005f;
     boolean hasBottom = (fadeEnd - fadeStart) > 0.005f;
-    float cornerRadiusPx = startCornerRadiusPx * (1f - transitionProgress);
+    float cornerRadiusPx = startCornerRadiusPx * (1f - cornerProgress);
 
     if ((!hasTop && !hasBottom) || transitionProgress <= 0.001f) {
       if (cornerRadiusPx > 0.5f) {

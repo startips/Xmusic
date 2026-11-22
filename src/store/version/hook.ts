@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react'
-import state from './state'
+import state, { type InitState } from './state'
+
+export const isUpdateAvailable = (
+  versionInfo: InitState['versionInfo'] = state.versionInfo,
+  ignoreVersion: InitState['ignoreVersion'] = state.ignoreVersion,
+): boolean => {
+  return Boolean(
+    !versionInfo.isLatest &&
+    !versionInfo.isUnknown &&
+    versionInfo.newVersion?.version &&
+    versionInfo.newVersion.version !== '0.0.0' &&
+    versionInfo.newVersion.version !== ignoreVersion,
+  )
+}
 
 export const useVersionInfo = () => {
   const [info, setInfo] = useState(state.versionInfo)
@@ -38,6 +51,12 @@ export const useVersionInfoIgnoreVersionUpdated = () => {
   }, [])
 
   return version
+}
+
+export const useHasNewVersion = () => {
+  const versionInfo = useVersionInfo()
+  const ignoreVersion = useVersionInfoIgnoreVersionUpdated()
+  return isUpdateAvailable(versionInfo, ignoreVersion)
 }
 
 // export const useActiveListId = () => {

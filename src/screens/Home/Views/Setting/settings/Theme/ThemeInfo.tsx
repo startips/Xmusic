@@ -3,9 +3,11 @@ import { Pressable, View } from 'react-native'
 
 import SubTitle from '../../components/SubTitle'
 import { useI18n } from '@/lang'
-import { useTheme } from '@/store/theme/hook'
+import { useSettingValue } from '@/store/setting/hook'
+import { useCoverPalette, useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
 import { createStyle } from '@/utils/tools'
+import { hapticTick } from '@/utils/haptics'
 import { M3Radius, withAlpha } from '@/theme/m3'
 import { getThemeSeedOption, XMUSIC_THEME_SEEDS } from '@/theme'
 import { setThemeId } from '@/core/theme'
@@ -13,7 +15,10 @@ import { setThemeId } from '@/core/theme'
 export default memo(() => {
   const t = useI18n()
   const theme = useTheme()
+  const isDynamicCoverColor = useSettingValue('theme.dynamicCoverColor')
+  const coverPalette = useCoverPalette()
   const activeSeed = getThemeSeedOption(theme.id)
+  const isCoverOverriding = Boolean(isDynamicCoverColor && coverPalette?.length)
 
   const swatches = [
     theme['m3-primary'],
@@ -22,6 +27,10 @@ export default memo(() => {
     theme['m3-surface-container-high'],
     theme['m3-on-surface-variant'],
   ]
+
+  const modeLabel = isCoverOverriding
+    ? t('setting_basic_theme_cover_active')
+    : t(activeSeed.nameKey)
 
   return (
     <SubTitle title={t('setting_basic_theme')}>
@@ -32,18 +41,21 @@ export default memo(() => {
           ))}
         </View>
         <View style={styles.info}>
-          <Text size={15} color={theme['m3-on-surface']} style={styles.name}>{`${theme.name} · ${t(activeSeed.nameKey)}`}</Text>
+          <Text size={15} color={theme['m3-on-surface']} style={styles.name}>{`${theme.name} · ${modeLabel}`}</Text>
           <Text size={12} color={theme['m3-on-surface-variant']} numberOfLines={2}>{t('setting_basic_theme_desc')}</Text>
         </View>
       </View>
 
       <View style={styles.seedRow}>
         {XMUSIC_THEME_SEEDS.map((option) => {
-          const selected = option.id === activeSeed.id
+          const selected = !isCoverOverriding && option.id === activeSeed.id
           return (
             <Pressable
               key={option.id}
-              onPress={() => { setThemeId(option.id) }}
+              onPress={() => {
+                hapticTick()
+                setThemeId(option.id)
+              }}
               android_ripple={{ color: withAlpha(theme['m3-primary'], 0.14) }}
               accessibilityLabel={t(option.nameKey)}
               accessibilityState={{ selected }}

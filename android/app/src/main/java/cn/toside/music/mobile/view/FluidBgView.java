@@ -50,7 +50,8 @@ public class FluidBgView extends View {
     0x664DAF7C, 0x523B82CE, 0x477C5CCC, 0x3D2D6A4F
   };
 
-  private boolean hasInitialColors = false;
+  private boolean hasInitialBaseColor = false;
+  private boolean hasInitialOrbColors = false;
   private boolean transitionActive = false;
   private long transitionStartNs = 0L;
 
@@ -102,7 +103,8 @@ public class FluidBgView extends View {
   }
 
   public void setBaseColorValue(int color) {
-    if (!hasInitialColors) {
+    if (!hasInitialBaseColor) {
+      hasInitialBaseColor = true;
       startBaseColor = color;
       targetBaseColor = color;
       currentBaseColor = color;
@@ -121,8 +123,8 @@ public class FluidBgView extends View {
     for (int i = 0; i < ORB_COUNT; i++) {
       normalized[i] = colors[i % colors.length];
     }
-    if (!hasInitialColors) {
-      hasInitialColors = true;
+    if (!hasInitialOrbColors) {
+      hasInitialOrbColors = true;
       System.arraycopy(normalized, 0, startOrbColors, 0, ORB_COUNT);
       System.arraycopy(normalized, 0, targetOrbColors, 0, ORB_COUNT);
       System.arraycopy(normalized, 0, currentOrbColors, 0, ORB_COUNT);

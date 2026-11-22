@@ -1,6 +1,7 @@
 import { View, TouchableOpacity } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
+import { isUpdateAvailable, useHasNewVersion } from '@/store/version/hook'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import { Icon } from '@/components/common/Icon'
@@ -23,9 +24,14 @@ const Header = () => {
   const id = useNavActiveId()
   const t = useI18n()
   const statusBarHeight = useStatusbarHeight()
+  const hasNewVersion = useHasNewVersion()
+  const badgeColor = theme.isDark ? '#FF453A' : '#E53935'
 
   const handleOpenSetting = () => {
     if (Boolean(commonState.componentIds.setting) || !commonState.componentIds.home) return
+    if (isUpdateAvailable()) {
+      global.lx.settingActiveId = 'about'
+    }
     navigations.pushSettingScreen(commonState.componentIds.home)
   }
 
@@ -57,6 +63,18 @@ const Header = () => {
             onPress={handleOpenSetting}
           >
             <Icon color={theme['m3-on-surface-variant']} name="setting" size={17} />
+            {hasNewVersion
+              ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      ...styles.updateDot,
+                      backgroundColor: badgeColor,
+                      borderColor: theme['m3-surface-container'],
+                    }}
+                  />
+                )
+              : null}
           </TouchableOpacity>
         </View>
       </View>
@@ -91,6 +109,15 @@ const styles = createStyle({
     borderRadius: M3Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  updateDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 9,
+    height: 9,
+    borderRadius: M3Radius.full,
+    borderWidth: 1.5,
   },
   title: {
     fontWeight: '700',

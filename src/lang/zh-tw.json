@@ -557,6 +557,7 @@
   "version_title_unknown": "❓ 獲取最新版本資訊失敗 ❓",
   "version_title_update": "🚀 軟體更新 🚀",
   "setting_basic_theme_dynamic_cover_color": "封面流轉主題色（隨目前歌曲封面即時切換全域強調色）",
+  "setting_basic_theme_cover_active": "封面流轉中",
   "setting_lyric_karaoke_dof": "啟用逐字卡拉 OK 歌詞與景深層級呼吸效果",
   "play_detail_setting_show_karaoke_lyric": "啟用逐字卡拉 OK 掃詞與景深縮放效果",
   "lyric_poster_title": "歌詞金句分享海報",

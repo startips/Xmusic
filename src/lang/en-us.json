@@ -557,6 +557,7 @@
   "version_title_unknown": "❓ Failed to get the latest version information ❓",
   "version_title_update": "🚀 App update 🚀",
   "setting_basic_theme_dynamic_cover_color": "Dynamic cover theme color (auto-extract accent color from album art)",
+  "setting_basic_theme_cover_active": "Cover Flow",
   "setting_lyric_karaoke_dof": "Enable word-by-word karaoke lyrics & depth-of-field hierarchy",
   "play_detail_setting_show_karaoke_lyric": "Enable word-by-word karaoke sweep & depth-of-field zoom",
   "lyric_poster_title": "Share Lyric Poster",

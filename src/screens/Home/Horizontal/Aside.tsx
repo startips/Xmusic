@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { useNavActiveId, useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
+import { isUpdateAvailable, useHasNewVersion } from '@/store/version/hook'
 import { useTheme } from '@/store/theme/hook'
 import { Icon } from '@/components/common/Icon'
 import { XmusicMark } from '@/components/common/XmusicMark'
@@ -57,6 +58,15 @@ const styles = createStyle({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  updateDot: {
+    position: 'absolute',
+    top: 3,
+    right: 10,
+    width: 8.5,
+    height: 8.5,
+    borderRadius: M3Radius.full,
+    borderWidth: 1.5,
+  },
   text: {
     paddingLeft: 15,
   },
@@ -103,6 +113,8 @@ const MenuItem = ({ id, icon, onPress }: {
 export default memo(() => {
   const theme = useTheme()
   const navBarHeight = useNavigationBarHeight()
+  const hasNewVersion = useHasNewVersion()
+  const badgeColor = theme.isDark ? '#FF453A' : '#E53935'
 
   const handlePress = (id: IdType) => {
     setNavActiveId(id)
@@ -110,6 +122,9 @@ export default memo(() => {
 
   const handleOpenSetting = () => {
     if (Boolean(commonState.componentIds.setting) || !commonState.componentIds.home) return
+    if (isUpdateAvailable()) {
+      global.lx.settingActiveId = 'about'
+    }
     navigations.pushSettingScreen(commonState.componentIds.home)
   }
 
@@ -131,6 +146,18 @@ export default memo(() => {
       <TouchableOpacity style={styles.menuItem} onPress={handleOpenSetting}>
         <View style={styles.iconContent}>
           <Icon name="setting" size={19} color={theme['m3-on-surface-variant']} />
+          {hasNewVersion
+            ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    ...styles.updateDot,
+                    backgroundColor: badgeColor,
+                    borderColor: theme['m3-surface-container-low'],
+                  }}
+                />
+              )
+            : null}
         </View>
       </TouchableOpacity>
     </View>

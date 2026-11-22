@@ -26,9 +26,9 @@ export default memo(({ componentId }: { componentId: string }) => {
       <FadeImage
         url={pic}
         nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_pic}
-        topFadeStart={0.04}
-        topFadeEnd={0.22}
-        fadeStart={0.54}
+        topFadeStart={0.05}
+        topFadeEnd={0.26}
+        fadeStart={0.52}
         fadeEnd={0.98}
         startCornerRadius={12}
         style={styles.image}

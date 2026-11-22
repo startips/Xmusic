@@ -1,7 +1,8 @@
-import { memo, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { View, Pressable, FlatList, type FlatListProps } from 'react-native'
 
 import { useTheme } from '@/store/theme/hook'
+import { useHasNewVersion } from '@/store/version/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
 import { scaleSizeH } from '@/utils/pixelRatio'
@@ -13,15 +14,17 @@ type FlatListType = FlatListProps<SettingScreenIds>
 
 const ITEM_HEIGHT = scaleSizeH(44)
 
-const ListItem = memo(({ id, activeId, onPress }: {
+const ListItem = memo(({ id, activeId, showBadge, onPress }: {
   onPress: (item: SettingScreenIds) => void
   activeId: string
   id: SettingScreenIds
+  showBadge: boolean
 }) => {
   const theme = useTheme()
   const t = useI18n()
 
   const active = activeId == id
+  const badgeColor = theme.isDark ? '#FF453A' : '#E53935'
 
   const handlePress = () => {
     onPress(id)
@@ -48,14 +51,20 @@ const ListItem = memo(({ id, activeId, onPress }: {
           >
             {t(`setting_group_${id}`)}
           </Text>
+          {showBadge
+            ? <View style={{ ...styles.badgeDot, backgroundColor: badgeColor }} />
+            : null}
         </Pressable>
       </View>
     </View>
   )
 }, (prevProps, nextProps) => {
-  return !!(prevProps.id === nextProps.id &&
-    prevProps.activeId != nextProps.id &&
-    nextProps.activeId != nextProps.id
+  const prevActive = prevProps.activeId == prevProps.id
+  const nextActive = nextProps.activeId == nextProps.id
+  return (
+    prevProps.id === nextProps.id &&
+    prevActive === nextActive &&
+    prevProps.showBadge === nextProps.showBadge
   )
 })
 
@@ -64,7 +73,21 @@ export default ({ onChangeId }: {
   onChangeId: (id: SettingScreenIds) => void
 }) => {
   const flatListRef = useRef<FlatList>(null)
+  const hasNewVersion = useHasNewVersion()
   const [activeId, setActiveId] = useState<SettingScreenIds>(() => normalizeSettingScreenId(global.lx.settingActiveId))
+
+  useEffect(() => {
+    const idx = SETTING_SCREENS.indexOf(activeId)
+    if (idx > 0) {
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ index: idx, animated: false, viewPosition: 0.5 })
+      }, 60)
+      return () => {
+        clearTimeout(timer)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChangeId = (id: SettingScreenIds) => {
     onChangeId(id)
@@ -77,6 +100,7 @@ export default ({ onChangeId }: {
       key={item}
       id={item}
       activeId={activeId}
+      showBadge={item === 'about' && hasNewVersion}
       onPress={handleChangeId}
     />
   )
@@ -122,15 +146,25 @@ const styles = createStyle({
   },
   listName: {
     height: '100%',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     flexGrow: 1,
     flexShrink: 1,
     paddingHorizontal: 14,
   },
   listNameText: {
     fontWeight: '400',
+    flexShrink: 1,
   },
   listNameActive: {
     fontWeight: '700',
+    flexShrink: 1,
+  },
+  badgeDot: {
+    width: 7.5,
+    height: 7.5,
+    borderRadius: M3Radius.full,
+    marginLeft: 6,
   },
 })
