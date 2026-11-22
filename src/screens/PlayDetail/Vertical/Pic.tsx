@@ -4,8 +4,7 @@ import { usePlayerMusicInfo } from '@/store/player/hook'
 import { useNavigationComponentDidAppear } from '@/navigation'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import commonState from '@/store/common/state'
-import Image from '@/components/common/Image'
-import AlphaFadeView from '@/components/common/AlphaFadeView'
+import FadeImage from '@/components/common/FadeImage'
 import { createStyle } from '@/utils/tools'
 
 export default memo(({ componentId }: { componentId: string }) => {
@@ -15,8 +14,8 @@ export default memo(({ componentId }: { componentId: string }) => {
   const [pic, setPic] = useState(musicInfo.pic)
 
   useEffect(() => {
-    if (animated) setPic(musicInfo.pic)
-  }, [musicInfo.pic, animated])
+    if (animated || !pic) setPic(musicInfo.pic)
+  }, [musicInfo.pic, animated, pic])
 
   useNavigationComponentDidAppear(componentId, () => {
     setAnimated(true)
@@ -24,15 +23,16 @@ export default memo(({ componentId }: { componentId: string }) => {
 
   return (
     <View style={styles.container}>
-      <AlphaFadeView
-        topFadeStart={0.035}
-        topFadeEnd={0.215}
-        fadeStart={0.55}
-        fadeEnd={1}
-        style={styles.fade}
-      >
-        <Image url={pic} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_pic} style={styles.image} />
-      </AlphaFadeView>
+      <FadeImage
+        url={pic}
+        nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_pic}
+        topFadeStart={0.04}
+        topFadeEnd={0.22}
+        fadeStart={0.54}
+        fadeEnd={0.98}
+        startCornerRadius={12}
+        style={styles.image}
+      />
     </View>
   )
 })
@@ -42,10 +42,6 @@ const styles = createStyle({
     flex: 1,
     width: '100%',
     overflow: 'hidden',
-  },
-  fade: {
-    flex: 1,
-    width: '100%',
   },
   image: {
     flex: 1,

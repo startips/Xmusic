@@ -295,6 +295,23 @@ export const playList = async(listId: string, index: number) => {
   await handlePlay()
 }
 
+export const jumpToQueueIndex = async(listId: string, index: number) => {
+  const target = getList(listId)[index]
+  if (!target) return
+  const prevListId = playerState.playInfo.playerListId
+  setPlayListId(listId)
+  setPlayMusicInfo(listId, target, false)
+  if (settingState.setting['player.isAutoCleanPlayedList'] || prevListId != listId) clearPlayedList()
+  await handlePlay()
+}
+
+export const playTempPlayListIndex = async(index: number) => {
+  const item = playerState.tempPlayList[index]
+  if (!item) return
+  removeTempPlayList(index)
+  await handlePlayNext(item)
+}
+
 const handleToggleStop = async() => {
   await stop()
   setTimeout(() => {

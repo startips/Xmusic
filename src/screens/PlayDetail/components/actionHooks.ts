@@ -4,12 +4,14 @@ import { updateSetting } from '@/core/common'
 import { toggleDesktopLyricLock } from '@/core/desktopLyric'
 import { navigations } from '@/navigation'
 import commonState from '@/store/common/state'
+import { toggleCurrentTrackFavoriteSilently } from '@/core/player/favoriteSync'
 import { useIsMusicInLoveList } from '@/store/list/hook'
 import { usePlayMusicInfo } from '@/store/player/hook'
 import { useSettingValue } from '@/store/setting/hook'
 import settingState from '@/store/setting/state'
 import { type DesktopLyricEnableType } from '@/components/DesktopLyricEnable'
 import { type MusicAddModalType } from '@/components/MusicAddModal'
+import { hapticHeart, hapticTick } from '@/utils/haptics'
 
 export const useDesktopLyricAction = () => {
   const enabledLyric = useSettingValue('desktopLyric.enable')
@@ -46,6 +48,12 @@ export const useLoveMusicAction = () => {
 
   const isLoved = useIsMusicInLoveList(targetMusicInfo?.id)
 
+  const handleToggleLove = useCallback(() => {
+    if (!targetMusicInfo) return
+    hapticHeart()
+    void toggleCurrentTrackFavoriteSilently()
+  }, [targetMusicInfo])
+
   const handleShowMusicAddModal = useCallback(() => {
     if (!targetMusicInfo) return
     musicAddModalRef.current?.show({
@@ -58,6 +66,7 @@ export const useLoveMusicAction = () => {
   return {
     isLoved,
     musicAddModalRef,
+    handleToggleLove,
     handleShowMusicAddModal,
   }
 }
@@ -76,6 +85,7 @@ export const usePlayModeAction = () => {
   const togglePlayMethod = useSettingValue('player.togglePlayMethod')
 
   const toggleNextPlayMode = useCallback(() => {
+    hapticTick()
     let index = MUSIC_TOGGLE_MODE_LIST.indexOf(togglePlayMethod)
     if (++index >= MUSIC_TOGGLE_MODE_LIST.length) index = 0
     const mode = MUSIC_TOGGLE_MODE_LIST[index]

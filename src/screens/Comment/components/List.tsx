@@ -5,6 +5,7 @@ import { FlatList, type FlatListProps, RefreshControl, View } from 'react-native
 import CommentFloor from './CommentFloor'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { useNavigationBarHeight } from '@/store/common/hook'
 import { type Comment } from '../utils'
 import { useI18n } from '@/lang'
 import Text from '@/components/common/Text'
@@ -28,6 +29,7 @@ const List = forwardRef<ListType, ListProps>(({
 }, ref) => {
   // const t = useI18n()
   const theme = useTheme()
+  const navBarHeight = useNavigationBarHeight()
   const flatListRef = useRef<FlatList>(null)
   const [currentList, setList] = useState<Comment[]>([])
   const [status, setStatus] = useState<Status>('idle')
@@ -69,7 +71,7 @@ const List = forwardRef<ListType, ListProps>(({
         label = 'list_loading'
         break
       case 'end':
-        label = 'list_end'
+        label = currentList.length ? 'list_end' : 'no_item'
         break
       case 'error':
         label = 'list_error'
@@ -79,13 +81,13 @@ const List = forwardRef<ListType, ListProps>(({
         break
     }
     return <Footer label={label} onLoadMore={onLoadMore} />
-  }, [onLoadMore, status])
+  }, [currentList.length, onLoadMore, status])
 
   return (
     <FlatList
       ref={flatListRef}
       style={styles.list}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={{ ...styles.contentContainer, paddingBottom: 16 + navBarHeight }}
       data={currentList}
       onEndReachedThreshold={0.5}
       // maxToRenderPerBatch={4}
@@ -104,7 +106,7 @@ const List = forwardRef<ListType, ListProps>(({
   )
 })
 
-type FooterLabel = 'list_loading' | 'list_end' | 'list_error' | null
+type FooterLabel = 'list_loading' | 'list_end' | 'list_error' | 'no_item' | null
 const Footer = ({ label, onLoadMore }: {
   label: FooterLabel
   onLoadMore: () => void

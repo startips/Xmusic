@@ -13,16 +13,20 @@ import Text from '@/components/common/Text'
 import { LIST_IDS } from '@/config/constant'
 import Loading from '@/components/common/Loading'
 import { useSettingValue } from '@/store/setting/hook'
+import { useI18n } from '@/lang'
+import { hapticLight } from '@/utils/haptics'
 
 export interface ActiveListProps {
   onShowSearchBar: () => void
   onScrollToTop: () => void
+  onOpenStats: () => void
 }
 export interface ActiveListType {
   setVisibleBar: (visible: boolean) => void
 }
 
-export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, onScrollToTop }, ref) => {
+export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, onScrollToTop, onOpenStats }, ref) => {
+  const t = useI18n()
   const theme = useTheme()
   const currentListId = useActiveListId()
   const fetching = useListFetching(currentListId)
@@ -62,6 +66,7 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
     <TouchableOpacity
       onPress={showList}
       onLongPress={onScrollToTop}
+      disabled={!visibleBar}
       activeOpacity={0.75}
       style={{
         ...styles.currentList,
@@ -73,7 +78,20 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
       <Icon style={styles.currentListIcon} color={theme['m3-on-surface-variant']} name="chevron-right" size={12} />
       { fetching ? <Loading color={theme['m3-primary']} style={styles.loading} /> : null }
       <Text style={styles.currentListText} size={14} numberOfLines={1} color={theme['m3-on-surface']}>{currentListName}</Text>
-      <TouchableOpacity style={{ ...styles.currentListBtns, backgroundColor: theme['m3-secondary-container'] }} onPress={onShowSearchBar}>
+      <TouchableOpacity
+        disabled={!visibleBar}
+        style={{ ...styles.statsPill, backgroundColor: theme['m3-primary-container'] }}
+        onPress={() => {
+          hapticLight()
+          onOpenStats()
+        }}
+      >
+        <Icon color={theme['m3-on-primary-container']} name="leaderboard" size={12} />
+        <Text size={11.5} color={theme['m3-on-primary-container']} style={styles.statsPillText}>
+          {t('stats_entry_btn')}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity disabled={!visibleBar} style={{ ...styles.currentListBtns, backgroundColor: theme['m3-secondary-container'] }} onPress={onShowSearchBar}>
         <Icon color={theme['m3-on-secondary-container']} name="search-2" size={14} />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -104,6 +122,18 @@ const styles = createStyle({
   },
   loading: {
     marginRight: 5,
+  },
+  statsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 30,
+    paddingHorizontal: 10,
+    marginRight: 6,
+    borderRadius: M3Radius.full,
+  },
+  statsPillText: {
+    fontWeight: '700',
   },
   currentListBtns: {
     width: 32,

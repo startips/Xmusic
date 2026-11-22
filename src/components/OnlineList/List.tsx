@@ -12,6 +12,7 @@ import { MULTI_SELECT_BAR_OFFSET } from './MultipleModeBar'
 import { useI18n } from '@/lang'
 import Text from '@/components/common/Text'
 import { handlePlay } from './listAction'
+import { useWindowSize } from '@/utils/hooks'
 import { useSettingValue } from '@/store/setting/hook'
 
 type FlatListType = FlatListProps<LX.Music.MusicInfoOnline>
@@ -68,7 +69,9 @@ const List = forwardRef<ListType, ListProps>(({
   const selectedListRef = useRef<LX.Music.MusicInfoOnline[]>([])
   const [visibleMultiSelect, setVisibleMultiSelect] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
-  const rowInfo = useRef(getRowInfo(rowType))
+  const windowSize = useWindowSize()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rowInfo = useMemo(() => getRowInfo(rowType), [rowType, windowSize.width, windowSize.height])
   const isShowAlbumName = useSettingValue('list.isShowAlbumName')
   const isShowInterval = useSettingValue('list.isShowInterval')
   // const currentListIdRef = useRef('')
@@ -114,7 +117,7 @@ const List = forwardRef<ListType, ListProps>(({
 
 
   const handleUpdateSelectedList = (newList: LX.Music.MusicInfoOnline[]) => {
-    if (selectedListRef.current.length && newList.length == currentList.length) onSelectAll(true)
+    if (newList.length > 0 && newList.length == currentList.length) onSelectAll(true)
     else if (selectedListRef.current.length == currentList.length) onSelectAll(false)
     selectedListRef.current = newList
     setSelectedList(newList)
@@ -189,7 +192,7 @@ const List = forwardRef<ListType, ListProps>(({
       onLongPress={handleLongPress}
       onShowMenu={onShowMenu}
       selectedList={selectedList}
-      rowInfo={rowInfo.current}
+      rowInfo={rowInfo}
       isShowAlbumName={isShowAlbumName}
       isShowInterval={isShowInterval}
     />
@@ -208,7 +211,9 @@ const List = forwardRef<ListType, ListProps>(({
   const footerComponent = useMemo(() => {
     let label: FooterLabel
     switch (status) {
-      case 'refreshing': return null
+      case 'refreshing':
+        label = null
+        break
       case 'loading':
         label = 'list_loading'
         break
@@ -222,6 +227,7 @@ const List = forwardRef<ListType, ListProps>(({
         label = null
         break
     }
+    if (!label && !visibleMultiSelect) return null
     return (
       <View style={{ width: '100%', paddingBottom: visibleMultiSelect ? MULTI_SELECT_BAR_OFFSET : 0 }} >
         <Footer label={label} onLoadMore={onLoadMore} />
@@ -231,10 +237,11 @@ const List = forwardRef<ListType, ListProps>(({
 
   return (
     <FlatList
+      key={String(rowInfo.rowNum ?? 1)}
       ref={flatListRef}
       style={styles.list}
       data={currentList}
-      numColumns={rowInfo.current.rowNum}
+      numColumns={rowInfo.rowNum}
       horizontal={false}
       maxToRenderPerBatch={4}
       // updateCellsBatchingPeriod={80}
@@ -243,7 +250,7 @@ const List = forwardRef<ListType, ListProps>(({
       initialNumToRender={12}
       renderItem={renderItem}
       keyExtractor={getkey}
-      getItemLayout={getItemLayout}
+      getItemLayout={ListHeaderComponent ? undefined : getItemLayout}
       // onRefresh={onRefresh}
       // refreshing={refreshing}
       onEndReachedThreshold={0.5}

@@ -1,15 +1,14 @@
 import { memo } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
-import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
+import { useNavActiveId, useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
 import { Icon } from '@/components/common/Icon'
 import { XmusicMark } from '@/components/common/XmusicMark'
-import { confirmDialog, createStyle, exitApp as backHome } from '@/utils/tools'
+import { createStyle } from '@/utils/tools'
 import { NAV_MENUS } from '@/config/constant'
-import type { InitState } from '@/store/common/state'
-// import commonState from '@/store/common/state'
-import { exitApp, setNavActiveId } from '@/core/common'
-import { useSettingValue } from '@/store/setting/hook'
+import commonState, { type InitState } from '@/store/common/state'
+import { setNavActiveId } from '@/core/common'
+import { navigations } from '@/navigation'
 import { M3Radius } from '@/theme/m3'
 
 const NAV_WIDTH = 74
@@ -77,7 +76,7 @@ const Header = () => {
   )
 }
 
-type IdType = InitState['navActiveId'] | 'nav_exit' | 'back_home'
+type IdType = InitState['navActiveId']
 
 const MenuItem = ({ id, icon, onPress }: {
   id: IdType
@@ -103,34 +102,22 @@ const MenuItem = ({ id, icon, onPress }: {
 
 export default memo(() => {
   const theme = useTheme()
-  // console.log('render drawer nav')
-  const showBackBtn = useSettingValue('common.showBackBtn')
-  const showExitBtn = useSettingValue('common.showExitBtn')
+  const navBarHeight = useNavigationBarHeight()
 
   const handlePress = (id: IdType) => {
-    switch (id) {
-      case 'nav_exit':
-        void confirmDialog({
-          message: global.i18n.t('exit_app_tip'),
-          confirmButtonText: global.i18n.t('list_remove_tip_button'),
-        }).then(isExit => {
-          if (!isExit) return
-          exitApp('Exit Btn')
-        })
-        return
-      case 'back_home':
-        backHome()
-        return
-    }
-
-    global.app_event.changeMenuVisible(false)
     setNavActiveId(id)
+  }
+
+  const handleOpenSetting = () => {
+    if (Boolean(commonState.componentIds.setting) || !commonState.componentIds.home) return
+    navigations.pushSettingScreen(commonState.componentIds.home)
   }
 
   return (
     <View
       style={{
         ...styles.container,
+        paddingBottom: 12 + navBarHeight,
         backgroundColor: theme['m3-surface-container-low'],
         borderRightColor: theme['m3-outline-variant'],
       }}
@@ -141,12 +128,11 @@ export default memo(() => {
           {NAV_MENUS.map(menu => <MenuItem key={menu.id} id={menu.id} icon={menu.icon} onPress={handlePress} />)}
         </View>
       </ScrollView>
-      {
-        showBackBtn ? <MenuItem id="back_home" icon="home" onPress={handlePress} /> : null
-      }
-      {
-        showExitBtn ? <MenuItem id="nav_exit" icon="exit2" onPress={handlePress} /> : null
-      }
+      <TouchableOpacity style={styles.menuItem} onPress={handleOpenSetting}>
+        <View style={styles.iconContent}>
+          <Icon name="setting" size={19} color={theme['m3-on-surface-variant']} />
+        </View>
+      </TouchableOpacity>
     </View>
   )
 })

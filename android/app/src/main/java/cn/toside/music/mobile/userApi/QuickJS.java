@@ -12,6 +12,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 
 import com.whl.quickjs.android.QuickJSLoader;
 import com.whl.quickjs.wrapper.QuickJSContext;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -40,12 +41,14 @@ public class QuickJS {
   }
 
   private String getPreloadScript() {
-    try {
-      InputStream inputStream = this.reactContext.getAssets().open("script/user-api-preload.js");
-      byte[] buffer = new byte[inputStream.available()];
-      inputStream.read(buffer);
-      inputStream.close();
-      return new String(buffer, StandardCharsets.UTF_8);
+    try (InputStream inputStream = this.reactContext.getAssets().open("script/user-api-preload.js")) {
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      byte[] chunk = new byte[4096];
+      int n;
+      while ((n = inputStream.read(chunk)) != -1) {
+        out.write(chunk, 0, n);
+      }
+      return new String(out.toByteArray(), StandardCharsets.UTF_8);
     } catch (Exception e) {
       return null;
     }
@@ -123,9 +126,15 @@ public class QuickJS {
       }
     });
     jsContext.getGlobalObject().setProperty("__lx_native_call__set_timeout", args -> {
+      long delayMs = (args.length > 1 && args[1] instanceof Number)
+        ? Math.max(0L, ((Number) args[1]).longValue())
+        : 0L;
+      final Object idArg = args.length > 0 ? args[0] : null;
       this.timeoutHandler.postDelayed(() -> {
-        callJS("__set_timeout__", args[0]);
-      }, (int) args[1]);
+        if (this.jsContext != null) {
+          callJS("__set_timeout__", idArg);
+        }
+      }, delayMs);
       return null;
     });
   }
@@ -214,7 +223,10 @@ public class QuickJS {
   }
 
   public void destroy () {
-    this.jsContext.destroy();
-    this.jsContext = null;
+    this.timeoutHandler.removeCallbacksAndMessages(null);
+    if (this.jsContext != null) {
+      this.jsContext.destroy();
+      this.jsContext = null;
+    }
   }
 }

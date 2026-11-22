@@ -176,7 +176,7 @@ export interface NowPlayingTitles {
   lyric?: string
 }
 export const updateNowPlayingTitles = async(titles: NowPlayingTitles) => {
-  // console.log('set playing titles', titles)
+  if (!global.lx.playerStatus.isInitialized) return
   return TrackPlayer.updateNowPlayingTitles(titles)
 }
 

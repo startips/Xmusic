@@ -12,8 +12,12 @@ import { useI18n } from '@/lang'
 import { COMPONENT_IDS } from '@/config/constant'
 import { setComponentId } from '@/core/common'
 import PageContent from '@/components/PageContent'
+import EdgeSwipeContainer from '@/components/common/EdgeSwipeContainer'
 import playerState from '@/store/player/state'
 import { M3Radius } from '@/theme/m3'
+import { pop } from '@/navigation'
+import { useBackHandler } from '@/utils/hooks/useBackHandler'
+import music from '@/utils/musicSdk'
 
 type ActiveId = 'hot' | 'new'
 
@@ -95,11 +99,23 @@ export default memo(({ componentId }: {
   const t = useI18n()
   const theme = useTheme()
   const [total, setTotal] = useState({ hot: 0, new: 0 })
+  const isDismissingRef = useRef(false)
 
   useEffect(() => {
     setComponentId(COMPONENT_IDS.comment, componentId)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const handleBack = useCallback(() => {
+    if (isDismissingRef.current) return
+    isDismissingRef.current = true
+    void pop(componentId)
+  }, [componentId])
+
+  useBackHandler(useCallback(() => {
+    handleBack()
+    return true
+  }, [handleBack]))
 
   const tabs = useMemo(() => {
     return [
@@ -126,6 +142,7 @@ export default memo(({ componentId }: {
       toast(t('comment_refresh', { name: musicInfo.name }))
       return
     }
+    setTotal({ hot: 0, new: 0 })
     setMusicInfo(playerMusicInfo)
   }, [musicInfo, t])
 
@@ -169,25 +186,32 @@ export default memo(({ componentId }: {
   }, [activeId, musicInfo, onPageSelected, refreshComment, setHotTotal, setNewTotal, tabs, theme, toggleTab])
 
   return (
-    <PageContent>
-      {
-        musicInfo == null
-          ? null
-          : <>
-            <Header musicInfo={musicInfo} />
-            {
-              musicInfo.source == 'local'
-                ? (
-                <View style={{ ...styles.container, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text>{t('comment_not support')}</Text>
-                </View>
-                  )
-                : commentComponent
-            }
-        </>
-      }
+    <EdgeSwipeContainer
+      edgeWidth={24}
+      dismissDistance={64}
+      onEdgeDismiss={handleBack}
+      style={{ flex: 1 }}
+    >
+      <PageContent>
+        {
+          musicInfo == null
+            ? null
+            : <>
+              <Header musicInfo={musicInfo} onBack={handleBack} />
+              {
+                musicInfo.source == 'local' || !music[musicInfo.source]?.comment
+                  ? (
+                  <View style={{ ...styles.container, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text>{t('comment_not support')}</Text>
+                  </View>
+                    )
+                  : commentComponent
+              }
+          </>
+        }
 
-    </PageContent>
+      </PageContent>
+    </EdgeSwipeContainer>
   )
 })
 

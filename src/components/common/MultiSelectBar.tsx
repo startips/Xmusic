@@ -1,9 +1,11 @@
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { Animated, Pressable, View, type ViewStyle } from 'react-native'
 
 import Text from '@/components/common/Text'
+import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
+import { useBackHandler } from '@/utils/hooks/useBackHandler'
 import { createStyle } from '@/utils/tools'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
 
@@ -13,6 +15,9 @@ export interface MultiSelectBarProps {
   onSwitchMode: (mode: SelectMode) => void
   onSelectAll: (isAll: boolean) => void
   onExitSelectMode: () => void
+  onPlayLater?: () => void
+  onAdd?: () => void
+  onRemove?: () => void
   slideFrom?: number
   wrapperStyle?: ViewStyle
   barStyle?: ViewStyle
@@ -32,6 +37,9 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
   onSelectAll,
   onSwitchMode,
   onExitSelectMode,
+  onPlayLater,
+  onAdd,
+  onRemove,
   slideFrom = -18,
   wrapperStyle,
   barStyle,
@@ -40,16 +48,33 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
   const [animatePlayed, setAnimatePlayed] = useState(true)
   const animFade = useRef(new Animated.Value(0)).current
   const animTranslateY = useRef(new Animated.Value(0)).current
+  const rafRef = useRef<number | null>(null)
   const [selectMode, setSelectMode] = useState<SelectMode>('single')
   const [isSelectAll, setIsSelectAll] = useState(false)
   const [visibleBar, setVisibleBar] = useState(true)
   const theme = useTheme()
   const t = useI18n()
 
+  useBackHandler(useCallback(() => {
+    if (!visible || !visibleBar) return false
+    onExitSelectMode()
+    return true
+  }, [onExitSelectMode, visible, visibleBar]))
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   const handleShow = useCallback(() => {
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
     setVisible(true)
     setAnimatePlayed(false)
-    requestAnimationFrame(() => {
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      animFade.stopAnimation()
+      animTranslateY.stopAnimation()
       animTranslateY.setValue(slideFrom)
 
       Animated.parallel([
@@ -62,13 +87,19 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
           toValue: 0,
           ...M3Motion.spatialFast,
         }),
-      ]).start(() => {
-        setAnimatePlayed(true)
+      ]).start((res) => {
+        if (res.finished) setAnimatePlayed(true)
       })
     })
   }, [animFade, animTranslateY, slideFrom])
 
   const handleHide = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+    animFade.stopAnimation()
+    animTranslateY.stopAnimation()
     setAnimatePlayed(false)
     Animated.parallel([
       Animated.timing(animFade, {
@@ -81,8 +112,8 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
         duration: 160,
         useNativeDriver: true,
       }),
-    ]).start(finished => {
-      if (!finished) return
+    ]).start(res => {
+      if (!res.finished) return
       setVisible(false)
       setAnimatePlayed(true)
     })
@@ -144,7 +175,7 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
                   }}
                 >
                   <Text
-                    size={12.5}
+                    size={12}
                     style={active ? styles.activeText : styles.inactiveText}
                     color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
                   >
@@ -156,13 +187,40 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
           </View>
         </View>
         <View style={styles.actions}>
+          {onPlayLater
+            ? (
+                <View style={styles.iconActionWrap}>
+                  <Pressable onPress={onPlayLater} android_ripple={{ color: rippleColor }} style={styles.iconActionBtn}>
+                    <Icon name="play-outline" size={14} color={theme['m3-on-surface']} />
+                  </Pressable>
+                </View>
+              )
+            : null}
+          {onAdd
+            ? (
+                <View style={styles.iconActionWrap}>
+                  <Pressable onPress={onAdd} android_ripple={{ color: rippleColor }} style={styles.iconActionBtn}>
+                    <Icon name="add-music" size={14} color={theme['m3-on-surface']} />
+                  </Pressable>
+                </View>
+              )
+            : null}
+          {onRemove
+            ? (
+                <View style={styles.iconActionWrap}>
+                  <Pressable onPress={onRemove} android_ripple={{ color: rippleColor }} style={styles.iconActionBtn}>
+                    <Icon name="remove" size={13} color={theme['m3-error']} />
+                  </Pressable>
+                </View>
+              )
+            : null}
           <View style={styles.actionBtnWrap}>
             <Pressable
               onPress={handleSelectAll}
               android_ripple={{ color: rippleColor }}
               style={styles.actionBtn}
             >
-              <Text size={13} style={styles.activeText} color={theme['m3-primary']}>
+              <Text size={12.5} style={styles.activeText} color={theme['m3-primary']}>
                 {t(isSelectAll ? 'list_select_unall' : 'list_select_all')}
               </Text>
             </Pressable>
@@ -173,7 +231,7 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
               android_ripple={{ color: rippleColor }}
               style={styles.actionBtn}
             >
-              <Text size={13} style={styles.inactiveText} color={theme['m3-on-surface-variant']}>
+              <Text size={12.5} style={styles.inactiveText} color={theme['m3-on-surface-variant']}>
                 {t('list_select_cancel')}
               </Text>
             </Pressable>
@@ -212,7 +270,7 @@ const styles = createStyle({
     borderRadius: M3Radius.full,
   },
   segmentBtn: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: M3Radius.full,
     overflow: 'hidden',
@@ -224,12 +282,22 @@ const styles = createStyle({
     alignItems: 'center',
     gap: 2,
   },
+  iconActionWrap: {
+    borderRadius: M3Radius.full,
+    overflow: 'hidden',
+  },
+  iconActionBtn: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   actionBtnWrap: {
     borderRadius: M3Radius.full,
     overflow: 'hidden',
   },
   actionBtn: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',

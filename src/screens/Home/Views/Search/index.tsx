@@ -50,12 +50,23 @@ export default () => {
 
     const handleTypeChange = (type: SearchType) => {
       searchInfo.current.searchType = type
-      void saveSearchSetting({ type })
+      const targetSources = type == 'music' ? searchMusicState.sources : searchSonglistState.sources
+      if (!(targetSources as readonly string[]).includes(searchInfo.current.source)) {
+        searchInfo.current.source = targetSources[0] ?? 'kw'
+        void saveSearchSetting({ type, source: searchInfo.current.source })
+      } else {
+        void saveSearchSetting({ type })
+      }
+      headerBarRef.current?.setSourceList(targetSources, searchInfo.current.source)
       listRef.current?.loadList(searchState.searchText, searchInfo.current.source, type)
     }
     global.app_event.on('searchTypeChanged', handleTypeChange)
 
     return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       global.app_event.off('searchTypeChanged', handleTypeChange)
     }
   }, [])
@@ -71,7 +82,9 @@ export default () => {
     listRef.current?.loadList(searchState.searchText, source, searchInfo.current.searchType)
   }
   const handleTipSearch: HeaderBarProps['onTipSearch'] = (text) => {
-    setTimeout(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = null
       searchTipListRef.current?.search(text, layoutHeightRef.current)
     }, 500)
   }
@@ -84,7 +97,6 @@ export default () => {
   }
   const handleSearch: HeaderBarProps['onSearch'] = (text) => {
     handleHideTipList()
-    searchTipListRef.current?.search(text, layoutHeightRef.current)
     headerBarRef.current?.setText(text)
     headerBarRef.current?.blur()
     void addHistoryWord(text)

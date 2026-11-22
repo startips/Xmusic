@@ -16,30 +16,25 @@ export default ({ url, maxWidth }: { url: string, maxWidth: number }) => {
   const theme = useTheme()
 
   useEffect(() => {
+    let cancelled = false
     getSize(url, (realWidth, realHeight) => {
-      let w = 0
-      let h = 0
+      if (cancelled || !realWidth || !realHeight) return
+      let w = realWidth
+      let h = realHeight
 
-      if (w && !h) {
+      if (maxWidth && w > maxWidth) {
+        w = maxWidth
         h = realHeight * (w / realWidth)
-      } else if (!w && h) {
-        w = realWidth * (h / realHeight)
-      } else {
-        if (maxWidth && realWidth > maxWidth) {
-          w = maxWidth
-          h = realHeight * (w / realWidth)
-
-          if (MAX_IMAGE_HEIGHT && h > MAX_IMAGE_HEIGHT) {
-            w = realWidth * (MAX_IMAGE_HEIGHT / realHeight)
-            h = MAX_IMAGE_HEIGHT
-          }
-        } else if (MAX_IMAGE_HEIGHT && realHeight > MAX_IMAGE_HEIGHT) {
-          w = realWidth * (h / realHeight)
-          h = MAX_IMAGE_HEIGHT
-        }
       }
-      setWH({ width: w || realWidth, height: h || realHeight })
+      if (MAX_IMAGE_HEIGHT && h > MAX_IMAGE_HEIGHT) {
+        h = MAX_IMAGE_HEIGHT
+        w = realWidth * (h / realHeight)
+      }
+      setWH({ width: Math.round(w), height: Math.round(h) })
     })
+    return () => {
+      cancelled = true
+    }
   }, [maxWidth, url])
 
   return (

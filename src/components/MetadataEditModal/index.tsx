@@ -39,9 +39,11 @@ export default forwardRef<MetadataEditType, MetadataEditProps>((props, ref) => {
   const isUnmounted = useUnmounted()
 
   const handleShow = (filePath: string) => {
+    metadata.current = { ...defaultData }
+    metadataFormRef.current?.setForm(filePath, { ...defaultData })
     alertRef.current?.setVisible(true)
     void Promise.all([
-      readMetadata(filePath),
+      readMetadata(filePath).catch(() => null),
       readPic(filePath).catch(() => ''),
       readLyric(filePath, false).catch(() => ''),
     ]).then(async([_metadata, pic, lyric]) => {

@@ -9,17 +9,16 @@ const defaultSetting: LX.AppSetting = {
   'common.autoHidePlayBar': true,
   'common.drawerLayoutPosition': 'left',
   'common.homePageScroll': true,
-  'common.allowProgressBarSeek': true,
-  'common.showBackBtn': false,
-  'common.showExitBtn': true,
+  'common.allowProgressBarSeek': false,
   'common.useSystemFileSelector': true,
   'common.alwaysKeepStatusbarHeight': false,
+  'common.enableHaptics': true,
 
   'player.startupAutoPlay': false,
   'player.startupPushPlayDetailScreen': false,
   'player.togglePlayMethod': 'listLoop',
   'player.playQuality': '128k',
-  'player.isSavePlayTime': false,
+  'player.isSavePlayTime': true,
   'player.volume': 1,
   'player.playbackRate': 1,
   'player.cacheSize': '1024',
@@ -28,6 +27,13 @@ const defaultSetting: LX.AppSetting = {
   'player.isAutoCleanPlayedList': false,
   'player.isHandleAudioFocus': true,
   'player.isEnableAudioOffload': false,
+  'player.isSoftPlayPause': true,
+  'player.crossfadeDuration': 2,
+  'player.eqEnabled': false,
+  'player.eqPreset': 'flat',
+  'player.eqBands': '0,0,0,0,0',
+  'player.bassBoost': 0,
+  'player.loudnessGain': 0,
   'player.isShowLyricTranslation': false,
   'player.isShowLyricRoma': false,
   'player.isShowNotificationImage': true,
@@ -41,6 +47,7 @@ const defaultSetting: LX.AppSetting = {
   'playDetail.vertical.style.lrcFontSize': 210,
   'playDetail.horizontal.style.lrcFontSize': 220,
   'playDetail.isShowLyricProgressSetting': false,
+  'playDetail.isShowKaraokeLyric': true,
 
   'desktopLyric.enable': false,
   'desktopLyric.isLock': false,
@@ -50,7 +57,7 @@ const defaultSetting: LX.AppSetting = {
   'desktopLyric.showToggleAnima': true,
   'desktopLyric.position.x': 0,
   'desktopLyric.position.y': 0,
-  'desktopLyric.textPosition.x': 'left',
+  'desktopLyric.textPosition.x': 'center',
   'desktopLyric.textPosition.y': 'top',
   'desktopLyric.style.fontSize': 180,
   'desktopLyric.style.opacity': 100,
@@ -58,7 +65,7 @@ const defaultSetting: LX.AppSetting = {
   'desktopLyric.style.lyricPlayedColor': 'rgba(7, 197, 86, 1)',
   'desktopLyric.style.lyricShadowColor': 'rgba(0, 0, 0, 0.6)',
 
-  'search.isShowHotSearch': false,
+  'search.isShowHotSearch': true,
   'search.isShowHistorySearch': false,
 
   'list.isClickPlayList': false,
@@ -73,8 +80,8 @@ const defaultSetting: LX.AppSetting = {
   'sync.enable': false,
 
   'theme.id': 'xmusic',
-  'theme.dynamicBg': false,
-  'theme.fontShadow': false,
+  'theme.dynamicBg': true,
+  'theme.dynamicCoverColor': true,
 }
 
 export default defaultSetting

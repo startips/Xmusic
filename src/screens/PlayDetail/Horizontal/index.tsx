@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import { View, AppState } from 'react-native'
 import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import MoreBtn from './MoreBtn'
@@ -9,16 +9,22 @@ import { COMPONENT_IDS } from '@/config/constant'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 
 import Pic from './Pic'
-// import ControlBtn from './ControlBtn'
 import Lyric from './Lyric'
+import LyricShareModal, { type LyricShareModalType } from '../components/LyricShareModal'
 import Player from './Player'
 import { createStyle } from '@/utils/tools'
 import { marginLeftRaw } from './constant'
-import { useStatusbarHeight } from '@/store/common/hook'
+import { useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
 // import MoreBtn from './MoreBtn2'
 
-export default memo(({ componentId }: { componentId: string }) => {
+export default memo(({ componentId, onBack }: { componentId: string, onBack: () => void }) => {
   const statusBarHeight = useStatusbarHeight()
+  const navBarHeight = useNavigationBarHeight()
+  const lyricShareRef = useRef<LyricShareModalType>(null)
+
+  const handleLongPressLyric = useCallback((lineIndex: number) => {
+    lyricShareRef.current?.show(lineIndex)
+  }, [])
 
   useEffect(() => {
     setComponentId(COMPONENT_IDS.playDetail, componentId)
@@ -51,8 +57,8 @@ export default memo(({ componentId }: { componentId: string }) => {
 
   return (
     <View style={{ ...styles.container, paddingTop: statusBarHeight }}>
-      <View style={styles.left}>
-        <Header />
+      <View style={{ ...styles.left, paddingBottom: Math.max(18, navBarHeight + 10) }}>
+        <Header onBack={onBack} />
         <View style={styles.leftContent}>
           <MoreBtn />
           <Pic componentId={componentId} />
@@ -64,8 +70,9 @@ export default memo(({ componentId }: { componentId: string }) => {
         </View> */}
       </View>
       <View style={styles.right}>
-        <Lyric />
+        <Lyric onLongPressLyric={handleLongPressLyric} />
       </View>
+      <LyricShareModal ref={lyricShareRef} position="right" />
     </View>
   )
 })

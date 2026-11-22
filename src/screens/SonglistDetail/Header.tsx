@@ -28,7 +28,7 @@ const CountText = memo(({ count }: { count: string }) => {
     }} numberOfLines={ 1 }>{count}</AnimatedText>
   )
 }, (prevProps, nextProps) => {
-  return true
+  return prevProps.count === nextProps.count
 })
 
 const Pic = ({ componentId, playCount, imgUrl }: {
@@ -40,8 +40,8 @@ const Pic = ({ componentId, playCount, imgUrl }: {
   const [animated, setAnimated] = useState(false)
   const info = useListInfo()
   useEffect(() => {
-    if (animated) setPic(imgUrl)
-  }, [imgUrl, animated])
+    if (animated || !pic) setPic(imgUrl)
+  }, [imgUrl, animated, pic])
 
   useNavigationComponentDidAppear(componentId, () => {
     setAnimated(true)
@@ -94,8 +94,8 @@ export default forwardRef<HeaderType, HeaderProps>(({ componentId }: { component
       >
         <View style={styles.heroTopRow}>
           <Pic componentId={componentId} playCount={detailInfo.playCount} imgUrl={detailInfo.imgUrl} />
-          <View style={styles.infoCol} nativeID={NAV_SHEAR_NATIVE_IDS.songlistDetail_title}>
-            <Text size={16} color={theme['m3-on-surface']} style={styles.title} numberOfLines={2}>
+          <View style={styles.infoCol}>
+            <Text nativeID={NAV_SHEAR_NATIVE_IDS.songlistDetail_title} size={16} color={theme['m3-on-surface']} style={styles.title} numberOfLines={2}>
               {detailInfo.name || info.name}
             </Text>
             {

@@ -3,11 +3,13 @@ import { Animated, Pressable, View } from 'react-native'
 import { BOTTOM_NAV_MENUS } from '@/config/constant'
 import { setNavActiveId } from '@/core/common'
 import { useI18n } from '@/lang'
-import { useNavActiveId } from '@/store/common/hook'
+import { useNavActiveId, useNavigationBarHeight } from '@/store/common/hook'
 import type { InitState } from '@/store/common/state'
 import { useTheme } from '@/store/theme/hook'
+import { useSettingValue } from '@/store/setting/hook'
+import { useKeyboard } from '@/utils/hooks'
+import { hapticTick } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
-import { scaleSizeH } from '@/utils/pixelRatio'
 import { Icon } from '@/components/common/Icon'
 import Text from '@/components/common/Text'
 import { M3Motion, M3Radius } from '@/theme/m3'
@@ -81,14 +83,18 @@ const NavTab = memo(({
 
 export default memo(() => {
   const activeId = useNavActiveId()
+  const navBarHeight = useNavigationBarHeight()
   const theme = useTheme()
   const t = useI18n()
+  const { keyboardShown } = useKeyboard()
+  const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
 
-  if (activeId == 'nav_setting') {
-    return <View style={styles.settingSpacer} />
+  if (autoHidePlayBar && keyboardShown) {
+    return null
   }
 
   const handlePress = (id: InitState['navActiveId']) => {
+    if (id != activeId) hapticTick()
     setNavActiveId(id)
   }
 
@@ -96,6 +102,7 @@ export default memo(() => {
     <View
       style={{
         ...styles.container,
+        paddingBottom: 8 + navBarHeight,
         backgroundColor: theme['m3-surface-container-low'],
         borderTopColor: theme['m3-outline-variant'],
       }}
@@ -151,8 +158,5 @@ const styles = createStyle({
   },
   labelActive: {
     fontWeight: '700',
-  },
-  settingSpacer: {
-    height: scaleSizeH(8),
   },
 })

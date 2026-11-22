@@ -73,7 +73,7 @@ public class LyricTextView extends TextView {
   @Override
   public void setTextSize(float size) {
     super.setTextSize(size);
-    speed = SPEED_LIMIT * size;
+    speed = SPEED_LIMIT * getTextSize();
     if (text == null) return;
     post(mStartScrollRunnable);
   }
@@ -118,7 +118,6 @@ public class LyricTextView extends TextView {
   protected void onDraw(Canvas canvas) {
     float mSpeed = speed;
     if (text != null) {
-      Log.d("Lyric", "getHeight: " + getHeight() + " y: " + y);
       canvas.drawText(text, getDrawX(), y, mPaint);
       if (getText().length() >= 20) {
         mSpeed += mSpeed;

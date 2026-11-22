@@ -22,15 +22,17 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
     async loadList(text, source) {
       // const listDetailInfo = searchSonglistState.listDetailInfo
       listRef.current?.setList([], source == 'all')
+      searchInfoRef.current.text = text
+      searchInfoRef.current.source = source
       if (searchSonglistState.searchText == text && searchSonglistState.source == source && searchSonglistState.listInfos[searchSonglistState.source]!.list.length) {
         requestAnimationFrame(() => {
-          listRef.current?.setList(searchSonglistState.listInfos[searchSonglistState.source]!.list, source == 'all')
+          const cachedInfo = searchSonglistState.listInfos[searchSonglistState.source]!
+          listRef.current?.setList(cachedInfo.list, source == 'all')
+          listRef.current?.setStatus((searchSonglistState.maxPages[searchSonglistState.source] ?? 1) <= cachedInfo.page ? 'end' : 'idle')
         })
       } else {
         listRef.current?.setStatus('loading')
         const page = 1
-        searchInfoRef.current.text = text
-        searchInfoRef.current.source = source
         return search(text, page, source).then((list) => {
           // const result = setListInfo(listDetail, id, page)
           if (isUnmountedRef.current) return

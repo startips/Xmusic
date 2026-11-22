@@ -1,14 +1,15 @@
 package cn.toside.music.mobile.lyric;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.hardware.SensorManager;
+import android.hardware.input.InputManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -28,7 +29,7 @@ import java.util.regex.Pattern;
 
 import cn.toside.music.mobile.R;
 
-public class LyricView extends Activity implements View.OnTouchListener {
+public class LyricView implements View.OnTouchListener {
   LyricSwitchView textView = null;
   WindowManager windowManager = null;
   WindowManager.LayoutParams layoutParams = null;
@@ -78,7 +79,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
   LyricView(ReactApplicationContext reactContext, LyricEvent lyricEvent) {
     this.reactContext = reactContext;
     this.lyricEvent = lyricEvent;
-    fixViewPositionHandler = new Handler();
+    fixViewPositionHandler = new Handler(Looper.getMainLooper());
   }
 
   private void listenOrientationEvent() {
@@ -265,19 +266,19 @@ public class LyricView extends Activity implements View.OnTouchListener {
     int textPositionY;
     switch (textX) {
       case "CENTER":
-        textPositionX = Gravity.CENTER;
+        textPositionX = Gravity.CENTER_HORIZONTAL;
         break;
       case "RIGHT":
         textPositionX = Gravity.END;
         break;
-      case "Left":
+      case "LEFT":
       default:
         textPositionX = Gravity.START;
         break;
     }
     switch (textY) {
       case "CENTER":
-        textPositionY = Gravity.CENTER;
+        textPositionY = Gravity.CENTER_VERTICAL;
         break;
       case "BOTTOM":
         textPositionY = Gravity.BOTTOM;
@@ -327,14 +328,21 @@ public class LyricView extends Activity implements View.OnTouchListener {
     if (isLock) {
       textView.setBackgroundColor(Color.TRANSPARENT);
 
-      // 修复 Android 12 的穿透点击问题
-      if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
-        layoutParams.alpha = 0.8f;
+      // 修复 Android 12+ 的穿透点击遮挡阈值问题，并避免重复叠加视图透明度
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        float maxObscuring = 0.8f;
+        InputManager im = (InputManager) reactContext.getSystemService(Context.INPUT_SERVICE);
+        if (im != null) {
+          maxObscuring = im.getMaximumObscuringOpacityForTouch();
+        }
+        float safeWindowAlpha = Math.min(alpha, maxObscuring * 0.94f);
+        layoutParams.alpha = safeWindowAlpha;
+        textView.setAlpha(1.0f);
       }
     } else {
       textView.setBackgroundResource(R.drawable.rounded_corner);
-
-      if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+      textView.setAlpha(alpha);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         layoutParams.alpha = 1.0f;
       }
     }
@@ -476,12 +484,12 @@ public class LyricView extends Activity implements View.OnTouchListener {
         //根据移动的位置来判断
         // dy = 0;
         tranY = 0;
-        float percentageX = (float)layoutParams.x / (float) maxWidth * 100f;
-        float percentageY = (float)layoutParams.y / (float) maxHeight * 100f;
-        if (percentageX != prevViewPercentageX || percentageY != prevViewPercentageY) {
-          prevViewPercentageX = percentageX / 100f;
-          prevViewPercentageY = percentageY / 100f;
-          sendPositionEvent(percentageX, percentageY);
+        float ratioX = maxWidth > 0 ? (float) layoutParams.x / (float) maxWidth : 0f;
+        float ratioY = maxHeight > 0 ? (float) layoutParams.y / (float) maxHeight : 0f;
+        if (Math.abs(ratioX - prevViewPercentageX) > 0.0005f || Math.abs(ratioY - prevViewPercentageY) > 0.0005f) {
+          prevViewPercentageX = ratioX;
+          prevViewPercentageY = ratioY;
+          sendPositionEvent(ratioX * 100f, ratioY * 100f);
         }
         break;
     }
@@ -493,8 +501,14 @@ public class LyricView extends Activity implements View.OnTouchListener {
     if (windowManager == null || textView == null) return;
     layoutParams.flags = getLayoutParamsFlags();
 
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
-      layoutParams.alpha = 0.8f;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      float maxObscuring = 0.8f;
+      InputManager im = (InputManager) reactContext.getSystemService(Context.INPUT_SERVICE);
+      if (im != null) {
+        maxObscuring = im.getMaximumObscuringOpacityForTouch();
+      }
+      layoutParams.alpha = Math.min(alpha, maxObscuring * 0.94f);
+      textView.setAlpha(1.0f);
     }
     textView.setBackgroundColor(Color.TRANSPARENT);
     windowManager.updateViewLayout(textView, layoutParams);
@@ -505,9 +519,10 @@ public class LyricView extends Activity implements View.OnTouchListener {
     if (windowManager == null || textView == null) return;
     layoutParams.flags = getLayoutParamsFlags();
 
-    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       layoutParams.alpha = 1.0f;
     }
+    textView.setAlpha(alpha);
     textView.setBackgroundResource(R.drawable.rounded_corner);
     windowManager.updateViewLayout(textView, layoutParams);
   }
@@ -560,7 +575,18 @@ public class LyricView extends Activity implements View.OnTouchListener {
   public void setAlpha(float alpha) {
     this.alpha = alpha;
     if (textView == null) return;
-    textView.setAlpha(alpha);
+    if (isLock && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && windowManager != null) {
+      float maxObscuring = 0.8f;
+      InputManager im = (InputManager) reactContext.getSystemService(Context.INPUT_SERVICE);
+      if (im != null) {
+        maxObscuring = im.getMaximumObscuringOpacityForTouch();
+      }
+      layoutParams.alpha = Math.min(alpha, maxObscuring * 0.94f);
+      textView.setAlpha(1.0f);
+      windowManager.updateViewLayout(textView, layoutParams);
+    } else {
+      textView.setAlpha(alpha);
+    }
   }
 
   public void setSingleLine(boolean isSingleLine) {
@@ -593,8 +619,11 @@ public class LyricView extends Activity implements View.OnTouchListener {
   }
 
   public void destroyView() {
+    fixViewPositionHandler.removeCallbacks(fixViewPositionRunnable);
     if (textView == null || windowManager == null) return;
-    windowManager.removeView(textView);
+    try {
+      windowManager.removeView(textView);
+    } catch (Exception ignored) {}
     textView = null;
     removeOrientationEvent();
   }

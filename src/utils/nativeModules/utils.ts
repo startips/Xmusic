@@ -68,6 +68,10 @@ export const getWindowSize = async(): Promise<{ width: number, height: number }>
   return UtilsModule.getWindowSize()
 }
 
+export const getNavigationBarHeight = async(): Promise<number> => {
+  return UtilsModule.getNavigationBarHeight()
+}
+
 export const onWindowSizeChange = (handler: (size: { width: number, height: number }) => void): () => void => {
   UtilsModule.listenWindowSizeChanged()
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -79,6 +83,49 @@ export const onWindowSizeChange = (handler: (size: { width: number, height: numb
   return () => {
     eventListener.remove()
   }
+}
+
+export const performHaptic = (type: 'heart' | 'tick' | 'confirm' | 'heavy' | 'light' = 'light'): void => {
+  UtilsModule.performHaptic?.(type)
+}
+
+export interface CoverPaletteResult {
+  isNeutral: boolean
+  seedRgb: string | null
+  colors: string[]
+}
+
+export const extractCoverPalette = async(uri: string): Promise<CoverPaletteResult> => {
+  if (!uri || !UtilsModule.extractCoverPalette) {
+    return { isNeutral: true, seedRgb: null, colors: [] }
+  }
+  return UtilsModule.extractCoverPalette(uri)
+}
+
+export interface WidgetSyncPayload {
+  title?: string
+  artist?: string
+  lyric?: string
+  isPlaying?: boolean
+  isFavorite?: boolean
+  accentColor?: number
+  coverUri?: string
+}
+
+export const updateWidgetState = (payload: WidgetSyncPayload): void => {
+  UtilsModule.updateWidgetState?.(payload)
+}
+
+export const captureViewToPng = async(viewTag: number): Promise<string> => {
+  return UtilsModule.captureViewToPng(viewTag)
+}
+
+export const shareImage = async(filePath: string, shareTitle = 'Xmusic'): Promise<boolean> => {
+  return UtilsModule.shareImage(filePath, shareTitle)
+}
+
+export const saveImageToGallery = async(filePath: string, displayName = 'xmusic_poster'): Promise<string> => {
+  return UtilsModule.saveImageToGallery(filePath, displayName)
 }
 
 export const isIgnoringBatteryOptimization = async(): Promise<boolean> => {

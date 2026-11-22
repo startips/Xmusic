@@ -29,10 +29,14 @@ const Title = () => {
   )
 }
 
-export default memo(() => {
+export default memo(({ onBack }: { onBack?: () => void }) => {
   const popupRef = useRef<SettingPopupType>(null)
 
   const back = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
     navigations.popPlayDetailScreen(commonState.componentIds.playDetail!)
   }
   const showSetting = () => {

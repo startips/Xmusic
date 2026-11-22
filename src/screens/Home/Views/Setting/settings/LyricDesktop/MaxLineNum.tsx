@@ -25,7 +25,10 @@ export default memo(() => {
     setSliderSize(value)
   }, [])
   const handleSlidingComplete = useCallback<NonNullable<SliderProps['onSlidingComplete']>>(value => {
-    if (maxLineNum == value) return
+    if (maxLineNum == value) {
+      setSliding(false)
+      return
+    }
     void setDesktopLyricMaxLineNum(value).then(() => {
       updateSetting({ 'desktopLyric.maxLineNum': value })
     }).finally(() => {

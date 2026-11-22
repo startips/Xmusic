@@ -44,6 +44,7 @@ export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList }, ref) => 
   const onSourceChange = (source: LX.OnlineSource) => {
     boundInfo.current.source = source
     void getBoardsList(source).then(list => {
+      if (!list.length) return
       const id = list[0].id
       requestAnimationFrame(() => {
         boardsListRef.current?.setList(list, id)
@@ -58,11 +59,9 @@ export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList }, ref) => 
     onChangeList(boundInfo.current.source, id)
   }
   const onPlay: BoardsListProps['onPlay'] = (id) => {
-    boundInfo.current.id = id
-    void handlePlay(id, boardState.listDetailInfo.list)
+    void handlePlay(id, id == boardState.listDetailInfo.id ? boardState.listDetailInfo.list : undefined)
   }
   const onCollect: BoardsListProps['onCollect'] = (id, name) => {
-    boundInfo.current.id = id
     void handleCollect(id, name, boundInfo.current.source)
   }
 

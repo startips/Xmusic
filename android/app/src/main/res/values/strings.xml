@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Xmusic</string>
+    <string name="widget_capsule_label">Xmusic 灵动胶囊</string>
+    <string name="widget_capsule_desc">4×1 紧凑专辑封面与快捷控播微件</string>
+    <string name="widget_card_label">Xmusic 黑胶歌词卡</string>
+    <string name="widget_card_desc">4×2 黑胶封面、实时歌词与红心控播微件</string>
 </resources>

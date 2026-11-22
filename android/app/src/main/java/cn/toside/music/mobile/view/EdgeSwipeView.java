@@ -2,14 +2,14 @@ package cn.toside.music.mobile.view;
 
 import android.content.Context;
 import android.graphics.Outline;
+import android.os.Build;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewOutlineProvider;
 import android.view.animation.DecelerateInterpolator;
-
-import androidx.annotation.NonNull;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -27,13 +27,14 @@ import com.facebook.react.views.view.ReactViewGroup;
  * on the UI thread, and notifies JS to run the bottom PlayerBar collapse pop transition.
  */
 public class EdgeSwipeView extends ReactViewGroup {
-  private static final float MIN_SCALE = 0.86f;
+  private static final float MIN_SCALE = 0.88f;
   private static final float FLING_MIN_DISTANCE_DP = 24f;
   private static final float FLING_MIN_VELOCITY_DP_PER_SEC = 280f;
   private static final float MAX_DRAG_DISTANCE_DP = 180f;
-  private static final float MAX_TRANSLATE_Y_DP = 64f;
-  private static final float MAX_TRANSLATE_X_DP = 18f;
+  private static final float MAX_TRANSLATE_Y_DP = 56f;
+  private static final float MAX_TRANSLATE_X_DP = 16f;
   private static final float DRAG_CORNER_RADIUS_DP = 32f;
+  private static final float BOTTOM_CONTROLS_SAFE_DP = 136f;
 
   private final int touchSlop;
   private final float cornerRadiusPx;
@@ -42,14 +43,17 @@ public class EdgeSwipeView extends ReactViewGroup {
   private final float maxTranslateXPx;
   private final float flingMinDistancePx;
   private final float flingMinVelocityPx;
+  private final float bottomControlsSafePx;
+  private final Runnable resetDismissLockRunnable = () -> dismissDispatched = false;
 
-  private float edgeWidthPx = PixelUtil.toPixelFromDIP(42f);
+  private float edgeWidthPx = PixelUtil.toPixelFromDIP(24f);
   private float dismissDistancePx = PixelUtil.toPixelFromDIP(64f);
 
   private int activeSide = 0; // -1 = left, 1 = right, 0 = none
   private boolean edgeCancelled = false;
   private boolean isDragging = false;
   private boolean dismissDispatched = false;
+  private boolean thresholdTickTriggered = false;
   private float downRawX = 0f;
   private float downRawY = 0f;
   private float currentInwardDx = 0f;
@@ -64,6 +68,7 @@ public class EdgeSwipeView extends ReactViewGroup {
     maxTranslateXPx = PixelUtil.toPixelFromDIP(MAX_TRANSLATE_X_DP);
     flingMinDistancePx = PixelUtil.toPixelFromDIP(FLING_MIN_DISTANCE_DP);
     flingMinVelocityPx = PixelUtil.toPixelFromDIP(FLING_MIN_VELOCITY_DP_PER_SEC);
+    bottomControlsSafePx = PixelUtil.toPixelFromDIP(BOTTOM_CONTROLS_SAFE_DP);
 
     setOutlineProvider(new ViewOutlineProvider() {
       @Override
@@ -74,7 +79,7 @@ public class EdgeSwipeView extends ReactViewGroup {
   }
 
   public void setEdgeWidth(float edgeWidthDp) {
-    this.edgeWidthPx = PixelUtil.toPixelFromDIP(Math.max(12f, edgeWidthDp));
+    this.edgeWidthPx = PixelUtil.toPixelFromDIP(Math.max(12f, Math.min(32f, edgeWidthDp)));
   }
 
   public void setDismissDistance(float dismissDistanceDp) {
@@ -89,15 +94,6 @@ public class EdgeSwipeView extends ReactViewGroup {
   }
 
   @Override
-  public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-    // Keep intercept control until an edge gesture either locks in or resolves as child scroll.
-    if (disallowIntercept && activeSide != 0 && !edgeCancelled && !isDragging) {
-      return;
-    }
-    super.requestDisallowInterceptTouchEvent(disallowIntercept);
-  }
-
-  @Override
   public boolean onInterceptTouchEvent(MotionEvent ev) {
     if (dismissDispatched) return false;
 
@@ -106,12 +102,16 @@ public class EdgeSwipeView extends ReactViewGroup {
         activeSide = 0;
         edgeCancelled = false;
         isDragging = false;
+        thresholdTickTriggered = false;
         currentInwardDx = 0f;
         recycleVelocityTracker();
 
         int width = getWidth();
+        int height = getHeight();
         float x = ev.getX();
-        if (width > 0) {
+        float y = ev.getY();
+        // Exclude the bottom player seekbar / transport region so scrubbing near 0:00 or track end never triggers dismiss
+        if (width > 0 && height > 0 && y < Math.max(height * 0.65f, height - bottomControlsSafePx)) {
           if (x <= edgeWidthPx) {
             activeSide = -1;
           } else if (x >= width - edgeWidthPx) {
@@ -141,7 +141,7 @@ public class EdgeSwipeView extends ReactViewGroup {
           cancelEdgeTracking();
           return false;
         }
-        if (inwardDx > touchSlop && inwardDx > absDy * 1.2f) {
+        if (inwardDx > touchSlop && inwardDx > absDy * 1.25f) {
           startDragging(ev);
           return true;
         }
@@ -166,6 +166,11 @@ public class EdgeSwipeView extends ReactViewGroup {
       return super.onTouchEvent(ev);
     }
 
+    int action = ev.getActionMasked();
+    if (action == MotionEvent.ACTION_DOWN) {
+      return activeSide != 0;
+    }
+
     if (velocityTracker == null) {
       velocityTracker = VelocityTracker.obtain();
     }
@@ -174,18 +179,34 @@ public class EdgeSwipeView extends ReactViewGroup {
     velocityTracker.addMovement(rawEvent);
     rawEvent.recycle();
 
-    switch (ev.getActionMasked()) {
+    switch (action) {
       case MotionEvent.ACTION_MOVE: {
         if (activeSide == 0 || edgeCancelled) return false;
+        if (!isDragging) {
+          float dx = ev.getRawX() - downRawX;
+          float dy = ev.getRawY() - downRawY;
+          float inwardDx = activeSide == -1 ? dx : -dx;
+          if (inwardDx > touchSlop && inwardDx > Math.abs(dy) * 1.25f) {
+            startDragging(ev);
+          } else {
+            return true;
+          }
+        }
         float dx = ev.getRawX() - downRawX;
         currentInwardDx = Math.max(0f, activeSide == -1 ? dx : -dx);
+        if (!thresholdTickTriggered && currentInwardDx >= dismissDistancePx) {
+          thresholdTickTriggered = true;
+          triggerThresholdHaptic();
+        } else if (thresholdTickTriggered && currentInwardDx < dismissDistancePx * 0.8f) {
+          thresholdTickTriggered = false;
+        }
         applyDragTransform(currentInwardDx);
         return true;
       }
 
       case MotionEvent.ACTION_UP: {
         boolean shouldDismiss = false;
-        if (activeSide != 0 && !edgeCancelled) {
+        if (isDragging && activeSide != 0 && !edgeCancelled) {
           velocityTracker.computeCurrentVelocity(1000);
           float rawVx = velocityTracker.getXVelocity();
           float inwardVx = activeSide == -1 ? rawVx : -rawVx;
@@ -210,6 +231,13 @@ public class EdgeSwipeView extends ReactViewGroup {
     }
   }
 
+  private void triggerThresholdHaptic() {
+    int constant = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+      ? HapticFeedbackConstants.CLOCK_TICK
+      : HapticFeedbackConstants.KEYBOARD_TAP;
+    performHapticFeedback(constant);
+  }
+
   private void startDragging(MotionEvent ev) {
     isDragging = true;
     animate().cancel();
@@ -222,7 +250,9 @@ public class EdgeSwipeView extends ReactViewGroup {
     }
     NativeGestureUtil.notifyNativeGestureStarted(this, ev);
 
-    velocityTracker = VelocityTracker.obtain();
+    if (velocityTracker == null) {
+      velocityTracker = VelocityTracker.obtain();
+    }
     MotionEvent rawEvent = MotionEvent.obtain(ev);
     rawEvent.setLocation(ev.getRawX(), ev.getRawY());
     velocityTracker.addMovement(rawEvent);
@@ -250,12 +280,8 @@ public class EdgeSwipeView extends ReactViewGroup {
     recycleVelocityTracker();
     NativeGestureUtil.notifyNativeGestureEnded(this, ev);
     setClipToOutline(true);
-    animate()
-      .translationX(0f)
-      .translationY(0f)
-      .setDuration(180)
-      .setInterpolator(new DecelerateInterpolator())
-      .start();
+    removeCallbacks(resetDismissLockRunnable);
+    postDelayed(resetDismissLockRunnable, 600);
     dispatchEdgeDismissEvent();
   }
 
@@ -264,20 +290,21 @@ public class EdgeSwipeView extends ReactViewGroup {
     isDragging = false;
     activeSide = 0;
     edgeCancelled = false;
+    thresholdTickTriggered = false;
     currentInwardDx = 0f;
     recycleVelocityTracker();
     if (wasDragging) {
       NativeGestureUtil.notifyNativeGestureEnded(this, ev);
+      animate()
+        .scaleX(1f)
+        .scaleY(1f)
+        .translationX(0f)
+        .translationY(0f)
+        .setDuration(220)
+        .setInterpolator(new DecelerateInterpolator())
+        .withEndAction(() -> setClipToOutline(false))
+        .start();
     }
-    animate()
-      .scaleX(1f)
-      .scaleY(1f)
-      .translationX(0f)
-      .translationY(0f)
-      .setDuration(220)
-      .setInterpolator(new DecelerateInterpolator())
-      .withEndAction(() -> setClipToOutline(false))
-      .start();
   }
 
   private void cancelEdgeTracking() {
@@ -306,6 +333,7 @@ public class EdgeSwipeView extends ReactViewGroup {
 
   @Override
   protected void onDetachedFromWindow() {
+    removeCallbacks(resetDismissLockRunnable);
     recycleVelocityTracker();
     super.onDetachedFromWindow();
   }

@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 import { type Source, type InitState } from '@/store/hotSearch/state'
 import Button from '@/components/common/Button'
 import { getList } from '@/core/hotSearch'
@@ -66,14 +66,14 @@ export default forwardRef<HotSearchType, ListProps>((props, ref) => {
   return (
     list.length
       ? (
-          <ScrollView>
+          <View>
             <Text style={styles.title} size={16}>{t('search_hot_search')}</Text>
             <View style={styles.list}>
               {
                 list.map(keyword => <ListItem keyword={keyword} key={keyword} onSearch={props.onSearch} />)
               }
             </View>
-          </ScrollView>
+          </View>
         )
       : null
   )

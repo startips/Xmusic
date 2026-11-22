@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
-import { View, TouchableOpacity } from 'react-native'
+import { Animated, PanResponder, View, TouchableOpacity } from 'react-native'
 
 import Modal, { type ModalType } from './Modal'
 import { Icon } from '@/components/common/Icon'
@@ -7,8 +7,8 @@ import { useKeyboard } from '@/utils/hooks'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
-import { useStatusbarHeight } from '@/store/common/hook'
-import { M3Radius } from '@/theme/m3'
+import { useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
+import { M3Motion, M3Radius } from '@/theme/m3'
 
 const styles = createStyle({
   centeredView: {
@@ -82,14 +82,49 @@ export default forwardRef<PopupType, PopupProps>(({
   const theme = useTheme()
   const { keyboardShown, keyboardHeight } = useKeyboard()
   const statusBarHeight = useStatusbarHeight()
+  const navBarHeight = useNavigationBarHeight()
+  const dragY = useRef(new Animated.Value(0)).current
 
   const modalRef = useRef<ModalType>(null)
 
   useImperativeHandle(ref, () => ({
     setVisible(visible: boolean) {
+      if (visible) dragY.setValue(0)
       modalRef.current?.setVisible(visible)
     },
   }))
+
+  const sheetPanResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => position === 'bottom',
+    onMoveShouldSetPanResponder: (_evt, gestureState) =>
+      position === 'bottom' && gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+    onPanResponderMove: (_evt, gestureState) => {
+      dragY.setValue(Math.max(0, gestureState.dy))
+    },
+    onPanResponderRelease: (_evt, gestureState) => {
+      if (gestureState.dy > 72 || gestureState.vy > 0.7) {
+        Animated.timing(dragY, {
+          toValue: 420,
+          duration: 180,
+          useNativeDriver: true,
+        }).start(() => {
+          modalRef.current?.setVisible(false)
+          dragY.setValue(0)
+        })
+      } else {
+        Animated.spring(dragY, {
+          toValue: 0,
+          ...M3Motion.spatialFast,
+        }).start()
+      }
+    },
+    onPanResponderTerminate: () => {
+      Animated.spring(dragY, {
+        toValue: 0,
+        ...M3Motion.spatialFast,
+      }).start()
+    },
+  }), [dragY, position])
 
   const closeBtnComponent = useMemo(() => closeBtn
     ? <TouchableOpacity style={{ ...styles.closeBtn, backgroundColor: theme['m3-surface-container-high'] }} onPress={() => modalRef.current?.setVisible(false)}>
@@ -113,7 +148,7 @@ export default forwardRef<PopupType, PopupProps>(({
             width: '100%',
             maxHeight: '78%',
             minHeight: '20%',
-            // backgroundColor: 'white',
+            paddingTop: statusBarHeight,
           },
         ] as const
       case 'left':
@@ -132,7 +167,7 @@ export default forwardRef<PopupType, PopupProps>(({
             maxWidth: '78%',
             height: '100%',
             paddingTop: statusBarHeight,
-            // backgroundColor: 'white',
+            paddingBottom: navBarHeight,
           },
         ] as const
       case 'right':
@@ -151,7 +186,7 @@ export default forwardRef<PopupType, PopupProps>(({
             maxWidth: '78%',
             height: '100%',
             paddingTop: statusBarHeight,
-            // backgroundColor: 'white',
+            paddingBottom: navBarHeight,
           },
         ] as const
       case 'bottom':
@@ -167,32 +202,41 @@ export default forwardRef<PopupType, PopupProps>(({
           },
           {
             width: '100%',
-            maxHeight: '78%',
+            maxHeight: '82%',
             minHeight: '20%',
+            paddingBottom: keyboardShown ? 8 : Math.max(12, navBarHeight + 8),
             borderTopLeftRadius: M3Radius.xl,
             borderTopRightRadius: M3Radius.xl,
           },
         ] as const
     }
-  }, [position, statusBarHeight])
+  }, [keyboardShown, navBarHeight, position, statusBarHeight])
 
   return (
-    <Modal onHide={onHide} keyHide={keyHide} bgHide={bgHide} bgColor={theme['m3-scrim']} ref={modalRef}>
+    <Modal onHide={onHide} keyHide={keyHide} bgHide={bgHide} statusBarPadding={false} bgColor={theme['m3-scrim']} ref={modalRef}>
       <View style={{ ...styles.centeredView, ...centeredViewStyle, paddingBottom: keyboardShown ? keyboardHeight : 0 }}>
-        <View style={{ ...styles.modalView, ...modalViewStyle, backgroundColor: theme['m3-surface-container-low'] }} onStartShouldSetResponder={() => true}>
+        <Animated.View
+          style={{
+            ...styles.modalView,
+            ...modalViewStyle,
+            backgroundColor: theme['m3-surface-container-low'],
+            transform: position === 'bottom' ? [{ translateY: dragY }] : undefined,
+          }}
+          onStartShouldSetResponder={() => true}
+        >
           {position == 'bottom'
             ? (
-                <View style={styles.dragHandleWrap}>
+                <View style={styles.dragHandleWrap} {...sheetPanResponder.panHandlers}>
                   <View style={{ ...styles.dragHandle, backgroundColor: theme['m3-outline'] }} />
                 </View>
               )
             : null}
-          <View style={styles.header}>
+          <View style={styles.header} {...(position === 'bottom' ? sheetPanResponder.panHandlers : {})}>
             <Text size={16} color={theme['m3-on-surface']} style={styles.title} numberOfLines={1}>{title}</Text>
             {closeBtnComponent}
           </View>
           {children}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   )

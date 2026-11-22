@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { View, ScrollView, Alert } from 'react-native'
 import { Navigation } from 'react-native-navigation'
 
@@ -14,6 +14,7 @@ import { checkUpdate } from '@/core/version'
 import { initDeeplink } from '@/core/init/deeplink'
 import settingState from '@/store/setting/state'
 import { M3Radius } from '@/theme/m3'
+import { useBackHandler } from '@/utils/hooks/useBackHandler'
 
 const Content = () => {
   const theme = useTheme()
@@ -157,6 +158,14 @@ const Footer = ({ componentId }: { componentId: string }) => {
 }
 
 const PactModal = ({ componentId }: { componentId: string }) => {
+  const isAgreePact = useSettingValue('common.isAgreePact')
+  useBackHandler(useCallback(() => {
+    if (isAgreePact) {
+      void Navigation.dismissOverlay(componentId)
+    }
+    return true
+  }, [componentId, isAgreePact]))
+
   return (
     <ModalContent>
       <Content />

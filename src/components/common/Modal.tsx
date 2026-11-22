@@ -1,23 +1,11 @@
-// import { createStyle } from '@/utils/tools'
-import { useImperativeHandle, forwardRef, useState, useMemo } from 'react'
-import { Modal, TouchableWithoutFeedback, View, type ModalProps as _ModalProps } from 'react-native'
+import { useImperativeHandle, forwardRef, useState, useMemo, useRef } from 'react'
+import { Modal, Platform, TouchableWithoutFeedback, UIManager, View, type ViewProps, type ModalProps as _ModalProps, requireNativeComponent } from 'react-native'
 import { useStatusbarHeight } from '@/store/common/hook'
-// import { useWindowSize } from '@/utils/hooks'
 
-// const styles = createStyle({
-//   container: {
-//     flex: 1,
-//   },
-//   // mask: {
-//   //   position: 'absolute',
-//   //   top: 0,
-//   //   left: 0,
-//   //   bottom: 0,
-//   //   right: 0,
-//   //   // width: '100%',
-//   //   // height: '100%',
-//   // },
-// })
+const EDGE_MODAL_VIEW = 'XmusicEdgeToEdgeModalView'
+const NativeEdgeToEdgeModalView = Platform.OS === 'android' && UIManager.getViewManagerConfig(EDGE_MODAL_VIEW) != null
+  ? requireNativeComponent<ViewProps>(EDGE_MODAL_VIEW)
+  : null
 
 export interface ModalProps extends Omit<_ModalProps, 'visible'> {
   onHide?: () => void
@@ -39,7 +27,6 @@ export interface ModalProps extends Omit<_ModalProps, 'visible'> {
   statusBarPadding?: boolean
 }
 
-
 export interface ModalType {
   setVisible: (visible: boolean) => void
 }
@@ -54,24 +41,27 @@ export default forwardRef<ModalType, ModalProps>(({
   ...props
 }: ModalProps, ref) => {
   const [visible, setVisible] = useState(false)
-  // const { window: windowSize } = useWindowSize()
+  const visibleRef = useRef(false)
   const statusBarHeight = useStatusbarHeight()
+
+  const closeModal = () => {
+    if (!visibleRef.current) return
+    visibleRef.current = false
+    setVisible(false)
+    onHide()
+  }
+
   const handleRequestClose = () => {
-    if (keyHide) {
-      setVisible(false)
-      onHide()
-    }
+    if (keyHide) closeModal()
   }
   const handleBgClose = () => {
-    if (bgHide) {
-      setVisible(false)
-      onHide()
-    }
+    if (bgHide) closeModal()
   }
 
   useImperativeHandle(ref, () => ({
     setVisible(_visible) {
-      if (visible == _visible) return
+      if (visibleRef.current == _visible) return
+      visibleRef.current = _visible
       setVisible(_visible)
       if (!_visible) onHide()
     },
@@ -89,14 +79,12 @@ export default forwardRef<ModalType, ModalProps>(({
       onRequestClose={handleRequestClose}
       {...props}
     >
-      {/* <StatusBar /> */}
-      {/* <View style={{ flex: 1, paddingTop: statusBarPadding ? StatusBar.currentHeight : 0 }}> */}
-      <TouchableWithoutFeedback style={{ flex: 1, paddingTop: statusBarPadding ? statusBarHeight : 0 }} onPress={handleBgClose}>
-        <View style={{ flex: 1, backgroundColor: bgColor }}>
+      <TouchableWithoutFeedback onPress={handleBgClose}>
+        <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: statusBarPadding ? statusBarHeight : 0 }}>
+          {NativeEdgeToEdgeModalView ? <NativeEdgeToEdgeModalView pointerEvents="none" style={{ position: 'absolute', width: 0, height: 0 }} /> : null}
           {memoChildren}
         </View>
       </TouchableWithoutFeedback>
-      {/* </View> */}
     </Modal>
   )
 })

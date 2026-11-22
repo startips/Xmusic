@@ -4,9 +4,10 @@ import { TouchableOpacity, ScrollView } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
-import { SETTING_SCREENS, type SettingScreenIds } from '../Main'
+import { SETTING_SCREENS, normalizeSettingScreenId, type SettingScreenIds } from '../Main'
 import { useI18n } from '@/lang'
 import { M3Radius } from '@/theme/m3'
+import { hapticTick } from '@/utils/haptics'
 
 
 const ListItem = memo(({ id, activeId, onPress }: {
@@ -28,6 +29,8 @@ const ListItem = memo(({ id, activeId, onPress }: {
       style={{
         ...styles.listItem,
         backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container'],
+        borderColor: active ? 'transparent' : theme['m3-outline-variant'],
+        borderWidth: active ? 0 : 0.6,
       }}
       activeOpacity={0.75}
       onPress={handlePress}
@@ -38,7 +41,7 @@ const ListItem = memo(({ id, activeId, onPress }: {
         style={active ? styles.listTextActive : styles.listText}
         color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
       >
-        {t(`setting_${id}`)}
+        {t(`setting_group_${id}`)}
       </Text>
     </TouchableOpacity>
   )
@@ -53,17 +56,23 @@ const ListItem = memo(({ id, activeId, onPress }: {
 export default ({ onChangeId }: {
   onChangeId: (id: SettingScreenIds) => void
 }) => {
-  const [activeId, setActiveId] = useState(global.lx.settingActiveId)
+  const [activeId, setActiveId] = useState<SettingScreenIds>(() => normalizeSettingScreenId(global.lx.settingActiveId))
 
   const handleChangeId = useCallback((id: SettingScreenIds) => {
+    hapticTick()
     onChangeId(id)
     setActiveId(id)
     global.lx.settingActiveId = id
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [onChangeId])
 
   return (
-    <ScrollView horizontal style={styles.container} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps={'always'} showsHorizontalScrollIndicator={false}>
+    <ScrollView
+      horizontal
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      keyboardShouldPersistTaps={'always'}
+      showsHorizontalScrollIndicator={false}
+    >
       {
         SETTING_SCREENS.map(id => <ListItem key={id} id={id} activeId={activeId} onPress={handleChangeId} />)
       }
@@ -74,7 +83,7 @@ export default ({ onChangeId }: {
 
 const styles = createStyle({
   container: {
-    height: 44,
+    height: 46,
     flexGrow: 0,
     flexShrink: 0,
   },
@@ -84,19 +93,19 @@ const styles = createStyle({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingBottom: 6,
-    gap: 6,
+    gap: 8,
   },
   listItem: {
-    height: 32,
-    paddingHorizontal: 14,
+    height: 34,
+    paddingHorizontal: 15,
     borderRadius: M3Radius.full,
     justifyContent: 'center',
     alignItems: 'center',
   },
   listText: {
-    fontWeight: '400',
+    fontWeight: '500',
   },
   listTextActive: {
-    fontWeight: '600',
+    fontWeight: '700',
   },
 })

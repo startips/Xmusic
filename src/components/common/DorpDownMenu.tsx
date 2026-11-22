@@ -24,11 +24,9 @@ export default <T extends Menus>({
   const menuRef = useRef<MenuType>(null)
 
   const showMenu = () => {
-    buttonRef.current?.measure((fx, fy, width, height, px, py) => {
-      // console.log(fx, fy, width, height, px, py)
-      menuRef.current?.show({ x: Math.ceil(px), y: Math.ceil(py), w: Math.ceil(width), h: Math.ceil(height) }, {
+    buttonRef.current?.measure((fx, fy, width, btnHeight, px, py) => {
+      menuRef.current?.show({ x: Math.ceil(px), y: Math.ceil(py), w: Math.ceil(width), h: Math.ceil(btnHeight) }, {
         width,
-        height,
       })
     })
   }

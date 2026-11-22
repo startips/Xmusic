@@ -261,7 +261,9 @@ export const saveLeaderboardSetting = async(setting: Partial<typeof DEFAULT_SETT
 }
 
 export const getViewPrevState = async() => {
-  return (await getData<{ id: NAV_ID_Type }>(viewPrevStateKey)) ?? { ...DEFAULT_SETTING.viewPrevState }
+  const prev = await getData<{ id: string }>(viewPrevStateKey)
+  if (!prev?.id || prev.id == 'nav_setting') return { ...DEFAULT_SETTING.viewPrevState }
+  return prev as { id: NAV_ID_Type }
 }
 export const saveViewPrevState = (state: { id: NAV_ID_Type }) => {
   saveViewPrevStateThrottle(state)

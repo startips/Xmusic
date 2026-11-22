@@ -108,6 +108,7 @@ declare global {
     type ActiveTheme = LegacyThemeColors & M3SemanticColors & {
       id: string
       name: string
+      seedColor: string
       isDark: boolean
       'bg-image-position': string
       'bg-image-size': string

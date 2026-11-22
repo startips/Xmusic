@@ -1,8 +1,8 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react'
 import { DrawerLayoutAndroid, type DrawerLayoutAndroidProps, View, type LayoutChangeEvent } from 'react-native'
-// import { getWindowSise } from '@/utils/tools'
 import { usePageVisible } from '@/store/common/hook'
 import { type COMPONENT_IDS } from '@/config/constant'
+import { useBackHandler } from '@/utils/hooks/useBackHandler'
 
 interface Props extends DrawerLayoutAndroidProps {
   visibleNavNames: COMPONENT_IDS[]
@@ -16,11 +16,28 @@ export interface DrawerLayoutFixedType {
   fixWidth: () => void
 }
 
-const DrawerLayoutFixed = forwardRef<DrawerLayoutFixedType, Props>(({ visibleNavNames, widthPercentage, widthPercentageMax, children, ...props }, ref) => {
+const DrawerLayoutFixed = forwardRef<DrawerLayoutFixedType, Props>(({ visibleNavNames, widthPercentage, widthPercentageMax, children, onDrawerOpen, onDrawerClose, ...props }, ref) => {
   const drawerLayoutRef = useRef<DrawerLayoutAndroid>(null)
+  const isOpenRef = useRef(false)
   const [w, setW] = useState<number | `${number}%`>('100%')
   const [drawerWidth, setDrawerWidth] = useState(0)
   const changedRef = useRef({ width: 0, changed: false })
+
+  useBackHandler(useCallback(() => {
+    if (!isOpenRef.current) return false
+    drawerLayoutRef.current?.closeDrawer()
+    return true
+  }, []))
+
+  const handleDrawerOpen = useCallback(() => {
+    isOpenRef.current = true
+    onDrawerOpen?.()
+  }, [onDrawerOpen])
+
+  const handleDrawerClose = useCallback(() => {
+    isOpenRef.current = false
+    onDrawerClose?.()
+  }, [onDrawerClose])
 
   const fixDrawerWidth = useCallback(() => {
     if (!changedRef.current.width) return
@@ -79,6 +96,8 @@ const DrawerLayoutFixed = forwardRef<DrawerLayoutFixedType, Props>(({ visibleNav
         ref={drawerLayoutRef}
         keyboardDismissMode="on-drag"
         drawerWidth={drawerWidth}
+        onDrawerOpen={handleDrawerOpen}
+        onDrawerClose={handleDrawerClose}
         {...props}
       >
         <View style={{ marginRight: w == '100%' ? 0 : -1, flex: 1 }}>

@@ -104,7 +104,7 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
           </View>
           {
             isShowInterval ? (
-              <Text size={12} color={theme['m3-on-surface-variant']} numberOfLines={1}>{item.interval}</Text>
+              <Text style={styles.intervalText} size={12} color={isSelected ? theme['m3-on-primary-container'] : theme['m3-on-surface-variant']}>{item.interval}</Text>
             ) : null
           }
         </Pressable>
@@ -114,7 +114,7 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
             android_ripple={{ color: withAlpha(theme['m3-on-surface'], 0.12), borderless: true }}
             style={styles.moreButton}
           >
-            <Icon name="dots-vertical" style={{ color: theme['m3-on-surface-variant'] }} size={13} />
+            <Icon name="dots-vertical" style={{ color: isSelected ? theme['m3-on-primary-container'] : theme['m3-on-surface-variant'] }} size={13} />
           </Pressable>
         </View>
       </View>
@@ -123,9 +123,11 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
 }, (prevProps, nextProps) => {
   return !!(prevProps.item === nextProps.item &&
     prevProps.index === nextProps.index &&
+    prevProps.showSource === nextProps.showSource &&
+    prevProps.rowInfo.rowWidth === nextProps.rowInfo.rowWidth &&
     prevProps.isShowAlbumName === nextProps.isShowAlbumName &&
     prevProps.isShowInterval === nextProps.isShowInterval &&
-    nextProps.selectedList.includes(nextProps.item) == prevProps.selectedList.includes(nextProps.item)
+    nextProps.selectedList.includes(nextProps.item) == prevProps.selectedList.includes(prevProps.item)
   )
 })
 
@@ -187,6 +189,12 @@ const styles = createStyle({
     flexGrow: 0,
     flexShrink: 1,
     fontWeight: '400',
+  },
+  intervalText: {
+    flexShrink: 0,
+    fontVariant: ['tabular-nums'],
+    paddingLeft: 4,
+    paddingRight: 2,
   },
   listItemBadge: {
     paddingLeft: 5,

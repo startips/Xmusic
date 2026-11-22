@@ -32,12 +32,20 @@ export class StateEvent extends Event {
     this.emit('statusbarHeightUpdated', size)
   }
 
+  navigationBarHeightUpdated(size: number) {
+    this.emit('navigationBarHeightUpdated', size)
+  }
+
   apiSourceUpdated(source: LX.AppSetting['common.apiSource']) {
     this.emit('apiSourceUpdated', source)
   }
 
   themeUpdated(theme: LX.ActiveTheme) {
     this.emit('themeUpdated', theme)
+  }
+
+  coverPaletteUpdated(palette: string[] | null) {
+    this.emit('coverPaletteUpdated', palette)
   }
 
   bgPicUpdated(bgPic: string | null) {

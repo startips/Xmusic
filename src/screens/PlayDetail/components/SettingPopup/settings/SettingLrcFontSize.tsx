@@ -36,7 +36,7 @@ const LrcFontSize = ({ direction }: {
     <View style={styles.container}>
       <Text>{t('play_detail_setting_lrc_font_size')}</Text>
       <View style={styles.content}>
-        <Text style={styles.label} color={theme['c-font-label']}>{isSliding ? sliderSize : lrcFontSize}</Text>
+        <Text style={styles.label} color={theme['c-font-label']}>{Math.round((isSliding ? sliderSize : lrcFontSize) / 10)}</Text>
         <Slider
           minimumValue={100}
           maximumValue={300}

@@ -3,6 +3,7 @@ import { Animated, Pressable } from 'react-native'
 import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
+import { hapticConfirm, triggerHaptic, type HapticType } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
 
 export interface ActionPillButtonProps {
@@ -13,6 +14,7 @@ export interface ActionPillButtonProps {
   active?: boolean
   inactiveBackgroundColor?: string
   inactiveIconColor?: string
+  hapticType?: HapticType | false
   onPress: () => void
   onLongPress?: () => void
   children?: ReactNode
@@ -30,6 +32,7 @@ export default memo(({
   active = false,
   inactiveBackgroundColor,
   inactiveIconColor,
+  hapticType = 'light',
   onPress,
   onLongPress,
   children,
@@ -49,8 +52,14 @@ export default memo(({
 
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={() => {
+        if (hapticType) triggerHaptic(hapticType)
+        onPress()
+      }}
+      onLongPress={onLongPress ? () => {
+        hapticConfirm()
+        onLongPress()
+      } : undefined}
       onPressIn={() => { M3Motion.pressSpring(pressScale, 0.9).start() }}
       onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
     >

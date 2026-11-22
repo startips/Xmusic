@@ -37,5 +37,7 @@ export default memo(() => {
 const styles = StyleSheet.create({
   list: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
 })

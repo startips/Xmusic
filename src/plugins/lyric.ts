@@ -31,28 +31,30 @@ const lrcTools = {
     this.currentLineData.line = line
     // console.log(line)
     this.currentLineData.text = text
-    for (const hook of this.playHooks) hook(line, text)
+    for (const hook of [...this.playHooks]) hook(line, text)
   },
   onSetLyric(lines: Lines) {
     this.currentLines = lines
     this.currentLineData.line = 0
     this.currentLineData.text = ''
-    for (const hook of this.playHooks) hook(-1, '')
-    for (const hook of this.setLyricHooks) hook(lines)
+    for (const hook of [...this.playHooks]) hook(-1, '')
+    for (const hook of [...this.setLyricHooks]) hook(lines)
   },
   addPlayHook(hook: PlayHook) {
     this.playHooks.push(hook)
     hook(this.currentLineData.line, this.currentLineData.text)
   },
   removePlayHook(hook: PlayHook) {
-    this.playHooks.splice(this.playHooks.indexOf(hook), 1)
+    const idx = this.playHooks.indexOf(hook)
+    if (idx > -1) this.playHooks.splice(idx, 1)
   },
   addSetLyricHook(hook: SetLyricHook) {
     this.setLyricHooks.push(hook)
     hook(this.currentLines)
   },
   removeSetLyricHook(hook: SetLyricHook) {
-    this.setLyricHooks.splice(this.setLyricHooks.indexOf(hook), 1)
+    const idx = this.setLyricHooks.indexOf(hook)
+    if (idx > -1) this.setLyricHooks.splice(idx, 1)
   },
   setLyric() {
     const extendedLyrics = [] as string[]

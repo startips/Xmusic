@@ -14,6 +14,7 @@ import type { Position } from './ListMenu'
 import type { SelectMode } from './MultipleModeBar'
 import { useActiveListId } from '@/store/list/hook'
 import { useSettingValue } from '@/store/setting/hook'
+import { useWindowSize } from '@/utils/hooks'
 
 type FlatListType = FlatListProps<LX.Music.MusicInfo>
 
@@ -56,7 +57,11 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
   const selectedListRef = useRef<LX.List.ListMusics>([])
   const currentListIdRef = useRef('')
   const waitJumpListPositionRef = useRef(false)
-  const rowInfo = useRef(getRowInfo())
+  const windowSize = useWindowSize()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rowInfo = useMemo(() => getRowInfo(), [windowSize.width, windowSize.height])
+  const rowNumRef = useRef(rowInfo.rowNum ?? 1)
+  rowNumRef.current = rowInfo.rowNum ?? 1
   const isShowAlbumName = useSettingValue('list.isShowAlbumName')
   const isShowInterval = useSettingValue('list.isShowInterval')
   // console.log('render music list')
@@ -89,7 +94,7 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
       void getListMusics(listState.activeListId).then((list) => {
         const index = list.findIndex(m => m.id == info.id)
         if (index < 0) return
-        flatListRef.current?.scrollToIndex({ index: Math.floor(index / (rowInfo.current.rowNum ?? 1)), viewPosition: 0.3, animated: true })
+        flatListRef.current?.scrollToIndex({ index: Math.floor(index / rowNumRef.current), viewPosition: 0.3, animated: true })
       })
     },
     scrollToTop() {
@@ -120,7 +125,7 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
               waitJumpListPositionRef.current = false
               if (playerState.playMusicInfo.listId == id && playerState.playInfo.playIndex > -1) {
                 try {
-                  flatListRef.current?.scrollToIndex({ index: Math.floor(playerState.playInfo.playIndex / (rowInfo.current.rowNum ?? 1)), viewPosition: 0.3, animated: false })
+                  flatListRef.current?.scrollToIndex({ index: Math.floor(playerState.playInfo.playIndex / rowNumRef.current), viewPosition: 0.3, animated: false })
                   return
                 } catch {}
               }
@@ -152,7 +157,7 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
           if (isUpdateingList) waitJumpListPositionRef.current = true
           else {
             try {
-              flatListRef.current?.scrollToIndex({ index: Math.floor(playerState.playInfo.playIndex / (rowInfo.current.rowNum ?? 1)), viewPosition: 0.3, animated: true })
+              flatListRef.current?.scrollToIndex({ index: Math.floor(playerState.playInfo.playIndex / rowNumRef.current), viewPosition: 0.3, animated: true })
             } catch {}
           }
         }
@@ -183,7 +188,7 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
   }
 
   const handleUpdateSelectedList = (newList: LX.List.ListMusics) => {
-    if (selectedListRef.current.length && newList.length == currentList.length) onSelectAll(true)
+    if (newList.length > 0 && newList.length == currentList.length) onSelectAll(true)
     else if (selectedListRef.current.length == currentList.length) onSelectAll(false)
     selectedListRef.current = newList
     setSelectedList(newList)
@@ -258,7 +263,7 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
       onLongPress={handleLongPress}
       onShowMenu={onShowMenu}
       selectedList={selectedList}
-      rowInfo={rowInfo.current}
+      rowInfo={rowInfo}
       isShowAlbumName={isShowAlbumName}
       isShowInterval={isShowInterval}
     />
@@ -270,12 +275,13 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
 
   return (
     <FlatList
+      key={String(rowInfo.rowNum ?? 1)}
       ref={flatListRef}
       onScroll={handleScroll}
       style={styles.list}
       data={currentList}
       maxToRenderPerBatch={4}
-      numColumns={rowInfo.current.rowNum}
+      numColumns={rowInfo.rowNum}
       horizontal={false}
       // updateCellsBatchingPeriod={80}
       windowSize={8}

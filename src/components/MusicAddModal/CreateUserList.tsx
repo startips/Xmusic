@@ -14,11 +14,13 @@ export default ({ isEdit, onHide }: {
 }) => {
   const [text, setText] = useState('')
   const inputRef = useRef<InputType>(null)
+  const submittedRef = useRef(false)
   const t = useI18n()
   const theme = useTheme()
 
   useEffect(() => {
     if (isEdit) {
+      submittedRef.current = false
       setText('')
       requestAnimationFrame(() => {
         inputRef.current?.focus()
@@ -27,6 +29,8 @@ export default ({ isEdit, onHide }: {
   }, [isEdit])
 
   const handleSubmitEditing = async() => {
+    if (submittedRef.current) return
+    submittedRef.current = true
     onHide()
     const name = text.trim()
     if (!name.length || (listState.userList.some(l => l.name == name) && !(await confirmDialog({

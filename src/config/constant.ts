@@ -25,6 +25,7 @@ export enum COMPONENT_IDS {
   playDetail = 'playDetail',
   songlistDetail = 'songlistDetail',
   comment = 'comment',
+  setting = 'setting',
 }
 
 export enum NAV_SHEAR_NATIVE_IDS {
@@ -105,8 +106,6 @@ export const BOTTOM_NAV_MENUS = [
 
 export const NAV_MENUS = [
   ...BOTTOM_NAV_MENUS,
-  // { id: 'download', icon: 'download-2' },
-  { id: 'nav_setting', icon: 'setting' },
 ] as const
 
 export type NAV_ID_Type = typeof NAV_MENUS[number]['id']

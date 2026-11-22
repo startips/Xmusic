@@ -14,7 +14,11 @@ export interface ParseNameProps {
 }
 
 const parsePath = (fileName: string) => {
-  return fileName.substring(0, fileName.lastIndexOf('.')).split('-').map(name => name.trim())
+  const dotIdx = fileName.lastIndexOf('.')
+  const baseName = dotIdx > 0 ? fileName.substring(0, dotIdx) : fileName
+  const sepIdx = baseName.indexOf('-')
+  if (sepIdx < 0) return [baseName.trim(), ''] as const
+  return [baseName.substring(0, sepIdx).trim(), baseName.substring(sepIdx + 1).trim()] as const
 }
 
 export default memo(({ fileName, onNameChanged, onSingerChanged }: ParseNameProps) => {
@@ -22,13 +26,17 @@ export default memo(({ fileName, onNameChanged, onSingerChanged }: ParseNameProp
   const t = useI18n()
   const handleParseNameSinger = () => {
     const [name, singer] = parsePath(fileName)
-    onNameChanged(name)
+    if (name) onNameChanged(name)
     if (singer) onSingerChanged(singer)
   }
   const handleParseSingerName = () => {
     const [singer, name] = parsePath(fileName)
-    onSingerChanged(singer)
-    if (name) onNameChanged(name)
+    if (name) {
+      onSingerChanged(singer)
+      onNameChanged(name)
+    } else if (singer) {
+      onNameChanged(singer)
+    }
   }
   return (
     <View style={styles.container}>

@@ -14,7 +14,9 @@ export default ({ url, width, height, maxWidth, maxHeight, style }: ScaledImageP
   const [wh, setWH] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
+    let cancelled = false
     getSize(url, (realWidth, realHeight) => {
+      if (cancelled || realWidth <= 0 || realHeight <= 0) return
       let w = width ?? 0
       let h = height ?? 0
 
@@ -28,16 +30,19 @@ export default ({ url, width, height, maxWidth, maxHeight, style }: ScaledImageP
           h = realHeight * (w / realWidth)
 
           if (maxHeight && h > maxHeight) {
-            w = realWidth * (maxHeight / realHeight)
             h = maxHeight
+            w = realWidth * (maxHeight / realHeight)
           }
         } else if (maxHeight && realHeight > maxHeight) {
-          w = realWidth * (h / realHeight)
           h = maxHeight
+          w = realWidth * (maxHeight / realHeight)
         }
       }
       setWH({ width: w || realWidth, height: h || realHeight })
     })
+    return () => {
+      cancelled = true
+    }
   }, [height, maxHeight, maxWidth, url, width])
 
   return (

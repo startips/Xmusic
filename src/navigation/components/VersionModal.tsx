@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, memo } from 'react'
+import { useMemo, useState, useEffect, memo, useCallback } from 'react'
 import { View, ScrollView } from 'react-native'
 
 import { compareVer, sizeFormate } from '@/utils'
@@ -14,6 +14,7 @@ import { useVersionDownloadProgressUpdated, useVersionInfo, useVersionInfoIgnore
 import ModalContent from './ModalContent'
 import { checkUpdate, downloadUpdate, hideModal, setIgnoreVersion } from '@/core/version'
 import { M3Radius } from '@/theme/m3'
+import { useBackHandler } from '@/utils/hooks/useBackHandler'
 
 const VersionItem = ({ version, desc }: VersionInfo) => {
   return (
@@ -132,7 +133,7 @@ const VersionModal = ({ componentId }: { componentId: string }) => {
         case 'error':
           setTitle(t('version_title_failed'))
           setTip(t('version_tip_failed'))
-          ignoreBtnConfig.show = true
+          ignoreBtnConfig.show = !!versionInfo.newVersion?.version
           ignoreBtnConfig.disabled = false
           setConfirmBtn({ text: t('version_btn_failed'), show: true, disabled: false })
           setCloseBtnText(t('version_btn_close'))
@@ -142,7 +143,7 @@ const VersionModal = ({ componentId }: { componentId: string }) => {
         default:
           setTitle(t('version_title_new'))
           setTip('')
-          ignoreBtnConfig.show = true
+          ignoreBtnConfig.show = !!versionInfo.newVersion?.version
           ignoreBtnConfig.disabled = false
           setConfirmBtn({ text: t('version_btn_new'), show: true, disabled: false })
           // setTip(t('version_btn_new'))
@@ -150,17 +151,24 @@ const VersionModal = ({ componentId }: { componentId: string }) => {
           break
       }
     }
-    ignoreBtnConfig.text = t(ignoreVersion == versionInfo.newVersion?.version ? 'version_btn_ignore_cancel' : 'version_btn_ignore')
+    ignoreBtnConfig.text = t(versionInfo.newVersion?.version && ignoreVersion == versionInfo.newVersion.version ? 'version_btn_ignore_cancel' : 'version_btn_ignore')
     setIgnoreBtn(ignoreBtnConfig)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t, versionInfo, ignoreVersion, progress])
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     hideModal(componentId)
-  }
+  }, [componentId])
+
+  useBackHandler(useCallback(() => {
+    handleCancel()
+    return true
+  }, [handleCancel]))
+
   const handleIgnore = () => {
-    setIgnoreVersion(ignoreVersion != versionInfo.newVersion!.version ? versionInfo.newVersion!.version : null)
+    if (!versionInfo.newVersion?.version) return
+    setIgnoreVersion(ignoreVersion != versionInfo.newVersion.version ? versionInfo.newVersion.version : null)
     // handleCancel()
   }
 

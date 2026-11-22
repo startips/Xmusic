@@ -12,6 +12,8 @@ export interface MultipleModeBarProps {
   onSwitchMode: (mode: SelectMode) => void
   onSelectAll: (isAll: boolean) => void
   onExitSelectMode: () => void
+  onPlayLater?: () => void
+  onAdd?: () => void
 }
 
 export interface MultipleModeBarType {

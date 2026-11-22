@@ -1,4 +1,4 @@
-import { useRef, useImperativeHandle, forwardRef, useCallback } from 'react'
+import { useRef, useImperativeHandle, forwardRef, useCallback, useState } from 'react'
 import { TextInput, View, TouchableOpacity, StyleSheet, type TextInputProps } from 'react-native'
 import { Icon } from '@/components/common/Icon'
 import { createStyle } from '@/utils/tools'
@@ -8,26 +8,17 @@ import { setSpText } from '@/utils/pixelRatio'
 const styles = createStyle({
   content: {
     flexDirection: 'row',
-    // backgroundColor: 'rgba(0,0,0,0.1)',
     flexGrow: 1,
     flexShrink: 1,
-    // height: 38,
     alignItems: 'center',
-    // paddingRight: 5,
   },
   input: {
-    // backgroundColor: 'rgba(0,0,0,0.1)',
-    // backgroundColor: 'white',
     borderRadius: 2,
-    paddingTop: 0,
-    paddingBottom: 0,
+    paddingVertical: 0,
+    paddingHorizontal: 5,
     height: 32,
-    paddingLeft: 5,
-    paddingRight: 0,
     flexGrow: 1,
     flexShrink: 1,
-    // height: '100%',
-    // width: '100%',
     fontSize: 14,
   },
   clearBtnContent: {
@@ -35,11 +26,11 @@ const styles = createStyle({
     flexShrink: 0,
   },
   clearBtn: {
-    height: '70%',
-    paddingLeft: 5,
-    paddingRight: 5,
+    minWidth: 32,
+    height: 32,
+    paddingHorizontal: 8,
     justifyContent: 'center',
-    // backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
   },
 })
 
@@ -50,7 +41,6 @@ export interface InputProps extends TextInputProps {
   size?: number
 }
 
-
 export interface InputType {
   blur: () => void
   focus: () => void
@@ -58,10 +48,10 @@ export interface InputType {
   isFocused: () => boolean
 }
 
-export default forwardRef<InputType, InputProps>(({ onChangeText, onClearText, clearBtn, style, size = 14, ...props }, ref) => {
+export default forwardRef<InputType, InputProps>(({ onChangeText, onClearText, clearBtn, style, size = 14, value, defaultValue, ...props }, ref) => {
   const inputRef = useRef<TextInput>(null)
   const theme = useTheme()
-  // const scaleClearBtn = useRef(new Animated.Value(0)).current
+  const [hasText, setHasText] = useState(Boolean(value ?? defaultValue))
 
   useImperativeHandle(ref, () => ({
     blur() {
@@ -72,42 +62,26 @@ export default forwardRef<InputType, InputProps>(({ onChangeText, onClearText, c
     },
     clear() {
       inputRef.current?.clear()
+      setHasText(false)
     },
     isFocused() {
       return inputRef.current?.isFocused() ?? false
     },
   }))
 
-  // const showClearBtn = useCallback(() => {
-  //   Animated.timing(scaleClearBtn, {
-  //     toValue: 1,
-  //     duration: 200,
-  //     useNativeDriver: true,
-  //   }).start()
-  // }, [scaleClearBtn])
-  // const hideClearBtn = useCallback(() => {
-  //   Animated.timing(scaleClearBtn, {
-  //     toValue: 0,
-  //     duration: 200,
-  //     useNativeDriver: true,
-  //   }).start()
-  // }, [scaleClearBtn])
-
   const clearText = useCallback(() => {
     inputRef.current?.clear()
-    // hideClearBtn()
+    setHasText(false)
     onChangeText?.('')
     onClearText?.()
   }, [onChangeText, onClearText])
 
   const changeText = useCallback((text: string) => {
-    // if (text.length) {
-    //   showClearBtn()
-    // } else {
-    //   hideClearBtn()
-    // }
+    setHasText(text.length > 0)
     onChangeText?.(text)
   }, [onChangeText])
+
+  const showClear = clearBtn && (value !== undefined ? value.length > 0 : hasText)
 
   return (
     <View style={styles.content}>
@@ -115,23 +89,22 @@ export default forwardRef<InputType, InputProps>(({ onChangeText, onClearText, c
         autoCapitalize="none"
         onChangeText={changeText}
         autoComplete="off"
+        value={value}
+        defaultValue={defaultValue}
         style={StyleSheet.compose({ ...styles.input, color: theme['m3-on-surface'], fontSize: setSpText(size) }, style)}
         placeholderTextColor={theme['m3-on-surface-variant']}
         selectionColor={theme['m3-primary']}
-        ref={inputRef} {...props} />
-      {/* <View style={styles.clearBtnContent}>
-      <Animated.View style={{ ...styles.clearBtnContent, transform: [{ scale: scaleClearBtn }] }}> */}
-        {clearBtn
-          ? <View style={styles.clearBtnContent}>
-              <TouchableOpacity style={styles.clearBtn} onPress={clearText}>
-                <Icon name="remove" color={theme['m3-on-surface-variant']} size={12} />
-              </TouchableOpacity>
-            </View>
-          : null
-        }
-      {/* </Animated.View>
-      </View> */}
+        ref={inputRef}
+        {...props}
+      />
+      {showClear
+        ? <View style={styles.clearBtnContent}>
+            <TouchableOpacity style={styles.clearBtn} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }} onPress={clearText}>
+              <Icon name="remove" color={theme['m3-on-surface-variant']} size={12} />
+            </TouchableOpacity>
+          </View>
+        : null
+      }
     </View>
   )
 })
-

@@ -91,8 +91,7 @@ const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTip
         duration: 300,
         useNativeDriver: true,
       }),
-    ]).start((finished) => {
-      // console.log(finished)
+    ]).start(({ finished }) => {
       if (!finished) return
       setVisible(false)
       setAnimatPlayed(true)
@@ -102,6 +101,7 @@ const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTip
 
   const component = useMemo(() => (
     <Animated.View
+      pointerEvents={visible ? 'auto' : 'none'}
       style={{
         ...styles.anima,
         transform: [
@@ -114,7 +114,7 @@ const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTip
       </View>
       <View style={styles.blank} onTouchStart={onPressBg}></View>
     </Animated.View>
-  ), [onPressBg, props, scaleY, theme, translateY])
+  ), [onPressBg, props, scaleY, theme, translateY, visible])
 
   return !visible && animatePlayed ? null : component
 }

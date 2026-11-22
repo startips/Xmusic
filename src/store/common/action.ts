@@ -12,6 +12,11 @@ export default {
     state.statusbarHeight = size
     global.state_event.statusbarHeightUpdated(size)
   },
+  setNavigationBarHeight(size: number) {
+    if (state.navigationBarHeight == size) return
+    state.navigationBarHeight = size
+    global.state_event.navigationBarHeightUpdated(size)
+  },
   setComponentId(name: COMPONENT_IDS, id: string) {
     state.componentIds[name] = id
     global.state_event.componentIdsUpdated({ ...state.componentIds })
@@ -24,7 +29,7 @@ export default {
   },
   setNavActiveId(id: InitState['navActiveId']) {
     state.navActiveId = id
-    if (id != 'nav_setting') state.lastNavActiveId = id
+    state.lastNavActiveId = id
     global.state_event.navActiveIdUpdated(id)
   },
   setLastNavActiveId(id: InitState['navActiveId']) {

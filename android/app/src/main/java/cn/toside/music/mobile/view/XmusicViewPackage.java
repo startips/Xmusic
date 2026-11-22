@@ -17,9 +17,12 @@ public class XmusicViewPackage implements ReactPackage {
   public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
     return Arrays.<ViewManager>asList(
       new AlphaFadeViewManager(),
+      new FadeImageViewManager(),
       new LinearGradientViewManager(),
       new SolidHeartViewManager(),
-      new EdgeSwipeViewManager()
+      new EdgeSwipeViewManager(),
+      new EdgeToEdgeModalViewManager(),
+      new FluidBgViewManager()
     );
   }
 

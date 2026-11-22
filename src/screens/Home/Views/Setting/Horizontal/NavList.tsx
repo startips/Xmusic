@@ -5,7 +5,7 @@ import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
 import { scaleSizeH } from '@/utils/pixelRatio'
-import { SETTING_SCREENS, type SettingScreenIds } from '../Main'
+import { SETTING_SCREENS, normalizeSettingScreenId, type SettingScreenIds } from '../Main'
 import { useI18n } from '@/lang'
 import { M3Radius, withAlpha } from '@/theme/m3'
 
@@ -46,7 +46,7 @@ const ListItem = memo(({ id, activeId, onPress }: {
             style={active ? styles.listNameActive : styles.listNameText}
             color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
           >
-            {t(`setting_${id}`)}
+            {t(`setting_group_${id}`)}
           </Text>
         </Pressable>
       </View>
@@ -64,7 +64,7 @@ export default ({ onChangeId }: {
   onChangeId: (id: SettingScreenIds) => void
 }) => {
   const flatListRef = useRef<FlatList>(null)
-  const [activeId, setActiveId] = useState(global.lx.settingActiveId)
+  const [activeId, setActiveId] = useState<SettingScreenIds>(() => normalizeSettingScreenId(global.lx.settingActiveId))
 
   const handleChangeId = (id: SettingScreenIds) => {
     onChangeId(id)
@@ -72,7 +72,7 @@ export default ({ onChangeId }: {
     global.lx.settingActiveId = id
   }
 
-  const renderItem: FlatListType['renderItem'] = ({ item, index }) => (
+  const renderItem: FlatListType['renderItem'] = ({ item }) => (
     <ListItem
       key={item}
       id={item}
@@ -94,7 +94,7 @@ export default ({ onChangeId }: {
       maxToRenderPerBatch={9}
       windowSize={9}
       removeClippedSubviews={true}
-      initialNumToRender={18}
+      initialNumToRender={10}
       renderItem={renderItem}
       keyExtractor={getkey}
       getItemLayout={getItemLayout}
@@ -131,7 +131,6 @@ const styles = createStyle({
     fontWeight: '400',
   },
   listNameActive: {
-    fontWeight: '600',
+    fontWeight: '700',
   },
 })
-

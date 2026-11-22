@@ -20,17 +20,19 @@ export default memo(() => {
   const info = useListInfo()
 
   const back = () => {
-    void pop(commonState.componentIds.songlistDetail!)
+    if (!commonState.componentIds.songlistDetail) return
+    void pop(commonState.componentIds.songlistDetail)
   }
 
   const handlePlayAll = () => {
-    if (!songlistState.listDetailInfo.info.name) return
+    if (!songlistState.listDetailInfo.list.length && !info.id) return
     void handlePlay(info.id, info.source, songlistState.listDetailInfo.list)
   }
 
   const handleCollection = () => {
-    if (!songlistState.listDetailInfo.info.name) return
-    void handleCollect(info.id, info.source, songlistState.listDetailInfo.info.name || info.name)
+    if (!songlistState.listDetailInfo.list.length && !info.id) return
+    const fallbackName = info.name ?? info.id
+    void handleCollect(info.id, info.source, songlistState.listDetailInfo.info.name ? songlistState.listDetailInfo.info.name : fallbackName)
   }
 
   return (
@@ -40,21 +42,21 @@ export default memo(() => {
         style={{ ...styles.backBtn, backgroundColor: theme['m3-surface-container-highest'] }}
       >
         <Icon name="chevron-left" size={14} color={theme['m3-on-surface']} />
-        <Text size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('back')}</Text>
+        <Text numberOfLines={1} size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('back')}</Text>
       </Button>
       <Button
         onPress={handleCollection}
         style={{ ...styles.actionBtn, backgroundColor: theme['m3-surface-container-highest'] }}
       >
         <Icon name="love" size={14} color={theme['m3-on-surface']} />
-        <Text size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('collect_songlist')}</Text>
+        <Text numberOfLines={1} size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('collect_songlist')}</Text>
       </Button>
       <Button
         onPress={handlePlayAll}
         style={{ ...styles.actionBtn, backgroundColor: theme['m3-primary'] }}
       >
         <Icon name="play" size={13} color={theme['m3-on-primary']} />
-        <Text size={13} style={styles.btnLabel} color={theme['m3-on-primary']}>{t('play_all')}</Text>
+        <Text numberOfLines={1} size={13} style={styles.btnLabel} color={theme['m3-on-primary']}>{t('play_all')}</Text>
       </Button>
     </View>
   )

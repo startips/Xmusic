@@ -2,8 +2,7 @@ import { forwardRef, useImperativeHandle, useMemo, useState } from 'react'
 
 import Basic from './settings/Basic'
 import Player from './settings/Player'
-import LyricDesktop from './settings/LyricDesktop'
-import Search from './settings/Search'
+import Lyric from './settings/Lyric'
 import List from './settings/List'
 import Sync from './settings/Sync'
 import Backup from './settings/Backup'
@@ -14,57 +13,66 @@ import About from './settings/About'
 export const SETTING_SCREENS = [
   'basic',
   'player',
-  'lyric_desktop',
-  'search',
+  'lyric',
   'list',
-  'sync',
-  'backup',
-  'other',
-  'version',
+  'sync_backup',
   'about',
 ] as const
 
 export type SettingScreenIds = typeof SETTING_SCREENS[number]
 
-// interface MainProps {
-//   onUpdateActiveId: (id: string) => void
-// }
+export const normalizeSettingScreenId = (id?: string): SettingScreenIds => {
+  if (id && (SETTING_SCREENS as readonly string[]).includes(id)) {
+    return id as SettingScreenIds
+  }
+  return 'basic'
+}
+
 export interface MainType {
   setActiveId: (id: SettingScreenIds) => void
 }
 
 const Main = forwardRef<MainType, {}>((props, ref) => {
-  const [id, setId] = useState(global.lx.settingActiveId)
+  const [id, setId] = useState<SettingScreenIds>(() => normalizeSettingScreenId(global.lx.settingActiveId))
 
   useImperativeHandle(ref, () => ({
-    setActiveId(id) {
+    setActiveId(nextId) {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setId(id)
-        })
+        setId(nextId)
       })
     },
   }))
 
   const component = useMemo(() => {
     switch (id) {
-      case 'player': return <Player />
-      case 'lyric_desktop': return <LyricDesktop />
-      case 'search': return <Search />
-      case 'list': return <List />
-      case 'sync': return <Sync />
-      case 'backup': return <Backup />
-      case 'other': return <Other />
-      case 'version': return <Version />
-      case 'about': return <About />
+      case 'player':
+        return <Player />
+      case 'lyric':
+        return <Lyric />
+      case 'list':
+        return <List />
+      case 'sync_backup':
+        return (
+          <>
+            <Sync />
+            <Backup />
+          </>
+        )
+      case 'about':
+        return (
+          <>
+            <Other />
+            <Version />
+            <About />
+          </>
+        )
       case 'basic':
-      default: return <Basic />
+      default:
+        return <Basic />
     }
   }, [id])
 
   return component
 })
 
-
 export default Main
-

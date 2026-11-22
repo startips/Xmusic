@@ -179,6 +179,7 @@ export default forwardRef<MetadataFormType, {}>((props, ref) => {
       <TextAreaItem
         value={fileName}
         label={global.i18n.t('metadata_edit_modal_file_name')}
+        editable={false}
         numberOfLines={2}
         scrollEnabled
         style={{ ...styles.pathText, color: theme['c-primary-font'] }}

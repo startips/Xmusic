@@ -60,7 +60,7 @@ export default {
     state.progress.nowPlayTimeStr = formatPlayTime2(currentTime)
     state.progress.maxPlayTime = totalTime
     state.progress.maxPlayTimeStr = formatPlayTime2(totalTime)
-    state.progress.progress = totalTime ? state.progress.nowPlayTime / currentTime : 0
+    state.progress.progress = totalTime ? state.progress.nowPlayTime / totalTime : 0
 
     global.state_event.playProgressChanged({ ...state.progress })
   },
@@ -68,17 +68,17 @@ export default {
     if (state.playedList.some(m => m.musicInfo.id == info.musicInfo.id)) return
     state.playedList.push(info)
 
-    global.state_event.playPlayedListChanged({ ...state.playedList })
+    global.state_event.playPlayedListChanged([...state.playedList])
   },
   removePlayedList(index: number) {
     state.playedList.splice(index, 1)
 
-    global.state_event.playPlayedListChanged({ ...state.playedList })
+    global.state_event.playPlayedListChanged([...state.playedList])
   },
   clearPlayedList() {
     state.playedList = []
 
-    global.state_event.playPlayedListChanged({ ...state.playedList })
+    global.state_event.playPlayedListChanged([...state.playedList])
   },
   addTempPlayList(list: LX.Player.TempPlayListItem[]) {
     const topList: Array<{ listId: string | null, musicInfo: LX.Music.MusicInfo | LX.Download.ListItem }> = []
@@ -89,20 +89,27 @@ export default {
       }
       return true
     })
-    if (topList.length) arrUnshift(state.tempPlayList, topList.map(({ musicInfo, listId }) => ({ musicInfo, listId, isTempPlay: true })))
-    if (bottomList.length) arrPush(state.tempPlayList, bottomList.map(({ musicInfo, listId }) => ({ musicInfo, listId, isTempPlay: true })))
+    if (topList.length) arrUnshift(state.tempPlayList, topList.map(({ musicInfo, listId }) => ({ musicInfo, listId: listId ?? '', isTempPlay: true })))
+    if (bottomList.length) arrPush(state.tempPlayList, bottomList.map(({ musicInfo, listId }) => ({ musicInfo, listId: listId ?? '', isTempPlay: true })))
 
-    global.state_event.playTempPlayListChanged({ ...state.tempPlayList })
+    global.state_event.playTempPlayListChanged([...state.tempPlayList])
+  },
+  promoteTempPlayList(index: number) {
+    if (index <= 0 || index >= state.tempPlayList.length) return
+    const [item] = state.tempPlayList.splice(index, 1)
+    state.tempPlayList.unshift(item)
+
+    global.state_event.playTempPlayListChanged([...state.tempPlayList])
   },
   removeTempPlayList(index: number) {
     state.tempPlayList.splice(index, 1)
 
-    global.state_event.playTempPlayListChanged({ ...state.tempPlayList })
+    global.state_event.playTempPlayListChanged([...state.tempPlayList])
   },
   clearTempPlayeList() {
     state.tempPlayList = []
 
-    global.state_event.playTempPlayListChanged({ ...state.tempPlayList })
+    global.state_event.playTempPlayListChanged([...state.tempPlayList])
   },
   setLoadErrorPicUrl(url: string) {
     state.loadErrorPicUrl = url

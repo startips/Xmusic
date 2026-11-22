@@ -40,8 +40,8 @@ export default memo(({
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
-    if (animated) setPic(musicInfo.pic)
-  }, [musicInfo.pic, animated])
+    if (animated || !pic) setPic(musicInfo.pic)
+  }, [musicInfo.pic, animated, pic])
 
   useNavigationComponentDidAppear(componentId, () => {
     setAnimated(true)

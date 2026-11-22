@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import settingState from '@/store/setting/state'
+import { useSettingValue } from '@/store/setting/hook'
 import MusicList from './MusicList'
 import MyList from './MyList'
 import { useTheme } from '@/store/theme/hook'
@@ -13,6 +13,7 @@ const MAX_WIDTH = scaleSizeW(400)
 export default () => {
   const drawer = useRef<DrawerLayoutFixedType>(null)
   const theme = useTheme()
+  const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
   // const [width, setWidth] = useState(0)
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export default () => {
       // drawerWidth={width}
       widthPercentage={0.82}
       widthPercentageMax={MAX_WIDTH}
-      drawerPosition={settingState.setting['common.drawerLayoutPosition']}
+      drawerPosition={drawerLayoutPosition}
       renderNavigationView={navigationView}
       drawerBackgroundColor={theme['c-content-background']}
       style={{ elevation: 1 }}

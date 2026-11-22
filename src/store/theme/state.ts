@@ -7,11 +7,15 @@ export interface InitState {
    */
   shouldUseDarkColors: boolean
   theme: LX.ActiveTheme
+  coverSeedColor: string | null
+  coverPalette: string[] | null
 }
 
 const state: InitState = {
   shouldUseDarkColors: false,
   theme: createActiveTheme(false),
+  coverSeedColor: null,
+  coverPalette: null,
 }
 
 export const ThemeContext = createContext(state.theme)

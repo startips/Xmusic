@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { View, ScrollView } from 'react-native'
 
 import Button from '@/components/common/Button'
@@ -11,6 +11,7 @@ import syncState from '@/store/sync/state'
 import CheckBox from '@/components/common/CheckBox'
 import { setSyncModeComponentId } from '@/core/sync'
 import { M3Radius } from '@/theme/m3'
+import { useBackHandler } from '@/utils/hooks/useBackHandler'
 
 
 const styles = createStyle({
@@ -201,6 +202,13 @@ export default ({ componentId }: { componentId: string }) => {
     setSyncModeComponentId(componentId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useBackHandler(useCallback(() => {
+    if (syncState.type == 'list' || syncState.type == 'dislike') {
+      global.app_event.selectSyncMode({ type: syncState.type, mode: 'cancel' })
+    }
+    return true
+  }, []))
 
   return (
     <ModalContent>

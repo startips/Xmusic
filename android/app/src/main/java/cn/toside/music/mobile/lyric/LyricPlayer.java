@@ -93,12 +93,12 @@ public class LyricPlayer {
 
   private void initTag() {
     tags = new HashMap();
-    Matcher matcher = Pattern.compile("\\[(ti|ar|al|offset|by):\\s*(\\S+(?:\\s+\\S+)*)\\s*]").matcher(this.lyric);
+    Matcher matcher = Pattern.compile("\\[(ti|ar|al|offset|by):([^\\]]*)]").matcher(this.lyric);
     while (matcher.find()) {
       String key = matcher.group(1);
       if (key == null) continue;
       String val = matcher.group(2);
-      if (val == null) val = "";
+      val = val == null ? "" : val.trim();
       tags.put(key, val);
     }
 
@@ -151,7 +151,12 @@ public class LyricPlayer {
     if (str.length() >= length) {
       return str;
     }
-    return str + String.valueOf(padChar).repeat(length - str.length());
+    StringBuilder sb = new StringBuilder(length);
+    sb.append(str);
+    while (sb.length() < length) {
+      sb.append(padChar);
+    }
+    return sb.toString();
   }
 
   private void initLines() {
@@ -205,6 +210,7 @@ public class LyricPlayer {
               seconds = timeArr[0];
               if (timeArr.length > 1) {
                 String msStr = timeArr[1];
+                if (msStr.length() > 3) msStr = msStr.substring(0, 3);
                 if (!isMsTime) msStr = padEnd(msStr, 3, '0');
                 milliseconds = msStr;
               }

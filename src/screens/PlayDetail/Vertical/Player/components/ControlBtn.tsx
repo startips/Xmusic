@@ -94,6 +94,7 @@ const styles = createStyle({
     flexGrow: 1,
     flexShrink: 1,
     paddingHorizontal: '4%',
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
 })

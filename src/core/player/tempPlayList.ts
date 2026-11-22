@@ -19,6 +19,12 @@ export const removeTempPlayList = (index: number) => {
   playerActions.removeTempPlayList(index)
 }
 /**
+ * 将稍后播放歌曲置顶
+ */
+export const promoteTempPlayList = (index: number) => {
+  playerActions.promoteTempPlayList(index)
+}
+/**
  * 清空稍后播放列表
  */
 export const clearTempPlayeList = () => {

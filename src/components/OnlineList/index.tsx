@@ -78,6 +78,17 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
     }
   }
 
+  const handleBatchPlayLater = () => {
+    const selected = listRef.current?.getSelectedList() ?? []
+    if (!selected.length) return
+    handlePlayLater(selected[0], selected, hancelExitSelect)
+  }
+  const handleBatchAdd = () => {
+    const selected = listRef.current?.getSelectedList() ?? []
+    if (!selected.length) return
+    listMusicMultiAddRef.current?.show({ selectedList: selected, listId: '', isMove: false })
+  }
+
   return (
     <View style={styles.container}>
       <View style={{ flex: 1 }}>
@@ -99,6 +110,8 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
           onSwitchMode={hancelSwitchSelectMode}
           onSelectAll={isAll => listRef.current?.selectAll(isAll)}
           onExitSelectMode={hancelExitSelect}
+          onPlayLater={handleBatchPlayLater}
+          onAdd={handleBatchAdd}
         />
       </View>
       <ListMusicAdd ref={listMusicAddRef} onAdded={() => { hancelExitSelect() }} />
@@ -106,7 +119,7 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
       <ListMenu
         ref={listMenuRef}
         onPlay={info => { handlePlay(info.musicInfo) }}
-        onPlayLater={info => { hancelExitSelect(); handlePlayLater(info.musicInfo, info.selectedList, hancelExitSelect) }}
+        onPlayLater={info => { handlePlayLater(info.musicInfo, info.selectedList, hancelExitSelect) }}
         onCopyName={info => { handleShare(info.musicInfo) }}
         onAdd={handleAddMusic}
         onMusicSourceDetail={info => { void handleShowMusicSourceDetail(info.musicInfo) }}

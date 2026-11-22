@@ -9,6 +9,7 @@ import ControlBtn from './components/ControlBtn'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useSettingValue } from '@/store/setting/hook'
+import { useNavigationBarHeight } from '@/store/common/hook'
 import { M3Radius } from '@/theme/m3'
 
 
@@ -17,26 +18,32 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
   const isHorizontalMode = useHorizontalMode()
   const theme = useTheme()
   const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
+  const navBarHeight = useNavigationBarHeight()
 
-  const playerComponent = useMemo(() => (
-    <View
-      style={{
-        ...styles.container,
-        ...(isHome && !isHorizontalMode ? styles.containerAboveNav : styles.containerStandalone),
-        backgroundColor: theme['m3-surface-container-high'],
-        borderColor: theme['m3-outline-variant'],
-      }}
-    >
-      <Pic isHome={isHome} />
-      <View style={styles.center}>
-        <Title isHome={isHome} />
-        <PlayInfo isHome={isHome} />
+  const playerComponent = useMemo(() => {
+    const showBottomNav = isHome && !isHorizontalMode
+    const marginBottom = showBottomNav ? 8 : (14 + navBarHeight)
+
+    return (
+      <View
+        style={{
+          ...styles.container,
+          marginBottom,
+          backgroundColor: theme['m3-surface-container-high'],
+          borderColor: theme['m3-outline-variant'],
+        }}
+      >
+        <Pic isHome={isHome} />
+        <View style={styles.center}>
+          <Title isHome={isHome} />
+          <PlayInfo isHome={isHome} />
+        </View>
+        <View style={styles.right}>
+          <ControlBtn />
+        </View>
       </View>
-      <View style={styles.right}>
-        <ControlBtn />
-      </View>
-    </View>
-  ), [theme, isHome, isHorizontalMode])
+    )
+  }, [theme, isHome, isHorizontalMode, navBarHeight])
 
   return autoHidePlayBar && keyboardShown ? null : playerComponent
 })
@@ -54,12 +61,6 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     elevation: 3,
-  },
-  containerAboveNav: {
-    marginBottom: 8,
-  },
-  containerStandalone: {
-    marginBottom: 14,
   },
   center: {
     flexDirection: 'column',

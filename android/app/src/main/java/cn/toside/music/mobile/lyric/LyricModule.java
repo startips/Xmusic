@@ -43,6 +43,15 @@ public class LyricModule extends ReactContextBaseJavaModule {
     return "LyricModule";
   }
 
+  @Override
+  public void invalidate() {
+    if (lyric != null) {
+      lyric.destroy();
+      lyric = null;
+    }
+    super.invalidate();
+  }
+
 //  @Override
 //  public Map<String, Object> getConstants() {
 //    return constants;

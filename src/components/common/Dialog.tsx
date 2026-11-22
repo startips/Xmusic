@@ -93,7 +93,7 @@ export default forwardRef<DialogType, DialogProps>(({
 
   return (
     <Modal onHide={onHide} keyHide={keyHide} bgHide={bgHide} bgColor={theme['m3-scrim']} ref={modalRef}>
-      <View style={{ ...styles.centeredView, paddingBottom: keyboardShown ? keyboardHeight : 0 }}>
+      <View style={{ ...styles.centeredView, paddingBottom: keyboardShown ? keyboardHeight : 16 }}>
         <View style={{ ...styles.modalView, height, backgroundColor: theme['m3-surface-container-high'] }} onStartShouldSetResponder={() => true}>
           {(title || closeBtn)
             ? (

@@ -42,7 +42,6 @@ export default ({ musicInfo, onUpdateTotal }: {
     }
   }
   const handleListLoadMore = () => {
-    console.log('load')
     if (listInfo.current.isLoading || listInfo.current.isEnd) return
     const list = listRef.current?.getList() ?? []
     const page = list.length ? listInfo.current.page + 1 : 1
@@ -60,14 +59,14 @@ export default ({ musicInfo, onUpdateTotal }: {
       listInfo.current.total = total
       listInfo.current.maxPage = maxPage
       onUpdateTotal(total)
-      let isEnd = maxPage === 1
+      let isEnd = maxPage <= 1
       if (listInfo.current.isEnd != isEnd) listInfo.current.isEnd = isEnd
       listRef.current?.setList(filterList(comments))
     }).finally(updateStatus)
   }
 
   const handleShowComment = (musicInfo: LX.Music.MusicInfoOnline) => {
-    if (!musicInfo.id || !music[musicInfo.source].comment) return
+    if (!musicInfo.id || !music[musicInfo.source]?.comment) return
     listInfo.current.page = 1
     listInfo.current.total = 0
     listInfo.current.maxPage = 1
@@ -80,12 +79,14 @@ export default ({ musicInfo, onUpdateTotal }: {
       listInfo.current.total = total
       listInfo.current.maxPage = maxPage
       onUpdateTotal(total)
-      let isEnd = maxPage === 1
+      let isEnd = maxPage <= 1
       if (listInfo.current.isEnd != isEnd) listInfo.current.isEnd = isEnd
       setTimeout(() => {
         listRef.current?.setList(filterList(comments))
         setTimeout(updateStatus, 300)
       }, 300)
+    }).catch(() => {
+      updateStatus()
     })
   }
 

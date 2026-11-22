@@ -15,11 +15,13 @@ import ListMusicSearch, { type ListMusicSearchType } from './ListMusicSearch'
 import MusicPositionModal, { type MusicPositionModalType } from './MusicPositionModal'
 import MetadataEditModal, { type MetadataEditType, type MetadataEditProps } from '@/components/MetadataEditModal'
 import MusicToggleModal, { type MusicToggleModalType } from './MusicToggleModal'
+import ListeningStatsModal, { type ListeningStatsModalType } from '@/components/ListeningStatsModal'
 
 
 export default () => {
   // const t = useI18n()
   const activeListRef = useRef<ActiveListType>(null)
+  const statsModalRef = useRef<ListeningStatsModalType>(null)
   const listMusicSearchRef = useRef<ListMusicSearchType>(null)
   const listRef = useRef<ListType>(null)
   const multipleModeBarRef = useRef<MultipleModeBarType>(null)
@@ -119,15 +121,41 @@ export default () => {
   }, [])
 
 
+  const handleBatchPlayLater = useCallback(() => {
+    const selected = listRef.current?.getSelectedList() ?? []
+    if (!selected.length) return
+    handlePlayLater(listState.activeListId, selected[0], selected, hancelExitSelect)
+  }, [hancelExitSelect])
+
+  const handleBatchAdd = useCallback(() => {
+    const selected = listRef.current?.getSelectedList() ?? []
+    if (!selected.length) return
+    listMusicMultiAddRef.current?.show({ selectedList: selected, listId: listState.activeListId, isMove: false })
+  }, [])
+
+  const handleBatchRemove = useCallback(() => {
+    const selected = listRef.current?.getSelectedList() ?? []
+    if (!selected.length) return
+    handleRemove(listState.activeListId, selected[0], selected, hancelExitSelect)
+  }, [hancelExitSelect])
+
   return (
     <View style={styles.container}>
       <View style={{ zIndex: 2 }}>
-        <ActiveList ref={activeListRef} onShowSearchBar={handleShowSearch} onScrollToTop={hancelScrollToTop} />
+        <ActiveList
+          ref={activeListRef}
+          onShowSearchBar={handleShowSearch}
+          onScrollToTop={hancelScrollToTop}
+          onOpenStats={() => statsModalRef.current?.show()}
+        />
         <MultipleModeBar
           ref={multipleModeBarRef}
           onSwitchMode={hancelSwitchSelectMode}
           onSelectAll={isAll => listRef.current?.selectAll(isAll)}
           onExitSelectMode={hancelExitSelect}
+          onPlayLater={handleBatchPlayLater}
+          onAdd={handleBatchAdd}
+          onRemove={handleBatchRemove}
         />
         <ListSearchBar
           ref={listSearchBarRef}
@@ -154,8 +182,8 @@ export default () => {
       <ListMenu
         ref={listMenuRef}
         onPlay={info => { handlePlay(info.listId, info.index) }}
-        onPlayLater={info => { hancelExitSelect(); handlePlayLater(info.listId, info.musicInfo, info.selectedList, hancelExitSelect) }}
-        onRemove={info => { hancelExitSelect(); handleRemove(info.listId, info.musicInfo, info.selectedList, hancelExitSelect) }}
+        onPlayLater={info => { handlePlayLater(info.listId, info.musicInfo, info.selectedList, hancelExitSelect) }}
+        onRemove={info => { handleRemove(info.listId, info.musicInfo, info.selectedList, hancelExitSelect) }}
         onDislikeMusic={info => { void handleDislikeMusic(info.musicInfo) }}
         onCopyName={info => { handleShare(info.musicInfo) }}
         onMusicSourceDetail={info => { void handleShowMusicSourceDetail(info.musicInfo) }}
@@ -171,6 +199,7 @@ export default () => {
         onUpdate={handleUpdateMetadata}
       />
       <MusicToggleModal ref={musicToggleModalRef} />
+      <ListeningStatsModal ref={statsModalRef} />
     </View>
   )
 }

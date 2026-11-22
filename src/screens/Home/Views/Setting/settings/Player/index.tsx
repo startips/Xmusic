@@ -9,10 +9,8 @@ import IsAutoCleanPlayedList from './IsAutoCleanPlayedList'
 import IsShowBluetoothLyric from './IsShowBluetoothLyric'
 import IsShowBluetoothFullLyric from './IsShowBluetoothFullLyric'
 import IsShowNotificationImage from './IsShowNotificationImage'
-import IsShowLyricTranslation from './IsShowLyricTranslation'
-import IsShowLyricRoma from './IsShowLyricRoma'
-import IsS2T from './IsS2T'
 import MaxCache from './MaxCache'
+import AudioEnhance from './AudioEnhance'
 import { useI18n } from '@/lang'
 
 
@@ -20,19 +18,19 @@ export default memo(() => {
   const t = useI18n()
 
   return (
-    <Section title={t('setting_player')}>
-      <IsSavePlayTime />
-      <IsAutoCleanPlayedList />
-      <IsHandleAudioFocus />
-      <IsEnableAudioOffload />
-      <IsShowBluetoothLyric />
-      <IsShowBluetoothFullLyric />
-      <IsShowNotificationImage />
-      <IsShowLyricTranslation />
-      <IsShowLyricRoma />
-      <IsS2T />
-      <MaxCache />
-      <PlayHighQuality />
-    </Section>
+    <>
+      <AudioEnhance />
+      <Section title={t('setting_player')}>
+        <PlayHighQuality />
+        <IsSavePlayTime />
+        <IsAutoCleanPlayedList />
+        <IsHandleAudioFocus />
+        <IsEnableAudioOffload />
+        <IsShowNotificationImage />
+        <IsShowBluetoothLyric />
+        <IsShowBluetoothFullLyric />
+        <MaxCache />
+      </Section>
+    </>
   )
 })

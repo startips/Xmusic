@@ -5,7 +5,6 @@ import {
   SYNC_MODE_MODAL,
 } from './screenNames'
 import themeState from '@/store/theme/state'
-import { toOpaqueColor } from '@/theme/m3'
 
 
 export const getStatusBarStyle = (isDark: boolean) => isDark ? 'light' : 'dark'
@@ -36,30 +35,8 @@ export const showPactModal = () => {
           backgroundColor: 'transparent',
         },
         navigationBar: {
-          // visible: false,
-          backgroundColor: toOpaqueColor(theme['c-main-background'] || theme['c-content-background']),
+          backgroundColor: 'transparent',
         },
-        // animations: {
-
-        //   showModal: {
-        //     enter: {
-        //       enabled: true,
-        //       alpha: {
-        //         from: 0,
-        //         to: 1,
-        //         duration: 300,
-        //       },
-        //     },
-        //     exit: {
-        //       enabled: true,
-        //       alpha: {
-        //         from: 1,
-        //         to: 0,
-        //         duration: 300,
-        //       },
-        //     },
-        //   },
-        // },
       },
     },
   })
@@ -85,30 +62,8 @@ export const showVersionModal = () => {
           backgroundColor: 'transparent',
         },
         navigationBar: {
-          // visible: false,
-          backgroundColor: toOpaqueColor(theme['c-main-background'] || theme['c-content-background']),
+          backgroundColor: 'transparent',
         },
-        // animations: {
-
-        //   showModal: {
-        //     enter: {
-        //       enabled: true,
-        //       alpha: {
-        //         from: 0,
-        //         to: 1,
-        //         duration: 300,
-        //       },
-        //     },
-        //     exit: {
-        //       enabled: true,
-        //       alpha: {
-        //         from: 1,
-        //         to: 0,
-        //         duration: 300,
-        //       },
-        //     },
-        //   },
-        // },
       },
     },
   })
@@ -134,30 +89,8 @@ export const showSyncModeModal = () => {
           backgroundColor: 'transparent',
         },
         navigationBar: {
-          // visible: false,
-          backgroundColor: toOpaqueColor(theme['c-main-background'] || theme['c-content-background']),
+          backgroundColor: 'transparent',
         },
-        // animations: {
-
-        //   showModal: {
-        //     enter: {
-        //       enabled: true,
-        //       alpha: {
-        //         from: 0,
-        //         to: 1,
-        //         duration: 300,
-        //       },
-        //     },
-        //     exit: {
-        //       enabled: true,
-        //       alpha: {
-        //         from: 1,
-        //         to: 0,
-        //         duration: 300,
-        //       },
-        //     },
-        //   },
-        // },
       },
     },
   })

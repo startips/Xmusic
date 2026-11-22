@@ -73,6 +73,10 @@ export const setStatusbarHeight = (size: number) => {
   commonActions.setStatusbarHeight(size)
 }
 
+export const setNavigationBarHeight = (size: number) => {
+  commonActions.setNavigationBarHeight(size)
+}
+
 export const setComponentId = (name: keyof CommonStateType['componentIds'], id: string) => {
   commonActions.setComponentId(name, id)
   navigations.syncScreenNavigationTheme()
@@ -83,16 +87,9 @@ export const removeComponentId = (name: string) => {
 
 export const setNavActiveId = (id: Parameters<typeof commonActions.setNavActiveId>['0']) => {
   if (id == commonState.navActiveId) return
-  const prevWasSetting = commonState.navActiveId == 'nav_setting'
-  const nextIsSetting = id == 'nav_setting'
   commonActions.setNavActiveId(id)
-  if (prevWasSetting !== nextIsSetting) {
-    navigations.syncScreenNavigationTheme()
-  }
-  if (id != 'nav_setting') {
-    commonActions.setLastNavActiveId(id)
-    saveViewPrevState({ id })
-  }
+  commonActions.setLastNavActiveId(id)
+  saveViewPrevState({ id })
 }
 
 export const showPactModal = () => {

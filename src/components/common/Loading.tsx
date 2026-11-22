@@ -11,14 +11,15 @@ export interface LoadingProps extends Omit<ActivityIndicatorProps, 'size'> {
   label?: string
 }
 
-const LoadingLabel = ({ style, label, ...props }: LoadingProps) => {
+const LoadingLabel = ({ style, label, size = 15, ...props }: LoadingProps) => {
   return (
     <>
       <ActivityIndicator
         style={StyleSheet.compose(styles.loadingLabel, style)}
+        size={setSpText(size)}
         {...props}
       />
-      <Text color={props.color} size={props.size! * 0.8}>{label}</Text>
+      <Text color={props.color} size={size * 0.82}>{label}</Text>
     </>
   )
 }
@@ -27,7 +28,7 @@ export default memo(({ size = 15, label, ...props }: LoadingProps) => {
   const theme = useTheme()
 
   return (
-    label ? <LoadingLabel color={theme['c-font-label']} size={setSpText(size)} label={label} {...props} />
+    label ? <LoadingLabel color={theme['c-font-label']} size={size} label={label} {...props} />
       : (
           <ActivityIndicator
             color={theme['c-font-label']}
@@ -37,7 +38,6 @@ export default memo(({ size = 15, label, ...props }: LoadingProps) => {
         )
   )
 })
-
 
 const styles = createStyle({
   loadingLabel: {

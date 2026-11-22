@@ -29,7 +29,7 @@ export default forwardRef<CurrentTagBtnType, CurrentTagBtnProps>(({ onShowList }
 
   return (
     <Button style={{ ...styles.btn, backgroundColor: theme['m3-surface-container'] }} onPress={onShowList}>
-      <Text size={13} style={styles.sourceMenu} color={theme['m3-on-surface']}>{name}</Text>
+      <Text numberOfLines={1} size={13} style={styles.sourceMenu} color={theme['m3-on-surface']}>{name}</Text>
     </Button>
   )
 })
@@ -42,6 +42,7 @@ const styles = createStyle({
     paddingVertical: 5,
     borderRadius: M3Radius.full,
     justifyContent: 'center',
+    maxWidth: 160,
   },
   sourceMenu: {
     textAlign: 'center',

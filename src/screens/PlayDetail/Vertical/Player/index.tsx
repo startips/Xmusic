@@ -7,11 +7,15 @@ import PlayInfo from './components/PlayInfo'
 import ControlBtn from './components/ControlBtn'
 import { createStyle } from '@/utils/tools'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
+import { useNavigationBarHeight } from '@/store/common/hook'
 
 
 export default memo(() => {
+  const navBarHeight = useNavigationBarHeight()
+  const bottomPadding = navBarHeight > 0 ? navBarHeight + 6 : 14
+
   return (
-    <View style={styles.container} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_player}>
+    <View style={{ ...styles.container, paddingBottom: bottomPadding }} nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_player}>
       <MoreBtn />
       <PlayInfo />
       <ControlBtn />

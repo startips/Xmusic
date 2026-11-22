@@ -7,6 +7,7 @@ import { useTheme } from '@/store/theme/hook'
 import { BorderWidths } from '@/theme'
 import { formatPlayTime2 } from '@/utils'
 import { Icon } from '@/components/common/Icon'
+import { hapticTick } from '@/utils/haptics'
 
 
 export interface PlayLineType {
@@ -64,15 +65,16 @@ export default forwardRef<PlayLineType, PlayLineProps>(({ onPlayLine }, ref) => 
   }))
 
   const handlePlayLine = () => {
+    hapticTick()
     onPlayLine(time / 1000)
   }
 
   if (!scrollInfo || !visible) return null
-  const offset = scrollInfo.contentOffset.y + scrollInfo.layoutMeasurement.height * 0.4
+  const offset = scrollInfo.contentOffset.y + scrollInfo.layoutMeasurement.height * 0.42
   let lineOffset = listLayoutInfo.spaceHeight
   let targetLineNum = -1
   for (let line = 0; line < listLayoutInfo.lineHeights.length; line++) {
-    lineOffset += listLayoutInfo.lineHeights[line]
+    lineOffset += listLayoutInfo.lineHeights[line] ?? 0
     if (lineOffset < offset) continue
     targetLineNum = line
     break
@@ -81,12 +83,12 @@ export default forwardRef<PlayLineType, PlayLineProps>(({ onPlayLine }, ref) => 
   const time = lyricLines[targetLineNum]?.time ?? 0
   const timeLabel = formatPlayTime2(time / 1000)
   return (
-    <Animated.View style={{ ...styles.playLine, opacity: opsAnim }}>
-      <Text style={styles.label} color={theme['c-primary-font']} size={13}>{timeLabel}</Text>
-      <View style={styles.lineContent}>
-        <View style={{ ...styles.line, borderBottomColor: theme['c-primary-alpha-700'] }} />
+    <Animated.View style={{ ...styles.playLine, opacity: opsAnim }} pointerEvents="box-none">
+      <Text style={styles.label} color={theme['m3-primary']} size={13}>{timeLabel}</Text>
+      <View style={styles.lineContent} pointerEvents="box-none">
+        <View pointerEvents="none" style={{ ...styles.line, borderBottomColor: theme['c-primary-alpha-700'] }} />
         <TouchableOpacity style={styles.button} onPress={handlePlayLine}>
-          <Icon name="play" color={theme['c-button-font']} size={18} />
+          <Icon name="play" color={theme['m3-primary']} size={18} />
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -97,7 +99,7 @@ const styles = createStyle({
   playLine: {
     position: 'absolute',
     width: '100%',
-    top: '40%',
+    top: '42%',
     left: 0,
     height: 2,
     // paddingTop: 5,
@@ -108,9 +110,8 @@ const styles = createStyle({
     position: 'absolute',
     right: 45,
     bottom: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '600',
   },
   lineContent: {
     // backgroundColor: 'rgba(0,0,0,0.1)',

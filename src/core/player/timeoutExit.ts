@@ -8,7 +8,7 @@ type Hook = (time: number, isPlayedStop: boolean) => void
 
 const timeoutTools = {
   bgTimeout: null as number | null,
-  timeout: null as NodeJS.Timer | null,
+  timeout: null as ReturnType<typeof setInterval> | null,
   startTime: 0,
   time: -1,
   timeHooks: [] as Hook[],
@@ -25,14 +25,14 @@ const timeoutTools = {
   },
   callHooks() {
     const time = this.getTime()
-    for (const hook of this.timeHooks) {
+    for (const hook of [...this.timeHooks]) {
       hook(time, global.lx.isPlayedStop)
     }
   },
   clearTimeout() {
     if (!this.bgTimeout) return
     BackgroundTimer.clearTimeout(this.bgTimeout)
-    clearInterval(this.timeout!)
+    if (this.timeout != null) clearInterval(this.timeout as unknown as number)
     this.bgTimeout = null
     this.timeout = null
     this.time = -1
@@ -55,7 +55,8 @@ const timeoutTools = {
     hook(this.getTime(), global.lx.isPlayedStop)
   },
   removeTimeHook(hook: Hook) {
-    this.timeHooks.splice(this.timeHooks.indexOf(hook), 1)
+    const index = this.timeHooks.indexOf(hook)
+    if (index > -1) this.timeHooks.splice(index, 1)
   },
 }
 

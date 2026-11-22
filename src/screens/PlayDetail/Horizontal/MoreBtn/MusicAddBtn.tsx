@@ -7,14 +7,16 @@ import Btn, { BTN_ICON_SIZE } from './Btn'
 
 export default memo(() => {
   const theme = useTheme()
-  const { isLoved, musicAddModalRef, handleShowMusicAddModal } = useLoveMusicAction()
+  const { isLoved, musicAddModalRef, handleToggleLove, handleShowMusicAddModal } = useLoveMusicAction()
 
   return (
     <>
       <Btn
         icon={isLoved ? undefined : 'love'}
         active={isLoved}
-        onPress={handleShowMusicAddModal}
+        hapticType={false}
+        onPress={handleToggleLove}
+        onLongPress={handleShowMusicAddModal}
       >
         {isLoved ? <SolidHeartIcon size={BTN_ICON_SIZE} color={theme['m3-primary']} /> : undefined}
       </Btn>

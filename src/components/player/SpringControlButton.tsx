@@ -2,6 +2,7 @@ import { memo, useEffect, useRef } from 'react'
 import { Animated, Pressable } from 'react-native'
 import { Icon } from '@/components/common/Icon'
 import { M3Motion } from '@/theme/m3'
+import { hapticConfirm, hapticLight } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
 
 export interface SpringActionButtonProps {
@@ -34,8 +35,14 @@ export const SpringActionButton = memo(({
 
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={() => {
+        hapticLight()
+        onPress()
+      }}
+      onLongPress={onLongPress ? () => {
+        hapticConfirm()
+        onLongPress()
+      } : undefined}
       onPressIn={() => { M3Motion.pressSpring(pressScale, 0.9).start() }}
       onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
     >
@@ -95,17 +102,23 @@ export const SpringTogglePlayButton = memo(({
     }).start()
   }, [isPlay, morphAnim])
 
-  const minRadius = Math.min(playRadius, pauseRadius)
-  const maxRadius = Math.max(playRadius, pauseRadius)
+  const halfSide = Math.max(1, Math.min(width, height) / 2)
+  const resolvedPlayRadius = Math.min(playRadius, halfSide)
+  const resolvedPauseRadius = Math.min(pauseRadius, halfSide)
+  const minRadius = Math.min(resolvedPlayRadius, resolvedPauseRadius)
+  const maxRadius = Math.max(resolvedPlayRadius, resolvedPauseRadius)
   const animatedRadius = morphAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [pauseRadius, playRadius],
+    outputRange: [resolvedPauseRadius, resolvedPlayRadius],
     extrapolate: 'clamp',
   })
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        hapticLight()
+        onPress()
+      }}
       onPressIn={() => { M3Motion.pressSpring(pressScale, 0.9).start() }}
       onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
     >

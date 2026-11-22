@@ -12,7 +12,7 @@ import { useTheme } from '@/store/theme/hook'
 // import { useTheme } from '@/store/theme/hook'
 import BoardsList, { type BoardsListType, type BoardsListProps } from '../BoardsList'
 import type { InitState as CommonState } from '@/store/common/state'
-import settingState from '@/store/setting/state'
+import { useSettingValue } from '@/store/setting/hook'
 import { getBoardsList } from '@/core/leaderboard'
 import { COMPONENT_IDS } from '@/config/constant'
 import { handleCollect, handlePlay } from '../listAction'
@@ -24,6 +24,7 @@ const MAX_WIDTH = scaleSizeW(200)
 export default () => {
   const drawer = useRef<DrawerLayoutFixedType>(null)
   const theme = useTheme()
+  const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
   const musicListRef = useRef<MusicListType>(null)
   const isUnmountedRef = useRef(false)
   const boardsListRef = useRef<BoardsListType>(null)
@@ -52,11 +53,9 @@ export default () => {
     })
   }
   const onPlay: BoardsListProps['onPlay'] = (id) => {
-    boundInfo.current.id = id
-    void handlePlay(id, boardState.listDetailInfo.list)
+    void handlePlay(id, id == boardState.listDetailInfo.id ? boardState.listDetailInfo.list : undefined)
   }
   const onCollect: BoardsListProps['onCollect'] = (id, name) => {
-    boundInfo.current.id = id
     void handleCollect(id, name, boundInfo.current.source)
   }
   const onShowBound = () => {
@@ -67,6 +66,7 @@ export default () => {
   const onSourceChange: HeaderBarProps['onSourceChange'] = (source) => {
     boundInfo.current.source = source
     void getBoardsList(source).then(list => {
+      if (!list.length) return
       const id = list[0].id
       const name = list[0].name
       requestAnimationFrame(() => {
@@ -126,7 +126,7 @@ export default () => {
       // drawerWidth={width}
       widthPercentage={0.82}
       widthPercentageMax={MAX_WIDTH}
-      drawerPosition={settingState.setting['common.drawerLayoutPosition']}
+      drawerPosition={drawerLayoutPosition}
       renderNavigationView={navigationView}
       drawerBackgroundColor={theme['c-content-background']}
       style={{ elevation: 1 }}

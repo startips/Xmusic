@@ -28,31 +28,30 @@ const PreassBar = memo(({ onDragState, setDragProgress, onSetProgress }: {
     onLayout,
     onDragStart,
     onDragEnd,
+    onDragCancel,
     onDrag,
   } = useDrag(onSetProgress, onDragState, setDragProgress)
-  // const handlePress = useCallback((event: GestureResponderEvent) => {
-  //   onPress(event.nativeEvent.locationX)
-  // }, [onPress])
+
+  const handlersRef = useRef({ onDragStart, onDragEnd, onDragCancel, onDrag })
+  handlersRef.current = { onDragStart, onDragEnd, onDragCancel, onDrag }
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
-      onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
-
-      // onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        onDrag(gestureState.dx)
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderMove: (_evt, gestureState) => {
+        handlersRef.current.onDrag(gestureState.dx)
       },
       onPanResponderGrant: (evt, gestureState) => {
-        // console.log(evt.nativeEvent.locationX, gestureState)
-        onDragStart(gestureState.dx, evt.nativeEvent.locationX)
+        handlersRef.current.onDragStart(gestureState.dx, evt.nativeEvent.locationX)
       },
       onPanResponderRelease: () => {
-        onDragEnd()
+        handlersRef.current.onDragEnd()
       },
-      // onPanResponderTerminate: (evt, gestureState) => {
-      //   onDragEnd()
-      // },
+      onPanResponderTerminate: () => {
+        handlersRef.current.onDragCancel()
+      },
     }),
   ).current
 

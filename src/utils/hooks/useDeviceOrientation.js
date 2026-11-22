@@ -1,37 +1,29 @@
 import { useEffect, useState, useCallback } from 'react'
 import { windowSizeTools } from '../windowSizeTools'
 
+const isOrientationPortrait = ({ width, height }) => height >= width
+const isOrientationLandscape = ({ width, height }) => width >= height
 
 export default () => {
-  const isOrientationPortrait = ({
-    width,
-    height,
-  }) => height >= width
-  const isOrientationLandscape = ({
-    width,
-    height,
-  }) => width >= height
-
   const size = windowSizeTools.getSize()
   const [orientation, setOrientation] = useState({
     portrait: isOrientationPortrait(size),
     landscape: isOrientationLandscape(size),
   })
 
-  const onChange = useCallback((size) => {
+  const onChange = useCallback((nextSize) => {
     setOrientation({
-      portrait: isOrientationPortrait(size),
-      landscape: isOrientationLandscape(size),
+      portrait: isOrientationPortrait(nextSize),
+      landscape: isOrientationLandscape(nextSize),
     })
   }, [])
 
   useEffect(() => {
-    const changeEvent = windowSizeTools.onSizeChanged(onChange)
-
+    const removeListener = windowSizeTools.onSizeChanged(onChange)
     return () => {
-      changeEvent.remove()
+      removeListener()
     }
-  }, [orientation.portrait, orientation.landscape, onChange])
+  }, [onChange])
 
   return orientation
 }

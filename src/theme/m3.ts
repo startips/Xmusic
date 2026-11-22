@@ -252,11 +252,18 @@ export const buildM3ThemeColors = (
   }
 
   const seedLum = relativeLuminance(seed)
-  // Keep primary vibrant while ensuring text/button legibility on light canvas
-  const primaryRgb = seedLum > 0.65 ? blendRgb(seed, black, 0.12) : seed
-  const onPrimary = relativeLuminance(primaryRgb) > 0.44 ? '#1E1B16' : '#FFFFFF'
-  const secondaryRgb = shiftColor(toRgbString(primaryRgb), { saturation: 0.55, lightness: -0.12 })
-  const tertiaryRgb = shiftColor(toRgbString(primaryRgb), { hue: 58, saturation: 0.9, lightness: -0.06 })
+  // Keep primary vibrant while ensuring >= 4.5:1 WCAG AA contrast against both #FFFFFF and light surfaces
+  let primaryRgb = seed
+  if (seedLum > 0.175) {
+    const darkenRatio = Math.min(0.52, Math.max(0.18, (seedLum - 0.14) / Math.max(0.22, seedLum)))
+    primaryRgb = blendRgb(seed, black, darkenRatio)
+  }
+  const onPrimary = relativeLuminance(primaryRgb) > 0.36 ? '#1E1B16' : '#FFFFFF'
+  const secondaryRgb = shiftColor(toRgbString(primaryRgb), { saturation: 0.58, lightness: -0.06 })
+  let tertiaryRgb = shiftColor(toRgbString(seed), { hue: 58, saturation: 0.88, lightness: -0.14 })
+  if (relativeLuminance(tertiaryRgb) > 0.19) {
+    tertiaryRgb = blendRgb(tertiaryRgb, black, 0.32)
+  }
 
   return {
     'm3-primary': toRgbString(primaryRgb),

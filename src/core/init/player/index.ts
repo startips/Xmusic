@@ -6,6 +6,8 @@ import initWatchList from './watchList'
 import initPlayProgress from './playProgress'
 import initPreloadNextMusic from './preloadNextMusic'
 import initLyric from './lyric'
+import initDesktopWidget from '@/core/desktopWidget'
+import { initListeningStats } from '@/core/listeningStats'
 
 export default async(setting: LX.AppSetting) => {
   await initPlayer(setting)
@@ -16,4 +18,6 @@ export default async(setting: LX.AppSetting) => {
   initWatchList()
   initPlayProgress()
   initPreloadNextMusic()
+  initDesktopWidget()
+  void initListeningStats()
 }

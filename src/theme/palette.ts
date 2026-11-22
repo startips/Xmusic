@@ -43,7 +43,6 @@ const buildLegacyAliases = (isDark: boolean, seed: string): LX.LegacyThemeColors
   const surface = m3['m3-surface']
   const onSurface = m3['m3-on-surface']
   const onSurfaceVariant = m3['m3-on-surface-variant']
-  const outline = m3['m3-outline']
   const primaryContainer = m3['m3-primary-container']
   const secondaryContainer = m3['m3-secondary-container']
 
@@ -84,9 +83,9 @@ const buildLegacyAliases = (isDark: boolean, seed: string): LX.LegacyThemeColors
     'c-primary-light-300-alpha-800': withAlpha(primary, 0.14),
     'c-primary-light-400-alpha-300': withAlpha(primary, 0.30),
     'c-primary-light-400-alpha-700': secondaryContainer,
-    'c-primary-light-600-alpha-600': withAlpha(secondaryContainer, 0.72),
-    'c-primary-light-600-alpha-900': withAlpha(secondaryContainer, 0.40),
-    'c-primary-light-700-alpha-900': withAlpha(secondaryContainer, 0.22),
+    'c-primary-light-600-alpha-600': withAlpha(secondaryContainer, 0.55),
+    'c-primary-light-600-alpha-900': withAlpha(primary, 0.10),
+    'c-primary-light-700-alpha-900': withAlpha(secondaryContainer, 0.16),
     'c-primary-light-1000': m3['m3-surface-container-lowest'],
     'c-primary-light-1000-alpha-100': withAlpha(m3['m3-surface-container-lowest'], 0.90),
     'c-primary-light-1000-alpha-200': withAlpha(m3['m3-surface-container-lowest'], 0.80),
@@ -123,10 +122,10 @@ const buildLegacyAliases = (isDark: boolean, seed: string): LX.LegacyThemeColors
     'c-150': m3['m3-surface-container'],
     'c-200': m3['m3-surface-container-high'],
     'c-250': m3['m3-surface-container-highest'],
-    'c-300': outline,
-    'c-350': outline,
-    'c-400': outline,
-    'c-450': outline,
+    'c-300': withAlpha(onSurfaceVariant, 0.70),
+    'c-350': withAlpha(onSurfaceVariant, 0.78),
+    'c-400': withAlpha(onSurfaceVariant, 0.85),
+    'c-450': onSurfaceVariant,
     'c-500': onSurfaceVariant,
     'c-550': onSurfaceVariant,
     'c-600': onSurfaceVariant,
@@ -146,14 +145,20 @@ const buildLegacyAliases = (isDark: boolean, seed: string): LX.LegacyThemeColors
   }
 }
 
-export const createActiveTheme = (isDark: boolean, seedId: LX.ThemeSeedId = XMUSIC_THEME_ID): LX.ActiveTheme => {
+export const createActiveTheme = (
+  isDark: boolean,
+  seedId: LX.ThemeSeedId = XMUSIC_THEME_ID,
+  customSeed?: string | null,
+): LX.ActiveTheme => {
   const seedOption = getThemeSeedOption(seedId)
+  const effectiveSeed = customSeed?.trim() ? customSeed.trim() : seedOption.seed
   return {
     id: seedOption.id,
     name: XMUSIC_THEME_NAME,
+    seedColor: effectiveSeed,
     isDark,
-    ...buildM3ThemeColors(seedOption.seed, isDark),
-    ...buildLegacyAliases(isDark, seedOption.seed),
+    ...buildM3ThemeColors(effectiveSeed, isDark),
+    ...buildLegacyAliases(isDark, effectiveSeed),
     'bg-image-position': 'center',
     'bg-image-size': 'cover',
   }

@@ -59,13 +59,14 @@ const initSelectInfo = {}
 export default forwardRef<ListNameEditType, {}>((props, ref) => {
   const alertRef = useRef<ConfirmAlertType>(null)
   const nameInputRef = useRef<NameInputType>(null)
-  const [position, setPosition] = useState(0)
+  const positionRef = useRef(0)
+  const [isRename, setIsRename] = useState(false)
   const selectedListInfo = useRef<LX.List.UserListInfo>(initSelectInfo as LX.List.UserListInfo)
   const [visible, setVisible] = useState(false)
 
   const handleShow = () => {
     alertRef.current?.setVisible(true)
-    const name = position == -1 ? '' : (selectedListInfo.current.name ?? '')
+    const name = positionRef.current == -1 ? (selectedListInfo.current.name ?? '') : ''
     requestAnimationFrame(() => {
       nameInputRef.current?.setName(name)
       setTimeout(() => {
@@ -75,7 +76,8 @@ export default forwardRef<ListNameEditType, {}>((props, ref) => {
   }
   useImperativeHandle(ref, () => ({
     showCreate(position) {
-      setPosition(position)
+      positionRef.current = position
+      setIsRename(false)
       if (visible) handleShow()
       else {
         setVisible(true)
@@ -85,7 +87,8 @@ export default forwardRef<ListNameEditType, {}>((props, ref) => {
       }
     },
     show(listInfo) {
-      setPosition(-1)
+      positionRef.current = -1
+      setIsRename(true)
       selectedListInfo.current = listInfo
       if (visible) handleShow()
       else {
@@ -101,15 +104,16 @@ export default forwardRef<ListNameEditType, {}>((props, ref) => {
     let name = nameInputRef.current?.getText() ?? ''
     if (!name.length) return
     if (name.length > 100) name = name.substring(0, 100)
-    if (position == -1) {
+    if (positionRef.current == -1) {
       void updateUserList([{ ...selectedListInfo.current, name }])
     } else {
+      const targetPos = positionRef.current
       void (listState.userList.some(l => l.name == name) ? confirmDialog({
         message: global.i18n.t('list_duplicate_tip'),
       }) : Promise.resolve(true)).then(confirmed => {
         if (!confirmed) return
         const now = Date.now()
-        void createUserList(position, [{ id: `userlist_${now}`, name, locationUpdateTime: now }])
+        void createUserList(targetPos, [{ id: `userlist_${now}`, name, locationUpdateTime: now }])
       })
     }
     alertRef.current?.setVisible(false)
@@ -122,7 +126,7 @@ export default forwardRef<ListNameEditType, {}>((props, ref) => {
           onConfirm={handleRename}
         >
           <View style={styles.renameContent}>
-            <Text style={{ marginBottom: 5 }}>{ position == -1 ? global.i18n.t('list_rename_title') : global.i18n.t('list_create')}</Text>
+            <Text style={{ marginBottom: 5 }}>{ isRename ? global.i18n.t('list_rename_title') : global.i18n.t('list_create')}</Text>
             <NameInput ref={nameInputRef} />
           </View>
         </ConfirmAlert>
@@ -140,7 +144,7 @@ const styles = createStyle({
   input: {
     flexGrow: 1,
     flexShrink: 1,
-    minWidth: 290,
+    width: '100%',
     borderRadius: M3Radius.sm,
     borderWidth: 0.8,
     paddingHorizontal: 10,

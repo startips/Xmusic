@@ -12,8 +12,19 @@ export const applyThemeByMode = () => {
   const mode = settingState.setting['common.themeMode'] ?? 'system'
   const seedOption = getThemeSeedOption(settingState.setting['theme.id'])
   const isDark = mode == 'dark' || (mode == 'system' && themeState.shouldUseDarkColors)
-  if (themeState.theme.id == seedOption.id && themeState.theme.isDark == isDark) return
-  themeActions.setTheme(createActiveTheme(isDark, seedOption.id))
+  const useCoverSeed = settingState.setting['theme.dynamicCoverColor'] && Boolean(themeState.coverSeedColor)
+  const targetSeed = useCoverSeed ? themeState.coverSeedColor! : seedOption.seed
+  if (
+    themeState.theme.id == seedOption.id &&
+    themeState.theme.isDark == isDark &&
+    themeState.theme.seedColor == targetSeed
+  ) return
+  themeActions.setTheme(createActiveTheme(isDark, seedOption.id, useCoverSeed ? targetSeed : null))
+}
+
+export const setCoverPalette = (seedColor: string | null, palette: string[] | null) => {
+  themeActions.setCoverPalette(seedColor, palette)
+  applyThemeByMode()
 }
 
 export const setShouldUseDarkColors = (shouldUseDarkColors: boolean) => {

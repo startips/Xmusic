@@ -19,6 +19,9 @@ import { showPactModal } from '@/core/common'
 export default memo(() => {
   const theme = useTheme()
   const t = useI18n()
+  const openAuthorPage = () => {
+    void openUrl('https://github.com/startips')
+  }
   const openForkRepoPage = () => {
     void openUrl('https://github.com/startips/Xmusic')
   }
@@ -118,8 +121,10 @@ export default memo(() => {
         <Text style={styles.text}>。</Text>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>By: </Text>
-        <Text style={styles.text}>落雪无痕</Text>
+        <Text style={styles.text}>UI by:</Text>
+        <TouchableOpacity onPress={openAuthorPage}>
+          <Text style={textLinkStyle}>startips</Text>
+        </TouchableOpacity>
       </View>
     </Section>
   )

@@ -44,7 +44,7 @@ export default ({ componentId }: { componentId: string }) => {
   return (
     <EdgeSwipeContainer
       ref={edgeSwipeRef}
-      edgeWidth={42}
+      edgeWidth={24}
       dismissDistance={64}
       onEdgeDismiss={triggerDismiss}
       style={{ flex: 1 }}
@@ -53,8 +53,8 @@ export default ({ componentId }: { componentId: string }) => {
         <StatusBar />
         {
           isHorizontalMode
-            ? <Horizontal componentId={componentId} />
-            : <Vertical componentId={componentId} />
+            ? <Horizontal componentId={componentId} onBack={triggerDismiss} />
+            : <Vertical componentId={componentId} onBack={triggerDismiss} />
         }
       </PageContent>
     </EdgeSwipeContainer>

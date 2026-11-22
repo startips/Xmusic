@@ -43,9 +43,7 @@ const CommentFloor = memo(({ comment, isLast, isReply }: {
         }
       </View>
     )
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [comment.id, comment.reply, theme])
 
   const likedCount = useMemo(() => {
     if (comment.likedCount == null) return null
@@ -55,8 +53,7 @@ const CommentFloor = memo(({ comment, isLast, isReply }: {
         <Text style={styles.likedCount} size={11.5} color={theme['m3-on-surface-variant']}>{comment.likedCount}</Text>
       </View>
     )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [comment.likedCount, theme])
 
   return (
     <View
@@ -169,6 +166,8 @@ const styles = createStyle({
     paddingTop: 8,
     width: '100%',
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   replyFloor: {
     marginTop: 10,

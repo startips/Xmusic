@@ -7,9 +7,9 @@ import { Icon } from '@/components/common/Icon'
 import Text from '@/components/common/Text'
 import StatusBar from '@/components/common/StatusBar'
 import { scaleSizeH } from '@/utils/pixelRatio'
-import { setNavActiveId } from '@/core/common'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import SearchTypeSelector from '@/screens/Home/Views/Search/SearchTypeSelector'
+import { navigations } from '@/navigation'
 import { M3Radius } from '@/theme/m3'
 
 const TOP_BAR_HEIGHT = 50
@@ -23,14 +23,10 @@ const Header = () => {
   const id = useNavActiveId()
   const t = useI18n()
   const statusBarHeight = useStatusbarHeight()
-  const isSetting = id == 'nav_setting'
-
-  const handleBack = () => {
-    setNavActiveId(commonState.lastNavActiveId)
-  }
 
   const handleOpenSetting = () => {
-    setNavActiveId('nav_setting')
+    if (Boolean(commonState.componentIds.setting) || !commonState.componentIds.home) return
+    navigations.pushSettingScreen(commonState.componentIds.home)
   }
 
   return (
@@ -44,19 +40,8 @@ const Header = () => {
         }}
       >
         <View style={styles.left}>
-          {isSetting
-            ? (
-                <TouchableOpacity
-                  style={{ ...styles.iconBtn, backgroundColor: theme['m3-surface-container'] }}
-                  activeOpacity={0.7}
-                  onPress={handleBack}
-                >
-                  <Icon color={theme['m3-on-surface']} name="chevron-left" size={16} />
-                </TouchableOpacity>
-              )
-            : null}
           <Text
-            style={isSetting ? styles.backTitle : styles.title}
+            style={styles.title}
             size={21}
             color={theme['m3-on-surface']}
             numberOfLines={1}
@@ -66,17 +51,13 @@ const Header = () => {
         </View>
         <View style={styles.right}>
           {headerComponents[id] ?? null}
-          {!isSetting
-            ? (
-                <TouchableOpacity
-                  style={{ ...styles.iconBtn, backgroundColor: theme['m3-surface-container'] }}
-                  activeOpacity={0.7}
-                  onPress={handleOpenSetting}
-                >
-                  <Icon color={theme['m3-on-surface-variant']} name="setting" size={17} />
-                </TouchableOpacity>
-              )
-            : null}
+          <TouchableOpacity
+            style={{ ...styles.iconBtn, backgroundColor: theme['m3-surface-container'] }}
+            activeOpacity={0.7}
+            onPress={handleOpenSetting}
+          >
+            <Icon color={theme['m3-on-surface-variant']} name="setting" size={17} />
+          </TouchableOpacity>
         </View>
       </View>
     </>

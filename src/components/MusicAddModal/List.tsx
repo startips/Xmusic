@@ -57,9 +57,8 @@ export default ({ musicInfo, onPress }: {
   const windowSize = useWindowSize()
   const allList = useMyList()
   const itemWidth = useMemo(() => {
-    let w = Math.floor(windowSize.width * 0.9 - PADDING)
-    let n = Math.floor(w / MIN_WIDTH)
-    if (n > 10) n = 10
+    let w = Math.max(MIN_WIDTH, Math.floor(windowSize.width * 0.9 - PADDING))
+    let n = Math.max(1, Math.min(10, Math.floor(w / MIN_WIDTH)))
     return Math.floor((w - 1) / n)
   }, [windowSize])
 

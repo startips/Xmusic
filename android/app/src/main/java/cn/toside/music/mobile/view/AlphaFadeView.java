@@ -10,16 +10,16 @@ import android.graphics.Shader;
 
 import com.facebook.react.views.view.ReactViewGroup;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Container view that smoothly fades its children's top and bottom edges to transparent
  * using a multi-stop PorterDuff DST_IN alpha gradient so artwork clears header text above
  * and melts cleanly into action controls below across solid and dynamic backgrounds.
  */
 public class AlphaFadeView extends ReactViewGroup {
-  private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+  private final float[] posScratch = new float[12];
+  private final int[] colorScratch = new int[12];
+
   private float topFadeStart = 0.0f;
   private float topFadeEnd = 0.0f;
   private float fadeStart = 0.60f;
@@ -91,57 +91,53 @@ public class AlphaFadeView extends ReactViewGroup {
     boolean hasTop = (tEnd - tStart) > 0.005f;
     boolean hasBottom = (bEnd - bStart) > 0.005f;
 
-    List<Float> posList = new ArrayList<>(12);
-    List<Integer> colorList = new ArrayList<>(12);
-
+    int count = 0;
     if (hasTop) {
-      posList.add(0f);
-      colorList.add(0x00FFFFFF);
+      posScratch[count] = 0f;
+      colorScratch[count++] = 0x00FFFFFF;
       if (tStart > 0.002f) {
-        posList.add(tStart);
-        colorList.add(0x00FFFFFF);
+        posScratch[count] = tStart;
+        colorScratch[count++] = 0x00FFFFFF;
       }
       float tSpan = tEnd - tStart;
-      posList.add(tStart + tSpan * 0.25f);
-      colorList.add(0x45FFFFFF);
-      posList.add(tStart + tSpan * 0.58f);
-      colorList.add(0xADFFFFFF);
-      posList.add(tStart + tSpan * 0.85f);
-      colorList.add(0xE8FFFFFF);
-      posList.add(tEnd);
-      colorList.add(0xFFFFFFFF);
+      posScratch[count] = tStart + tSpan * 0.25f;
+      colorScratch[count++] = 0x45FFFFFF;
+      posScratch[count] = tStart + tSpan * 0.58f;
+      colorScratch[count++] = 0xADFFFFFF;
+      posScratch[count] = tStart + tSpan * 0.85f;
+      colorScratch[count++] = 0xE8FFFFFF;
+      posScratch[count] = tEnd;
+      colorScratch[count++] = 0xFFFFFFFF;
     } else {
-      posList.add(0f);
-      colorList.add(0xFFFFFFFF);
+      posScratch[count] = 0f;
+      colorScratch[count++] = 0xFFFFFFFF;
     }
 
     if (hasBottom) {
       float bSpan = bEnd - bStart;
-      if (bStart > posList.get(posList.size() - 1) + 0.001f) {
-        posList.add(bStart);
-        colorList.add(0xFFFFFFFF);
+      if (bStart > posScratch[count - 1] + 0.001f) {
+        posScratch[count] = bStart;
+        colorScratch[count++] = 0xFFFFFFFF;
       }
-      posList.add(bStart + bSpan * 0.35f);
-      colorList.add(0xB8FFFFFF);
-      posList.add(bStart + bSpan * 0.70f);
-      colorList.add(0x40FFFFFF);
-      posList.add(bEnd);
-      colorList.add(0x00FFFFFF);
+      posScratch[count] = bStart + bSpan * 0.35f;
+      colorScratch[count++] = 0xB8FFFFFF;
+      posScratch[count] = bStart + bSpan * 0.70f;
+      colorScratch[count++] = 0x40FFFFFF;
+      posScratch[count] = bEnd;
+      colorScratch[count++] = 0x00FFFFFF;
       if (bEnd < 0.999f) {
-        posList.add(1f);
-        colorList.add(0x00FFFFFF);
+        posScratch[count] = 1f;
+        colorScratch[count++] = 0x00FFFFFF;
       }
     } else {
-      posList.add(1f);
-      colorList.add(0xFFFFFFFF);
+      posScratch[count] = 1f;
+      colorScratch[count++] = 0xFFFFFFFF;
     }
 
-    float[] positions = new float[posList.size()];
-    int[] colors = new int[colorList.size()];
-    for (int i = 0; i < posList.size(); i++) {
-      positions[i] = posList.get(i);
-      colors[i] = colorList.get(i);
-    }
+    float[] positions = new float[count];
+    int[] colors = new int[count];
+    System.arraycopy(posScratch, 0, positions, 0, count);
+    System.arraycopy(colorScratch, 0, colors, 0, count);
 
     maskPaint.setShader(new LinearGradient(0f, 0f, 0f, height, colors, positions, Shader.TileMode.CLAMP));
   }

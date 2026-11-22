@@ -15,7 +15,7 @@ import java.util.Arrays;
  * Hardware-accelerated vertical linear gradient overlay view.
  */
 public class LinearGradientView extends View {
-  private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
   private int[] colors = new int[] { 0x00000000, 0x00000000 };
   @Nullable
   private float[] locations = null;
@@ -27,10 +27,12 @@ public class LinearGradientView extends View {
     super(context);
   }
 
-  public void setColors(int[] colors) {
-    if (colors == null || colors.length < 2) return;
-    if (Arrays.equals(this.colors, colors)) return;
-    this.colors = colors;
+  public void setColors(@Nullable int[] colors) {
+    int[] nextColors = (colors == null || colors.length < 2)
+      ? new int[] { 0x00000000, 0x00000000 }
+      : colors;
+    if (Arrays.equals(this.colors, nextColors)) return;
+    this.colors = nextColors;
     cachedHeight = -1;
     invalidate();
   }

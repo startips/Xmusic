@@ -1,4 +1,5 @@
 import { LIST_IDS } from '@/config/constant'
+import { syncAudioEffectsFromSetting, syncAudioTransitionFromSetting } from '@/core/audioEffects'
 import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
 import { pause, playNext } from '@/core/player/player'
@@ -11,8 +12,14 @@ import settingState from '@/store/setting/state'
 
 
 export default async(setting: LX.AppSetting) => {
+  syncAudioTransitionFromSetting(setting)
+  syncAudioEffectsFromSetting(setting)
+
   const setPlayStatus = () => {
     setIsPlay(true)
+    if (settingState.setting['player.eqEnabled']) {
+      syncAudioEffectsFromSetting(settingState.setting)
+    }
   }
   const setPauseStatus = () => {
     setIsPlay(false)
@@ -52,6 +59,17 @@ export default async(setting: LX.AppSetting) => {
       if (playerState.playedList.length) clearPlayedList()
       const playMusicInfo = playerState.playMusicInfo
       if (newValue == 'random' && playMusicInfo.musicInfo && !playMusicInfo.isTempPlay) addPlayedList({ ...(playMusicInfo as LX.Player.PlayMusicInfo) })
+    }
+    if (keys.includes('player.isSoftPlayPause') || keys.includes('player.crossfadeDuration')) {
+      syncAudioTransitionFromSetting(settingState.setting)
+    }
+    if (
+      keys.includes('player.eqEnabled') ||
+      keys.includes('player.eqBands') ||
+      keys.includes('player.bassBoost') ||
+      keys.includes('player.loudnessGain')
+    ) {
+      syncAudioEffectsFromSetting(settingState.setting)
     }
   }
 

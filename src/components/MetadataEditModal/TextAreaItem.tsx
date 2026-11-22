@@ -62,16 +62,18 @@ const styles = createStyle({
   },
   header: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 30,
+    gap: 10,
   },
   label: {
     marginBottom: 5,
   },
   btns: {
     flexDirection: 'row',
-    gap: 15,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   textarea: {
     flexGrow: 1,

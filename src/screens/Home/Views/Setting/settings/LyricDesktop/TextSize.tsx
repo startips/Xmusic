@@ -25,7 +25,10 @@ export default memo(() => {
     setSliderSize(value)
   }, [])
   const handleSlidingComplete = useCallback<NonNullable<SliderProps['onSlidingComplete']>>(value => {
-    if (fontSize == value) return
+    if (fontSize == value) {
+      setSliding(false)
+      return
+    }
     void setDesktopLyricTextSize(value).then(() => {
       updateSetting({ 'desktopLyric.style.fontSize': value })
     }).finally(() => {
@@ -36,7 +39,7 @@ export default memo(() => {
   return (
     <SubTitle title={t('setting_lyric_desktop_text_size')}>
       <View style={styles.content}>
-        <Text style={{ color: theme['c-primary-font'] }}>{isSliding ? sliderSize : fontSize}</Text>
+        <Text style={{ color: theme['c-primary-font'] }}>{Math.round((isSliding ? sliderSize : fontSize) / 10)}</Text>
         <Slider
           minimumValue={100}
           maximumValue={500}

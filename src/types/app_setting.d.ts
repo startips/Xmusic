@@ -57,16 +57,6 @@ declare global {
       'common.allowProgressBarSeek': boolean
 
       /**
-       * 是否显示返回按钮
-       */
-      'common.showBackBtn': boolean
-
-      /**
-       * 是否显示退出按钮
-       */
-      'common.showExitBtn': boolean
-
-      /**
        * 使用系统文件选择器
        */
       'common.useSystemFileSelector': boolean
@@ -75,6 +65,11 @@ declare global {
        * 总是保留状态栏高度
        */
       'common.alwaysKeepStatusbarHeight': boolean
+
+      /**
+       * 是否启用线性马达触感反馈
+       */
+      'common.enableHaptics': boolean
 
       /**
        * 主题种子色 id
@@ -87,9 +82,9 @@ declare global {
       'theme.dynamicBg': boolean
 
       /**
-       * 字体阴影
+       * 封面实时流转主题色
        */
-      'theme.fontShadow': boolean
+      'theme.dynamicCoverColor': boolean
 
       /**
        * 启动时自动播放歌曲
@@ -157,6 +152,41 @@ declare global {
       'player.isEnableAudioOffload': boolean
 
       /**
+       * 是否启用暂停/恢复柔和音量渐变
+       */
+      'player.isSoftPlayPause': boolean
+
+      /**
+       * 切歌淡入淡出时长（秒，0 为关闭）
+       */
+      'player.crossfadeDuration': number
+
+      /**
+       * 是否启用硬件音效与均衡器
+       */
+      'player.eqEnabled': boolean
+
+      /**
+       * 均衡器预设
+       */
+      'player.eqPreset': 'flat' | 'pop' | 'rock' | 'classical' | 'jazz' | 'vocal' | 'bass' | 'custom'
+
+      /**
+       * 均衡器各频段增益（mB 逗号分隔）
+       */
+      'player.eqBands': string
+
+      /**
+       * 重低音增强强度（0-1000）
+       */
+      'player.bassBoost': number
+
+      /**
+       * 响度增强增益（mB，0-1000）
+       */
+      'player.loudnessGain': number
+
+      /**
        * 是否显示歌词翻译
        */
       'player.isShowLyricTranslation': boolean
@@ -215,6 +245,11 @@ declare global {
        * 播放详情页-是否允许通过歌词调整播放进度
        */
       'playDetail.isShowLyricProgressSetting': boolean
+
+      /**
+       * 播放详情页-是否启用逐字卡拉OK与景深歌词效果
+       */
+      'playDetail.isShowKaraokeLyric': boolean
 
       /**
        * 是否启用桌面歌词

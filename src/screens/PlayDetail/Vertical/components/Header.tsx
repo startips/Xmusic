@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef } from 'react'
+import { memo, useRef } from 'react'
 
 import { View, StyleSheet } from 'react-native'
 
@@ -13,8 +13,6 @@ import commonState from '@/store/common/state'
 import SettingPopup, { type SettingPopupType } from '../../components/SettingPopup'
 import { useStatusbarHeight } from '@/store/common/hook'
 import Btn from './Btn'
-import LinearGradientOverlay from '@/components/common/LinearGradientOverlay'
-import { withAlpha } from '@/theme/m3'
 
 export const HEADER_HEIGHT = scaleSizeH(52)
 
@@ -32,22 +30,20 @@ const Title = () => {
   )
 }
 
-export default memo(() => {
+export default memo(({ onBack }: { onBack?: () => void }) => {
   const popupRef = useRef<SettingPopupType>(null)
   const statusBarHeight = useStatusbarHeight()
-  const theme = useTheme()
 
   const back = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
     navigations.popPlayDetailScreen(commonState.componentIds.playDetail!)
   }
   const showSetting = () => {
     popupRef.current?.show()
   }
-
-  const scrimColors = useMemo(() => {
-    const base = theme['m3-background']
-    return [withAlpha(base, 0.85), withAlpha(base, 0.42), withAlpha(base, 0)]
-  }, [theme])
 
   return (
     <View
@@ -59,12 +55,6 @@ export default memo(() => {
       nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_header}
       pointerEvents="box-none"
     >
-      <LinearGradientOverlay
-        pointerEvents="none"
-        colors={scrimColors}
-        locations={[0, 0.62, 1]}
-        style={{ ...styles.scrim, height: HEADER_HEIGHT + statusBarHeight + 20 }}
-      />
       <StatusBar />
       <View style={styles.container}>
         <Btn icon="chevron-left" onPress={back} />
@@ -84,12 +74,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-  },
-  scrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
   },
   container: {
     flexDirection: 'row',

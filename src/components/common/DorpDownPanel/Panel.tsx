@@ -56,12 +56,12 @@ const Panel = ({
     let justifyContent: 'flex-end' | 'flex-start'
     if (isBottom) {
       const buttonPositionY = Math.ceil(buttonPosition.y)
-      height = buttonPositionY - windowSize.height * 0.3
-      top = buttonPositionY - height
+      height = Math.max(120, buttonPositionY - windowSize.height * 0.3)
+      top = Math.max(8, buttonPositionY - height)
       justifyContent = 'flex-end'
     } else {
       top = Math.floor(buttonPosition.y) + Math.floor(buttonPosition.h)
-      height = windowSize.height * 0.7 - top
+      height = Math.max(120, windowSize.height * 0.7 - top)
       justifyContent = 'flex-start'
     }
     const frameStyle = {
@@ -115,7 +115,7 @@ export default forwardRef<PanelType, PanelProps>(({ onHide, keyHide, bgHide, chi
 
   // console.log(visible)
   return (
-    <Modal ref={modalRef} onHide={onHide} onStartShouldSetResponder={() => true} keyHide={keyHide} bgHide={bgHide}>
+    <Modal ref={modalRef} onHide={onHide} statusBarPadding={false} keyHide={keyHide} bgHide={bgHide}>
       <Panel buttonPosition={position} onHide={() => modalRef.current?.setVisible(false)}>
         {children}
       </Panel>

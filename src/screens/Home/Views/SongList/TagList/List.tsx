@@ -21,6 +21,8 @@ export default forwardRef<ListType, ListProps>(({ onTagChange }, ref) => {
   // const theme = useTheme()
   const [activeId, setActiveId] = useState('')
   const [list, setList] = useState<TagInfo['tags']>([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const t = useI18n()
   const prevSource = useRef('')
 
@@ -36,15 +38,22 @@ export default forwardRef<ListType, ListProps>(({ onTagChange }, ref) => {
     loadTag(source, id) {
       if (id != activeId) setActiveId(id)
       if (source != prevSource.current) {
+        setLoading(true)
+        setLoadError(false)
         setList([{ name: '', list: [{ name: t('songlist_tag_default'), id: '', parent_id: '', parent_name: '', source }] }])
         void getTags(source).then(tagInfo => {
           if (isUnmountedRef.current) return
           prevSource.current = source
+          setLoading(false)
           setList([
             { name: '', list: [{ name: t('songlist_tag_default'), id: '', parent_id: '', parent_name: '', source }] },
             { name: t('songlist_tag_hot'), list: [...tagInfo.hotTag] },
             ...tagInfo.tags,
           ].filter(t => t.list.length))
+        }).catch(() => {
+          if (isUnmountedRef.current) return
+          setLoading(false)
+          setLoadError(true)
         })
       }
     },
@@ -66,10 +75,10 @@ export default forwardRef<ListType, ListProps>(({ onTagChange }, ref) => {
           ))
         }
         {
-          list.length == 1
+          loading || loadError
             ? (
                 <View style={styles.blankView}>
-                  <Text>{t('list_loading')}</Text>
+                  <Text>{loadError ? t('list_error') : t('list_loading')}</Text>
                 </View>
               )
             : null

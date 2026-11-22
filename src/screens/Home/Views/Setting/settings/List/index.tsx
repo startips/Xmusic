@@ -5,6 +5,8 @@ import AddMusicLocationType from './AddMusicLocationType'
 import IsClickPlayList from './IsClickPlayList'
 import IsShowAlbumName from './IsShowAlbumName'
 import IsShowInterval from './IsShowInterval'
+import DislikeList from '../Other/DislikeList'
+import Search from '../Search'
 
 import { useI18n } from '@/lang'
 
@@ -12,11 +14,15 @@ export default memo(() => {
   const t = useI18n()
 
   return (
-    <Section title={t('setting_list')}>
-      <IsClickPlayList />
-      <IsShowAlbumName />
-      <IsShowInterval />
-      <AddMusicLocationType />
-    </Section>
+    <>
+      <Section title={t('setting_list')}>
+        <IsClickPlayList />
+        <IsShowAlbumName />
+        <IsShowInterval />
+        <AddMusicLocationType />
+        <DislikeList />
+      </Section>
+      <Search />
+    </>
   )
 })

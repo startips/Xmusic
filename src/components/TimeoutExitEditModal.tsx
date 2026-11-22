@@ -13,7 +13,7 @@ import { updateSetting } from '@/core/common'
 import settingState from '@/store/setting/state'
 
 const MAX_MIN = 1440
-const rxp = /([1-9]\d*)/
+const rxp = /^([1-9]\d*)$/
 export const formatTime = (time: number) => {
   // let d = parseInt(time / 86400)
   // d = d ? d.toString() + ':' : ''
@@ -75,6 +75,7 @@ const TimeInput = forwardRef<TimeInputType, {}>((props, ref) => {
       placeholder={t('timeout_exit_input_tip')}
       value={text}
       onChangeText={setText}
+      keyboardType="number-pad"
       style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}
     />
   )
@@ -105,27 +106,30 @@ export const useTimeInfo = () => {
   const t = useI18n()
 
   useEffect(() => {
-    let active: boolean | null = null
+    let prevActive: boolean | null = null
+    let prevPlayedStop: boolean | null = null
     const remove = onTimeUpdate((time, isPlayedStop) => {
       if (time < 0) {
-        if (active) {
+        if (prevActive !== false || prevPlayedStop !== isPlayedStop) {
           setExitTimeInfo({
             cancelText: isPlayedStop ? t('timeout_exit_btn_wait_cancel') : '',
             confirmText: '',
             isPlayedStop,
             active: false,
           })
-          active = false
+          prevActive = false
+          prevPlayedStop = isPlayedStop
         }
       } else {
-        if (active !== true) {
+        if (prevActive !== true || prevPlayedStop !== isPlayedStop) {
           setExitTimeInfo({
             cancelText: t('timeout_exit_btn_cancel'),
             confirmText: t('timeout_exit_btn_update'),
             isPlayedStop,
             active: true,
           })
-          active = true
+          prevActive = true
+          prevPlayedStop = isPlayedStop
         }
       }
     })

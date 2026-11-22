@@ -15,15 +15,21 @@ import { M3Radius } from '@/theme/m3'
 
 const TOP_BAR_HEIGHT = scaleSizeH(50)
 
-export default memo(({ musicInfo }: {
+export default memo(({ musicInfo, onBack }: {
   musicInfo: LX.Music.MusicInfo
+  onBack?: () => void
 }) => {
   const t = useI18n()
   const theme = useTheme()
   const statusBarHeight = useStatusbarHeight()
 
   const back = () => {
-    void pop(commonState.componentIds.comment!)
+    if (onBack) {
+      onBack()
+      return
+    }
+    if (!commonState.componentIds.comment) return
+    void pop(commonState.componentIds.comment)
   }
 
   return (

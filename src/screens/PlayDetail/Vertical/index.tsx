@@ -1,29 +1,30 @@
-import { memo, useState, useRef, useMemo, useEffect } from 'react'
+import { memo, useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { View, AppState, Animated, Pressable } from 'react-native'
 
-import Header from './components/Header'
+import Header, { HEADER_HEIGHT } from './components/Header'
 import Player from './Player'
 import PagerView, { type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
 import Pic from './Pic'
 import Lyric from './Lyric'
+import LyricShareModal, { type LyricShareModalType } from '../components/LyricShareModal'
 import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { useStatusbarHeight } from '@/store/common/hook'
+import LinearGradientOverlay from '@/components/common/LinearGradientOverlay'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
 
-const LyricPage = ({ activeIndex }: { activeIndex: number }) => {
+const LyricPage = ({ activeIndex, onLongPressLyric }: { activeIndex: number, onLongPressLyric: (lineIndex: number) => void }) => {
   const initedRef = useRef(false)
-  const lyric = useMemo(() => <Lyric />, [])
+  const lyric = useMemo(() => <Lyric onLongPressLyric={onLongPressLyric} />, [onLongPressLyric])
   switch (activeIndex) {
-    // case 3:
     case 1:
       if (!initedRef.current) initedRef.current = true
       return lyric
     default:
       return initedRef.current ? lyric : null
   }
-  // return activeIndex == 0 || activeIndex == 1 ? setting : null
 }
 
 const PageIndicator = ({
@@ -78,10 +79,27 @@ const PageIndicator = ({
   )
 }
 
-export default memo(({ componentId }: { componentId: string }) => {
+export default memo(({ componentId, onBack }: { componentId: string, onBack: () => void }) => {
   const [pageIndex, setPageIndex] = useState(0)
   const pagerViewRef = useRef<PagerView>(null)
+  const lyricShareRef = useRef<LyricShareModalType>(null)
   const showLyricRef = useRef(false)
+
+  const handleLongPressLyric = useCallback((lineIndex: number) => {
+    lyricShareRef.current?.show(lineIndex)
+  }, [])
+  const theme = useTheme()
+  const statusBarHeight = useStatusbarHeight()
+
+  const topScrimColors = useMemo(() => {
+    const base = theme['m3-background']
+    return [withAlpha(base, 0.9), withAlpha(base, 0.56), withAlpha(base, 0.16), withAlpha(base, 0)]
+  }, [theme])
+
+  const bottomScrimColors = useMemo(() => {
+    const base = theme['m3-background']
+    return [withAlpha(base, 0), withAlpha(base, 0.42), withAlpha(base, 0.78), withAlpha(base, 0.9)]
+  }, [theme])
 
   const onPageSelected = ({ nativeEvent }: PagerViewOnPageSelectedEvent) => {
     setPageIndex(nativeEvent.position)
@@ -111,7 +129,7 @@ export default memo(({ componentId }: { componentId: string }) => {
 
     const handleComponentIdsChange = (ids: CommonState['componentIds']) => {
       if (ids.comment) screenUnkeepAwake()
-      else if (AppState.currentState == 'active') screenkeepAwake()
+      else if (AppState.currentState == 'active' && showLyricRef.current) screenkeepAwake()
     }
 
     global.state_event.on('componentIdsUpdated', handleComponentIdsChange)
@@ -126,6 +144,12 @@ export default memo(({ componentId }: { componentId: string }) => {
 
   return (
     <>
+      <LinearGradientOverlay
+        pointerEvents="none"
+        colors={bottomScrimColors}
+        locations={[0, 0.35, 0.75, 1]}
+        style={styles.bottomScrim}
+      />
       <View style={styles.container}>
         <PagerView
           ref={pagerViewRef}
@@ -136,13 +160,20 @@ export default memo(({ componentId }: { componentId: string }) => {
             <Pic componentId={componentId} />
           </View>
           <View collapsable={false}>
-            <LyricPage activeIndex={pageIndex} />
+            <LyricPage activeIndex={pageIndex} onLongPressLyric={handleLongPressLyric} />
           </View>
         </PagerView>
         <PageIndicator pageIndex={pageIndex} onSelectPage={handleSelectPage} />
         <Player />
       </View>
-      <Header />
+      <LinearGradientOverlay
+        pointerEvents="none"
+        colors={topScrimColors}
+        locations={[0, 0.42, 0.78, 1]}
+        style={{ ...styles.topScrim, height: HEADER_HEIGHT + statusBarHeight + 36 }}
+      />
+      <Header onBack={onBack} />
+      <LyricShareModal ref={lyricShareRef} />
     </>
   )
 })
@@ -151,6 +182,20 @@ const styles = createStyle({
   container: {
     flex: 1,
     flexDirection: 'column',
+  },
+  topScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 5,
+  },
+  bottomScrim: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '46%',
   },
   pagerView: {
     flex: 1,

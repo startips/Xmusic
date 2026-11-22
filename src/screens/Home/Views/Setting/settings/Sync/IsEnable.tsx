@@ -141,9 +141,11 @@ export default memo(({ host, setHost }: {
   }, [syncStatus.message, syncStatus.status, t])
 
   const handleCancelSetCode = useCallback(() => {
+    setIsEnableSync(false)
+    void disconnectServer()
     setSyncMessage('')
     confirmAlertRef.current?.setVisible(false)
-  }, [])
+  }, [setIsEnableSync])
   const handleSetCode = useCallback(() => {
     // const code = authCode.trim()
     // if (code.length != 6) return
@@ -207,11 +209,8 @@ const styles = createStyle({
   authCodeInput: {
     flexGrow: 1,
     flexShrink: 1,
-    minWidth: 260,
+    width: '100%',
     borderRadius: 4,
-    // paddingTop: 2,
-    // paddingBottom: 2,
-    // fontSize: 14,
   },
 
   // tagTypeList: {

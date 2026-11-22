@@ -219,7 +219,7 @@ const SourceDetail = ({ info, onConfirm, toggleSource }: { info: LX.Music.MusicI
           onConfirm(toggleSource!)
         }}
         style={{ ...styles.button, backgroundColor: theme['c-button-background'] }}
-        disabled={!toggleSource}
+        disabled={!toggleSource || toggleSource.id == info.id}
       >
         <Text color={theme['c-button-font']}>{t('music_toggle__confirm')}</Text>
       </Button>
@@ -330,13 +330,14 @@ const Modal = forwardRef<ModalType, {}>((props, ref) => {
       if (tags.length) setSource(tags[0])
     }).catch(() => {
       if (isUnmountedRef.current) return
-      setSourceInfo({ ...sourceInfo, error: true })
+      setSourceInfo(prev => ({ ...prev, loading: false, error: true }))
     })
-  }, [isUnmountedRef, sourceInfo])
+  }, [isUnmountedRef])
   useImperativeHandle(ref, () => ({
     show(info) {
       infoRef.current = info
       setSource('')
+      setToggleSource(null)
       loadData(info)
       requestAnimationFrame(() => {
         dialogRef.current?.setVisible(true)

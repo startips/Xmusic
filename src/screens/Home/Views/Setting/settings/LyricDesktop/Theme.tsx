@@ -1,6 +1,8 @@
 import { updateSetting } from '@/core/common'
 import { setDesktopLyricColor } from '@/core/desktopLyric'
 import { useI18n } from '@/lang'
+import { useSettingValue } from '@/store/setting/hook'
+import { useTheme } from '@/store/theme/hook'
 import { memo } from 'react'
 import { StyleSheet, View, TouchableOpacity } from 'react-native'
 
@@ -19,13 +21,21 @@ const themes = [
 ] as const
 type Theme = typeof themes[number]
 
-const ThemeItem = ({ color, change }: {
+const ThemeItem = ({ color, isActive, borderColor, change }: {
   color: Theme
+  isActive: boolean
+  borderColor: string
   change: (color: Theme) => void
 }) => {
   return (
-    <TouchableOpacity style={styles.item} activeOpacity={0.5} onPress={() => { change(color) }}>
-      <View style={styles.colorContent}>
+    <TouchableOpacity style={styles.item} activeOpacity={0.65} onPress={() => { change(color) }}>
+      <View
+        style={{
+          ...styles.colorContent,
+          borderWidth: isActive ? 2 : 0,
+          borderColor: isActive ? borderColor : 'transparent',
+        }}
+      >
         <View style={{ ...styles.image, backgroundColor: color[0] }}></View>
       </View>
     </TouchableOpacity>
@@ -34,9 +44,10 @@ const ThemeItem = ({ color, change }: {
 
 export default memo(() => {
   const t = useI18n()
+  const appTheme = useTheme()
+  const activeColor = useSettingValue('desktopLyric.style.lyricPlayedColor')
 
   const setThemeDesktopLyric = (color: Theme) => {
-    // const shadowColor = 'rgba(0,0,0,0.6)'
     void setDesktopLyricColor(null, color[0], color[1]).then(() => {
       updateSetting({ 'desktopLyric.style.lyricPlayedColor': color[0], 'desktopLyric.style.lyricShadowColor': color[1] })
     })
@@ -46,7 +57,15 @@ export default memo(() => {
     <SubTitle title={t('setting_lyric_desktop_theme')}>
       <View style={styles.list}>
         {
-          themes.map((c, i) => <ThemeItem key={i.toString()} color={c} change={setThemeDesktopLyric} />)
+          themes.map((c, i) => (
+            <ThemeItem
+              key={i.toString()}
+              color={c}
+              isActive={activeColor.toLowerCase() == c[0].toLowerCase()}
+              borderColor={appTheme['m3-primary']}
+              change={setThemeDesktopLyric}
+            />
+          ))
         }
       </View>
     </SubTitle>
@@ -59,24 +78,22 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   item: {
-    marginRight: 15,
-    marginTop: 5,
+    marginRight: 14,
+    marginTop: 6,
     alignItems: 'center',
-    width: 26,
-    // backgroundColor: 'rgba(0,0,0,0.2)',
+    width: 30,
   },
   colorContent: {
-    width: 26,
-    height: 26,
-    borderRadius: 4,
-    // borderWidth: 1.6,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   image: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     elevation: 1,
   },
 })

@@ -12,25 +12,26 @@ export type SliderProps = Pick<_SliderProps,
 | 'onSlidingComplete'
 | 'onValueChange'
 | 'step'
+| 'disabled'
 >
 
-export default memo(({ value, minimumValue, maximumValue, onSlidingStart, onSlidingComplete, onValueChange, step }: SliderProps) => {
+export default memo(({ value, minimumValue = 0, maximumValue = 1, onSlidingStart, onSlidingComplete, onValueChange, step, disabled }: SliderProps) => {
   const theme = useTheme()
 
-  const handleValueChange = (value: number) => {
-    // 修复当value小于等于minimumValue时，首次调用会传入0的问题
-    if (onValueChange && minimumValue != null) onValueChange(Math.max(value, minimumValue))
+  const handleValueChange = (nextValue: number) => {
+    if (onValueChange) onValueChange(Math.max(nextValue, minimumValue))
   }
 
   return (
     <Slider
       value={value}
+      disabled={disabled}
       style={styles.slider}
       minimumValue={minimumValue}
       maximumValue={maximumValue}
-      minimumTrackTintColor={theme['c-primary-alpha-500']}
-      maximumTrackTintColor={theme['c-primary-alpha-500']}
-      thumbTintColor={theme['c-primary']}
+      minimumTrackTintColor={theme['m3-primary']}
+      maximumTrackTintColor={theme['m3-surface-container-highest']}
+      thumbTintColor={theme['m3-primary']}
       onSlidingStart={onSlidingStart}
       onSlidingComplete={onSlidingComplete}
       onValueChange={handleValueChange}
@@ -39,14 +40,10 @@ export default memo(({ value, minimumValue, maximumValue, onSlidingStart, onSlid
   )
 })
 
-
 const styles = createStyle({
   slider: {
-    flexShrink: 0,
+    flexShrink: 1,
     flexGrow: 1,
-    // width: '100%',
-    // maxWidth: 300,
     height: 40,
-    // backgroundColor: '#eee',
   },
 })

@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { useWindowSize } from '@/utils/hooks'
-import { useStatusbarHeight } from '@/store/common/hook'
+import { useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
 import { HEADER_HEIGHT } from './components/Header'
 import { BTN_WIDTH } from './MoreBtn/Btn'
 import { marginLeft } from './constant'
@@ -10,8 +10,9 @@ import { createStyle } from '@/utils/tools'
 export default memo(({ componentId }: { componentId: string }) => {
   const { width: winWidth, height: winHeight } = useWindowSize()
   const statusBarHeight = useStatusbarHeight()
+  const navBarHeight = useNavigationBarHeight()
 
-  const availableHeight = winHeight - statusBarHeight - HEADER_HEIGHT
+  const availableHeight = Math.max(120, winHeight - statusBarHeight - HEADER_HEIGHT - Math.max(18, navBarHeight + 10))
   let imgWidth = Math.min((winWidth * 0.45 - marginLeft - BTN_WIDTH) * 0.72, availableHeight * 0.54)
   imgWidth -= imgWidth * (global.lx.fontSize - 1) * 0.3
   let contentHeight = availableHeight * 0.58

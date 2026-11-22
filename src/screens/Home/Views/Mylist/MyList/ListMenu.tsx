@@ -3,7 +3,6 @@ import { useI18n } from '@/lang'
 import Menu, { type Menus, type MenuType, type Position } from '@/components/common/Menu'
 import { LIST_IDS } from '@/config/constant'
 import musicSdk from '@/utils/musicSdk'
-import { scaleSizeW } from '@/utils/pixelRatio'
 import listState from '@/store/list/state'
 
 export interface SelectInfo {
@@ -14,8 +13,6 @@ export interface SelectInfo {
   // single: boolean
 }
 const initSelectInfo = {}
-
-const menuItemWidth = scaleSizeW(110)
 
 
 export interface ListMenuProps {
@@ -145,7 +142,6 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
           ref={menuRef}
           menus={menus}
           onPress={handleMenuPress}
-          width={menuItemWidth}
         />
       : null
   )

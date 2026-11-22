@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
@@ -104,5 +105,42 @@
           android:name="android.support.FILE_PROVIDER_PATHS"
           android:resource="@xml/file_paths" />
       </provider>
+
+      <!-- M3 Expressive Desktop App Widgets -->
+      <receiver
+        android:name=".widget.XmusicCapsuleWidgetProvider"
+        android:label="@string/widget_capsule_label"
+        android:exported="true">
+        <intent-filter>
+          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data
+          android:name="android.appwidget.provider"
+          android:resource="@xml/widget_xmusic_capsule_info" />
+      </receiver>
+
+      <receiver
+        android:name=".widget.XmusicCardWidgetProvider"
+        android:label="@string/widget_card_label"
+        android:exported="true">
+        <intent-filter>
+          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data
+          android:name="android.appwidget.provider"
+          android:resource="@xml/widget_xmusic_card_info" />
+      </receiver>
+
+      <receiver
+        android:name=".widget.XmusicWidgetActionReceiver"
+        android:exported="false">
+        <intent-filter>
+          <action android:name="com.startips.xmusic.WIDGET_STATE_CHANGED" />
+          <action android:name="com.startips.xmusic.WIDGET_ACTION_PLAY_PAUSE" />
+          <action android:name="com.startips.xmusic.WIDGET_ACTION_PREV" />
+          <action android:name="com.startips.xmusic.WIDGET_ACTION_NEXT" />
+          <action android:name="com.startips.xmusic.WIDGET_ACTION_FAVORITE" />
+        </intent-filter>
+      </receiver>
     </application>
 </manifest>

@@ -1,6 +1,7 @@
 import { useImperativeHandle, forwardRef, useMemo, useRef, useState, type Ref } from 'react'
 import { View, Animated, TouchableHighlight } from 'react-native'
 import { useWindowSize } from '@/utils/hooks'
+import { useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
 
 import Modal, { type ModalType } from './Modal'
 
@@ -11,33 +12,23 @@ import { scaleSizeH, scaleSizeW } from '@/utils/pixelRatio'
 import { M3Radius } from '@/theme/m3'
 
 const menuItemHeight = scaleSizeH(42)
-const menuItemWidth = scaleSizeW(108)
-const MENU_PADDING_V = 6
+const menuItemWidth = scaleSizeW(144)
+const MENU_PADDING_V = scaleSizeH(6)
+const MENU_ITEM_MARGIN_H = scaleSizeW(6)
 
 export interface Position { w: number, h: number, x: number, y: number, menuWidth?: number, menuHeight?: number }
 export interface MenuSize { width?: number, height?: number }
 export type Menus = Readonly<Array<{ action: string, label: string, disabled?: boolean }>>
 
 const styles = createStyle({
-  mask: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    opacity: 0,
-    backgroundColor: 'black',
-  },
   menu: {
     position: 'absolute',
     borderWidth: 1,
     borderRadius: M3Radius.md,
-    paddingVertical: MENU_PADDING_V,
     overflow: 'hidden',
     elevation: 8,
   },
   menuItem: {
-    marginHorizontal: 6,
     paddingLeft: 12,
     paddingRight: 12,
     borderRadius: M3Radius.sm,
@@ -72,56 +63,53 @@ const Menu = ({
 }: Props) => {
   const theme = useTheme()
   const windowSize = useWindowSize()
-  // const fadeAnim = useRef(new Animated.Value(0)).current
-  // console.log(buttonPosition)
+  const statusBarHeight = useStatusbarHeight()
+  const navBarHeight = useNavigationBarHeight()
 
   const menuItemStyle = useMemo(() => {
+    const resolvedWidth = width ?? Math.max(menuSize.width ?? 0, menuItemWidth)
+    const resolvedHeight = height ?? menuSize.height ?? menuItemHeight
     return {
-      width: width ?? menuSize.width ?? menuItemWidth,
-      height: height ?? menuSize.height ?? menuItemHeight,
+      width: resolvedWidth,
+      height: resolvedHeight,
     }
   }, [menuSize, width, height])
 
   const menuStyle = useMemo(() => {
-    let menuHeight = menus.length * menuItemStyle.height + MENU_PADDING_V * 2
-    const topHeight = buttonPosition.y - 20
-    const bottomHeight = windowSize.height - buttonPosition.y - buttonPosition.h - 20
-    if (menuHeight > topHeight && menuHeight > bottomHeight) menuHeight = Math.max(topHeight, bottomHeight)
+    const safeTop = statusBarHeight + 8
+    const safeBottom = Math.max(16, navBarHeight + 12)
+    let menuHeight = menus.length * menuItemStyle.height + MENU_PADDING_V * 2 + 2
+    const topSpace = Math.max(120, buttonPosition.y - safeTop)
+    const bottomSpace = Math.max(120, windowSize.height - buttonPosition.y - buttonPosition.h - safeBottom)
+    if (menuHeight > topSpace && menuHeight > bottomSpace) {
+      menuHeight = Math.max(topSpace, bottomSpace)
+    }
 
-    const menuWidth = menuItemStyle.width + 12
-    const bottomSpace = windowSize.height - buttonPosition.y - buttonPosition.h - 20
-    const rightSpace = windowSize.width - buttonPosition.x - menuWidth
-    const showInBottom = bottomSpace >= menuHeight
-    const showInRight = rightSpace >= menuWidth
-    const frameStyle: {
-      height: number
-      width: number
-      top: number
-      left?: number
-      right?: number
-    } = {
+    const menuWidth = menuItemStyle.width + MENU_ITEM_MARGIN_H * 2 + 2
+    const showInBottom = (windowSize.height - buttonPosition.y - buttonPosition.h - safeBottom) >= menuHeight || bottomSpace >= topSpace
+    const rawTop = showInBottom ? buttonPosition.y + buttonPosition.h + 4 : buttonPosition.y - menuHeight - 4
+    const clampedTop = Math.max(safeTop, Math.min(rawTop, windowSize.height - menuHeight - safeBottom))
+
+    const rightRemaining = windowSize.width - buttonPosition.x - menuWidth
+    const rawLeft = rightRemaining >= 8
+      ? buttonPosition.x
+      : buttonPosition.x + buttonPosition.w - menuWidth
+    const clampedLeft = Math.max(8, Math.min(rawLeft, windowSize.width - menuWidth - 8))
+
+    return {
       height: menuHeight,
-      top: showInBottom ? buttonPosition.y + buttonPosition.h : buttonPosition.y - menuHeight,
       width: menuWidth,
+      top: clampedTop,
+      left: clampedLeft,
+      paddingVertical: MENU_PADDING_V,
     }
-    if (showInRight) {
-      frameStyle.left = buttonPosition.x
-    } else {
-      frameStyle.right = windowSize.width - buttonPosition.x - buttonPosition.w
-    }
-    return frameStyle
-  }, [menus.length, menuItemStyle, buttonPosition, windowSize])
+  }, [menus.length, menuItemStyle, buttonPosition, windowSize, statusBarHeight, navBarHeight])
 
   const menuPress = (menu: Menus[number]) => {
-    // if (menu.disabled) return
     onPress(menu)
     onHide()
   }
 
-  // console.log('render menu')
-  // console.log(activeId)
-  // console.log(menuStyle)
-  // console.log(menuItemStyle)
   return (
     <View
       style={{
@@ -139,29 +127,32 @@ const Menu = ({
               ? (
                   <View
                     key={menu.action}
-                    style={{ ...styles.menuItem, width: menuItemStyle.width, height: menuItemStyle.height, opacity: 0.38 }}
+                    style={{ ...styles.menuItem, marginHorizontal: MENU_ITEM_MARGIN_H, width: menuItemStyle.width, height: menuItemStyle.height, opacity: 0.38 }}
                   >
                     <Text style={{ textAlign: center ? 'center' : 'left' }} size={fontSize} color={theme['m3-on-surface']} numberOfLines={1}>{menu.label}</Text>
                   </View>
                 )
               : menu.action == activeId
                 ? (
-                    <View
+                    <TouchableHighlight
                       key={menu.action}
                       style={{
                         ...styles.menuItem,
+                        marginHorizontal: MENU_ITEM_MARGIN_H,
                         width: menuItemStyle.width,
                         height: menuItemStyle.height,
                         backgroundColor: theme['m3-secondary-container'],
                       }}
+                      underlayColor={theme['m3-surface-container-highest']}
+                      onPress={onHide}
                     >
                       <Text style={{ textAlign: center ? 'center' : 'left', fontWeight: '600' }} color={theme['m3-on-secondary-container']} size={fontSize} numberOfLines={1}>{menu.label}</Text>
-                    </View>
+                    </TouchableHighlight>
                   )
                 : (
                     <TouchableHighlight
                       key={menu.action}
-                      style={{ ...styles.menuItem, width: menuItemStyle.width, height: menuItemStyle.height }}
+                      style={{ ...styles.menuItem, marginHorizontal: MENU_ITEM_MARGIN_H, width: menuItemStyle.width, height: menuItemStyle.height }}
                       underlayColor={theme['m3-surface-container-highest']}
                       onPress={() => { menuPress(menu) }}
                     >
@@ -193,17 +184,16 @@ export interface MenuType {
 }
 
 const Component = <M extends Menus>({ menus, width, height, activeId, onHide, onPress, fontSize, center }: MenuProps<M>, ref: Ref<MenuType>) => {
-  // console.log(visible)
   const modalRef = useRef<ModalType>(null)
   const [position, setPosition] = useState<Position>({ w: 0, h: 0, x: 0, y: 0 })
-  const [menuSize, setMenuSize] = useState<MenuSize>({ })
+  const [menuSize, setMenuSize] = useState<MenuSize>({})
   const hide = () => {
     modalRef.current?.setVisible(false)
   }
   useImperativeHandle(ref, () => ({
-    show(newPosition, menuSize) {
+    show(newPosition, nextMenuSize) {
       setPosition(newPosition)
-      if (menuSize) setMenuSize(menuSize)
+      if (nextMenuSize) setMenuSize(nextMenuSize)
       modalRef.current?.setVisible(true)
     },
     hide() {
@@ -212,11 +202,10 @@ const Component = <M extends Menus>({ menus, width, height, activeId, onHide, on
   }))
 
   return (
-    <Modal onHide={onHide} ref={modalRef}>
+    <Modal onHide={onHide} statusBarPadding={false} ref={modalRef}>
       <Menu menus={menus} width={width} height={height} activeId={activeId} buttonPosition={position} menuSize={menuSize} onPress={onPress} onHide={hide} fontSize={fontSize} center={center} />
     </Modal>
   )
 }
 
-// export default forwardRef(Component) as ForwardRefFn<MenuType>
 export default forwardRef(Component) as <M extends Menus>(p: MenuProps<M> & { ref?: Ref<MenuType> }) => JSX.Element | null
