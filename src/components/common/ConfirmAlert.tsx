@@ -1,12 +1,11 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { View, ScrollView } from 'react-native'
 import Dialog, { type DialogType } from './Dialog'
-import Button from './Button'
+import { ExpressiveButton } from './m3e/ExpressiveButton'
 import { createStyle } from '@/utils/tools'
 import { useI18n } from '@/lang/index'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
-import { M3Radius } from '@/theme/m3'
 
 const styles = createStyle({
   main: {
@@ -36,12 +35,6 @@ const styles = createStyle({
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: M3Radius.full,
-  },
-  btnLabel: {
-    fontWeight: '600',
   },
 })
 
@@ -106,13 +99,15 @@ export default forwardRef<ConfirmAlertType, ConfirmAlertProps>(({
         </ScrollView>
       </View>
       <View style={{ ...styles.btns, ...(reverseBtn ? styles.btnsReversedDirection : null) }}>
-        <Button style={{ ...styles.btn, backgroundColor: theme['m3-surface-container-highest'] }} onPress={handleCancel}>
-          <Text style={styles.btnLabel} color={theme['m3-on-surface']}>{cancelText || t('cancel')}</Text>
-        </Button>
+        <ExpressiveButton variant="surface" size="md" style={styles.btn} onPress={handleCancel}>
+          {cancelText || t('cancel')}
+        </ExpressiveButton>
         {showConfirm
-          ? <Button style={{ ...styles.btn, backgroundColor: theme['m3-primary-container'] }} onPress={onConfirm} disabled={disabledConfirm}>
-              <Text style={styles.btnLabel} color={theme['m3-on-primary-container']}>{confirmText || t('confirm')}</Text>
-            </Button>
+          ? (
+              <ExpressiveButton variant="filled" size="md" style={styles.btn} onPress={onConfirm} disabled={disabledConfirm}>
+                {confirmText || t('confirm')}
+              </ExpressiveButton>
+            )
           : null}
       </View>
     </Dialog>

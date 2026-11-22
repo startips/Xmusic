@@ -1,7 +1,9 @@
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { ScrollView, TouchableOpacity, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 
 import Popup, { type PopupProps, type PopupType } from '@/components/common/Popup'
+import { ExpressiveButton } from '@/components/common/m3e/ExpressiveButton'
+import ExpressiveSwitch from '@/components/common/m3e/ExpressiveSwitch'
 import Slider from '@/components/common/Slider'
 import Text from '@/components/common/Text'
 import {
@@ -16,7 +18,7 @@ import { useI18n } from '@/lang'
 import { useSettingValue } from '@/store/setting/hook'
 import { useTheme } from '@/store/theme/hook'
 import { M3Radius, withAlpha } from '@/theme/m3'
-import { hapticConfirm, hapticTick } from '@/utils/haptics'
+import { hapticTick } from '@/utils/haptics'
 import { getNativeEffectInfo, syncNativeAudioSession, type EqBandInfo } from '@/utils/nativeModules/audioEffect'
 import { createStyle } from '@/utils/tools'
 
@@ -122,9 +124,8 @@ const EqualizerBody = () => {
 
   const levels = parseEqBands(eqBandsRaw, bandDefs.length)
 
-  const handleToggleEnable = () => {
-    hapticConfirm()
-    updateSetting({ 'player.eqEnabled': !eqEnabled })
+  const handleToggleEnable = (nextEnabled: boolean) => {
+    updateSetting({ 'player.eqEnabled': nextEnabled })
   }
 
   const handleSelectPreset = (preset: EqPresetId) => {
@@ -165,29 +166,14 @@ const EqualizerBody = () => {
           }}
         >
           <View style={styles.masterInfo}>
-            <Text size={15} color={theme['m3-on-surface']} style={styles.masterTitle}>
+            <Text size={14.5} color={theme['m3-on-surface']} style={styles.masterTitle}>
               {t('eq_enable_label')}
             </Text>
             <Text size={12} color={theme['m3-on-surface-variant']}>
               {t('eq_enable_desc')}
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={{
-              ...styles.togglePill,
-              backgroundColor: eqEnabled ? theme['m3-primary'] : theme['m3-surface-container-highest'],
-            }}
-            onPress={handleToggleEnable}
-          >
-            <Text
-              size={13}
-              color={eqEnabled ? theme['m3-on-primary'] : theme['m3-on-surface-variant']}
-              style={styles.togglePillText}
-            >
-              {eqEnabled ? t('eq_on') : t('eq_off')}
-            </Text>
-          </TouchableOpacity>
+          <ExpressiveSwitch value={eqEnabled} onValueChange={handleToggleEnable} />
         </View>
 
         <Text size={13} color={theme['m3-on-surface-variant']} style={styles.sectionTitle}>
@@ -197,24 +183,20 @@ const EqualizerBody = () => {
           {EQ_PRESET_LIST.map((preset) => {
             const active = eqPreset == preset
             return (
-              <TouchableOpacity
+              <ExpressiveButton
                 key={preset}
-                activeOpacity={0.75}
-                style={{
-                  ...styles.presetChip,
-                  backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container-high'],
-                  borderColor: active ? theme['m3-primary'] : theme['m3-outline-variant'],
-                }}
+                size="sm"
+                variant={active ? 'tonal' : 'surface'}
+                leftRadius={active ? 16 : 10}
+                rightRadius={active ? 16 : 10}
+                pressRadius={8}
+                textSize={12.5}
                 onPress={() => { handleSelectPreset(preset) }}
+                style={{ paddingHorizontal: 13, paddingVertical: 6 }}
+                textStyle={{ fontWeight: active ? '700' : '500' }}
               >
-                <Text
-                  size={12.5}
-                  color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
-                  style={{ fontWeight: active ? '700' : '500' }}
-                >
-                  {t(`eq_preset_${preset}`)}
-                </Text>
-              </TouchableOpacity>
+                {t(`eq_preset_${preset}`)}
+              </ExpressiveButton>
             )
           })}
         </View>
@@ -345,14 +327,6 @@ const styles = createStyle({
   masterTitle: {
     fontWeight: '700',
   },
-  togglePill: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: M3Radius.full,
-  },
-  togglePillText: {
-    fontWeight: '700',
-  },
   sectionTitle: {
     fontWeight: '600',
     marginTop: 14,
@@ -362,12 +336,6 @@ const styles = createStyle({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  presetChip: {
-    paddingHorizontal: 13,
-    paddingVertical: 6,
-    borderRadius: M3Radius.full,
-    borderWidth: 0.7,
   },
   card: {
     borderRadius: M3Radius.lg,

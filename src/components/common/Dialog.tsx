@@ -1,8 +1,8 @@
 import { useImperativeHandle, forwardRef, useMemo, useRef } from 'react'
-import { View, TouchableHighlight } from 'react-native'
+import { View } from 'react-native'
 
 import Modal, { type ModalType } from './Modal'
-import { Icon } from '@/components/common/Icon'
+import { ExpressiveIconButton } from './m3e/ExpressiveButton'
 import { useKeyboard } from '@/utils/hooks'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
@@ -38,15 +38,6 @@ const styles = createStyle({
     flex: 1,
     fontWeight: '600',
     paddingRight: 8,
-  },
-  closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: M3Radius.full,
-    flexGrow: 0,
-    flexShrink: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 })
 
@@ -85,9 +76,14 @@ export default forwardRef<DialogType, DialogProps>(({
 
   const closeBtnComponent = useMemo(() => {
     return closeBtn
-      ? <TouchableHighlight style={styles.closeBtn} underlayColor={theme['m3-surface-container-highest']} onPress={() => modalRef.current?.setVisible(false)}>
-          <Icon name="close" color={theme['m3-on-surface-variant']} size={12} />
-        </TouchableHighlight>
+      ? <ExpressiveIconButton
+          size={30}
+          icon="close"
+          iconSize={11}
+          backgroundColor={theme['m3-surface-container-highest']}
+          color={theme['m3-on-surface-variant']}
+          onPress={() => modalRef.current?.setVisible(false)}
+        />
       : null
   }, [closeBtn, theme])
 

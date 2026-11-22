@@ -9,6 +9,7 @@ const NativeEdgeToEdgeModalView = Platform.OS === 'android' && UIManager.getView
 
 export interface ModalProps extends Omit<_ModalProps, 'visible'> {
   onHide?: () => void
+  onRequestDismiss?: () => void
   /**
    * 按返回键是否隐藏
    */
@@ -33,6 +34,7 @@ export interface ModalType {
 
 export default forwardRef<ModalType, ModalProps>(({
   onHide = () => {},
+  onRequestDismiss,
   keyHide = true,
   bgHide = true,
   bgColor = 'rgba(0,0,0,0)',
@@ -52,10 +54,14 @@ export default forwardRef<ModalType, ModalProps>(({
   }
 
   const handleRequestClose = () => {
-    if (keyHide) closeModal()
+    if (!keyHide) return
+    if (onRequestDismiss) onRequestDismiss()
+    else closeModal()
   }
   const handleBgClose = () => {
-    if (bgHide) closeModal()
+    if (!bgHide) return
+    if (onRequestDismiss) onRequestDismiss()
+    else closeModal()
   }
 
   useImperativeHandle(ref, () => ({

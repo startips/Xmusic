@@ -1,10 +1,12 @@
 import { type ReactNode } from 'react'
+import { useTheme } from '@/store/theme/hook'
 import { scaleSizeW } from '@/utils/pixelRatio'
+import { withAlpha } from '@/theme/m3'
 import { type HapticType } from '@/utils/haptics'
 import ActionPillButton from '../../../../components/ActionPillButton'
 
-export const BTN_WIDTH = scaleSizeW(46)
-export const BTN_ICON_SIZE = 21
+export const BTN_WIDTH = scaleSizeW(48)
+export const BTN_ICON_SIZE = 22
 
 export default ({ icon, color, active, hapticType, onPress, onLongPress, children }: {
   icon?: string
@@ -15,6 +17,7 @@ export default ({ icon, color, active, hapticType, onPress, onLongPress, childre
   onLongPress?: () => void
   children?: ReactNode
 }) => {
+  const theme = useTheme()
   return (
     <ActionPillButton
       size={BTN_WIDTH}
@@ -22,6 +25,8 @@ export default ({ icon, color, active, hapticType, onPress, onLongPress, childre
       icon={icon}
       color={color}
       active={active}
+      inactiveBackgroundColor={withAlpha(theme['m3-surface-container-high'], 0.72)}
+      inactiveIconColor={theme['m3-on-surface']}
       hapticType={hapticType}
       onPress={onPress}
       onLongPress={onLongPress}

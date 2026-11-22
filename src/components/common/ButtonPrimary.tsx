@@ -1,41 +1,33 @@
-import { memo } from 'react'
-import { StyleSheet } from 'react-native'
-
-import Button, { type BtnProps } from '@/components/common/Button'
-import Text from '@/components/common/Text'
-import { useTheme } from '@/store/theme/hook'
-import { createStyle } from '@/utils/tools'
-import { M3Radius } from '@/theme/m3'
+import { memo, useCallback } from 'react'
+import { type StyleProp, type ViewStyle } from 'react-native'
+import { type BtnProps } from '@/components/common/Button'
+import { ExpressiveButton } from '@/components/common/m3e/ExpressiveButton'
 
 export interface ButtonProps extends BtnProps {
   size?: number
+  style?: StyleProp<ViewStyle>
 }
 
-export default memo(({ disabled, size = 14, onPress, style, children, ...rest }: ButtonProps) => {
-  const theme = useTheme()
+export default memo(({ disabled, size = 14, onPress, onLongPress, style, children }: ButtonProps) => {
+  const handlePress = useCallback(() => {
+    (onPress as (() => void) | undefined)?.()
+  }, [onPress])
+
+  const handleLongPress = useCallback(() => {
+    (onLongPress as (() => void) | undefined)?.()
+  }, [onLongPress])
 
   return (
-    <Button
-      style={StyleSheet.compose({ ...styles.button, backgroundColor: theme['m3-primary-container'] }, style)}
-      onPress={onPress}
-      disabled={disabled}
-      {...rest}
+    <ExpressiveButton
+      variant="tonal"
+      size="md"
+      textSize={size}
+      disabled={disabled ?? false}
+      onPress={onPress ? handlePress : undefined}
+      onLongPress={onLongPress ? handleLongPress : undefined}
+      style={[{ marginRight: 10 }, style]}
     >
-      <Text size={size} color={theme['m3-on-primary-container']} style={styles.label}>{children}</Text>
-    </Button>
+      {children}
+    </ExpressiveButton>
   )
-})
-
-const styles = createStyle({
-  button: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: M3Radius.full,
-    marginRight: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontWeight: '600',
-  },
 })

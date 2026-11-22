@@ -39,6 +39,7 @@ export default () => {
   const [mountedMap, setMountedMap] = useState<Partial<Record<SettingScreenIds, boolean>>>(() => ({
     [initialId]: true,
   }))
+  const mountedMapRef = useRef<Partial<Record<SettingScreenIds, boolean>>>({ [initialId]: true })
 
   const ensureMounted = useCallback((ids: SettingScreenIds[]) => {
     setMountedMap((prev) => {
@@ -52,6 +53,7 @@ export default () => {
       if (!changed) return prev
       const next = { ...prev }
       for (const id of ids) next[id] = true
+      mountedMapRef.current = next
       return next
     })
   }, [])
@@ -65,7 +67,7 @@ export default () => {
     }
   }, [])
 
-  // Pre-warm immediate neighbor pages right after the SettingScreen push transition settles
+  // Pre-warm immediate neighbor pages right after the 300ms SettingScreen push transition settles
   useEffect(() => {
     const timer = setTimeout(() => {
       const idx = activeIndexRef.current
@@ -73,7 +75,7 @@ export default () => {
       if (idx > 0) neighbors.push(SETTING_SCREENS[idx - 1])
       if (idx + 1 < SETTING_SCREENS.length) neighbors.push(SETTING_SCREENS[idx + 1])
       if (neighbors.length) ensureMounted(neighbors)
-    }, 260)
+    }, 360)
     return () => {
       clearTimeout(timer)
     }
@@ -82,13 +84,20 @@ export default () => {
   const handleSelectFromNav = useCallback((nextId: SettingScreenIds) => {
     const nextIndex = SETTING_SCREENS.indexOf(nextId)
     if (nextIndex < 0) return
-    ensureMounted([nextId])
+    const wasMounted = Boolean(mountedMapRef.current[nextId])
+    if (!wasMounted) ensureMounted([nextId])
     if (activeIndexRef.current !== nextIndex) {
       hapticTick()
       activeIndexRef.current = nextIndex
       setActiveId(nextId)
       global.lx.settingActiveId = nextId
-      pagerViewRef.current?.setPage(nextIndex)
+      if (wasMounted) {
+        pagerViewRef.current?.setPage(nextIndex)
+      } else {
+        requestAnimationFrame(() => {
+          pagerViewRef.current?.setPage(nextIndex)
+        })
+      }
     }
   }, [ensureMounted])
 

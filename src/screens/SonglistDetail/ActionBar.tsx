@@ -1,21 +1,15 @@
 import { memo } from 'react'
 import { View } from 'react-native'
-import Button from '@/components/common/Button'
-import { Icon } from '@/components/common/Icon'
-
+import { ExpressiveButton } from '@/components/common/m3e/ExpressiveButton'
 import { createStyle } from '@/utils/tools'
 import { pop } from '@/navigation'
-import { useTheme } from '@/store/theme/hook'
 import commonState from '@/store/common/state'
-import Text from '@/components/common/Text'
 import { handleCollect, handlePlay } from './listAction'
 import songlistState from '@/store/songlist/state'
 import { useI18n } from '@/lang'
 import { useListInfo } from './state'
-import { M3Radius } from '@/theme/m3'
 
 export default memo(() => {
-  const theme = useTheme()
   const t = useI18n()
   const info = useListInfo()
 
@@ -37,27 +31,45 @@ export default memo(() => {
 
   return (
     <View style={styles.container}>
-      <Button
+      <ExpressiveButton
+        variant="surface"
+        size="md"
+        icon="chevron-left"
+        iconSize={13}
+        textSize={13}
         onPress={back}
-        style={{ ...styles.backBtn, backgroundColor: theme['m3-surface-container-highest'] }}
+        style={styles.backBtn}
       >
-        <Icon name="chevron-left" size={14} color={theme['m3-on-surface']} />
-        <Text numberOfLines={1} size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('back')}</Text>
-      </Button>
-      <Button
-        onPress={handleCollection}
-        style={{ ...styles.actionBtn, backgroundColor: theme['m3-surface-container-highest'] }}
-      >
-        <Icon name="love" size={14} color={theme['m3-on-surface']} />
-        <Text numberOfLines={1} size={13} style={styles.btnLabel} color={theme['m3-on-surface']}>{t('collect_songlist')}</Text>
-      </Button>
-      <Button
-        onPress={handlePlayAll}
-        style={{ ...styles.actionBtn, backgroundColor: theme['m3-primary'] }}
-      >
-        <Icon name="play" size={13} color={theme['m3-on-primary']} />
-        <Text numberOfLines={1} size={13} style={styles.btnLabel} color={theme['m3-on-primary']}>{t('play_all')}</Text>
-      </Button>
+        {t('back')}
+      </ExpressiveButton>
+      <View style={styles.splitGroup}>
+        <ExpressiveButton
+          variant="secondary"
+          size="md"
+          icon="love"
+          iconSize={13.5}
+          textSize={13}
+          rightRadius={8}
+          pressRadius={12}
+          onPress={handleCollection}
+          style={styles.collectBtn}
+        >
+          {t('collect_songlist')}
+        </ExpressiveButton>
+        <ExpressiveButton
+          variant="filled"
+          size="md"
+          icon="play"
+          iconSize={13}
+          textSize={13}
+          leftRadius={8}
+          pressRadius={12}
+          onPress={handlePlayAll}
+          style={styles.playAllBtn}
+        >
+          {t('play_all')}
+        </ExpressiveButton>
+      </View>
     </View>
   )
 })
@@ -65,31 +77,26 @@ export default memo(() => {
 const styles = createStyle({
   container: {
     flexDirection: 'row',
+    alignItems: 'center',
     width: '100%',
     marginTop: 14,
     gap: 8,
   },
   backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: M3Radius.full,
-    gap: 4,
   },
-  actionBtn: {
+  splitGroup: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: M3Radius.full,
-    gap: 6,
+    gap: 4,
   },
-  btnLabel: {
-    fontWeight: '600',
+  collectBtn: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+  playAllBtn: {
+    flex: 1.15,
+    paddingHorizontal: 12,
   },
 })
-

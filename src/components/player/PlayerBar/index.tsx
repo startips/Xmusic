@@ -10,7 +10,6 @@ import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useSettingValue } from '@/store/setting/hook'
 import { useNavigationBarHeight } from '@/store/common/hook'
-import { M3Radius } from '@/theme/m3'
 
 
 export default memo(({ isHome = false }: { isHome?: boolean }) => {
@@ -30,7 +29,6 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
           ...styles.container,
           marginBottom,
           backgroundColor: theme['m3-surface-container-high'],
-          borderColor: theme['m3-outline-variant'],
         }}
       >
         <Pic isHome={isHome} />
@@ -55,12 +53,11 @@ const styles = createStyle({
     marginTop: 4,
     paddingVertical: 7,
     paddingLeft: 8,
-    paddingRight: 8,
-    borderRadius: M3Radius.lg,
-    borderWidth: 0.8,
+    paddingRight: 10,
+    borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 3,
+    elevation: 4,
   },
   center: {
     flexDirection: 'column',
@@ -75,6 +72,6 @@ const styles = createStyle({
     flexGrow: 0,
     flexShrink: 0,
     paddingLeft: 6,
-    gap: 4,
+    gap: 6,
   },
 })

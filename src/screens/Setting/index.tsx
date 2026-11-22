@@ -1,21 +1,20 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { TouchableOpacity, View } from 'react-native'
+import { View } from 'react-native'
 
 import PageContent from '@/components/PageContent'
 import StatusBar from '@/components/common/StatusBar'
 import EdgeSwipeContainer from '@/components/common/EdgeSwipeContainer'
 import PlayerBar from '@/components/player/PlayerBar'
-import { Icon } from '@/components/common/Icon'
+import { ExpressiveIconButton } from '@/components/common/m3e/ExpressiveButton'
 import Text from '@/components/common/Text'
 import SettingViews from '@/screens/Home/Views/Setting'
 import { COMPONENT_IDS } from '@/config/constant'
 import { removeComponentId, setComponentId } from '@/core/common'
-import { pop } from '@/navigation'
+import { navigations } from '@/navigation'
 import { useI18n } from '@/lang'
 import { useStatusbarHeight } from '@/store/common/hook'
 import commonState from '@/store/common/state'
 import { useTheme } from '@/store/theme/hook'
-import { M3Radius } from '@/theme/m3'
 import { useBackHandler } from '@/utils/hooks/useBackHandler'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { createStyle } from '@/utils/tools'
@@ -36,13 +35,14 @@ const Header = memo(({ onBack }: { onBack: () => void }) => {
       }}
     >
       <View style={styles.headerInner}>
-        <TouchableOpacity
-          style={{ ...styles.backBtn, backgroundColor: theme['m3-surface-container'] }}
-          activeOpacity={0.7}
+        <ExpressiveIconButton
+          size={36}
+          icon="chevron-left"
+          iconSize={16}
+          backgroundColor={theme['m3-surface-container']}
+          color={theme['m3-on-surface']}
           onPress={onBack}
-        >
-          <Icon name="chevron-left" size={16} color={theme['m3-on-surface']} />
-        </TouchableOpacity>
+        />
         <Text size={20} color={theme['m3-on-surface']} style={styles.title} numberOfLines={1}>
           {t('nav_setting')}
         </Text>
@@ -52,6 +52,7 @@ const Header = memo(({ onBack }: { onBack: () => void }) => {
 })
 
 export default memo(({ componentId }: { componentId: string }) => {
+  const theme = useTheme()
   const isDismissingRef = useRef(false)
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default memo(({ componentId }: { componentId: string }) => {
   const handleBack = useCallback(() => {
     if (isDismissingRef.current) return
     isDismissingRef.current = true
-    void pop(componentId)
+    navigations.popSettingScreen(componentId)
   }, [componentId])
 
   useBackHandler(useCallback(() => {
@@ -79,7 +80,7 @@ export default memo(({ componentId }: { componentId: string }) => {
       edgeWidth={24}
       dismissDistance={64}
       onEdgeDismiss={handleBack}
-      style={styles.edgeWrap}
+      style={{ ...styles.edgeWrap, backgroundColor: theme['m3-background'] }}
     >
       <PageContent>
         <StatusBar />
@@ -96,6 +97,7 @@ export default memo(({ componentId }: { componentId: string }) => {
 const styles = createStyle({
   edgeWrap: {
     flex: 1,
+    elevation: 16,
   },
   header: {
     paddingHorizontal: 14,
@@ -105,13 +107,6 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     height: '100%',
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: M3Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   title: {
     fontWeight: '700',

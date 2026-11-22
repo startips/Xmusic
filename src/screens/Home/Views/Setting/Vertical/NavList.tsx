@@ -1,10 +1,11 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { TouchableOpacity, ScrollView, View, type LayoutChangeEvent } from 'react-native'
+import { ScrollView, View, type LayoutChangeEvent } from 'react-native'
 
 import { useTheme } from '@/store/theme/hook'
 import { useHasNewVersion } from '@/store/version/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
+import { ExpressiveButton } from '@/components/common/m3e/ExpressiveButton'
 import { SETTING_SCREENS, type SettingScreenIds } from '../Main'
 import { useI18n } from '@/lang'
 import { M3Radius } from '@/theme/m3'
@@ -40,14 +41,16 @@ const ListItem = memo(({ id, activeId, showBadge, onPress, onItemLayout }: {
 
   return (
     <View onLayout={handleLayout}>
-      <TouchableOpacity
+      <ExpressiveButton
+        size="sm"
+        variant={active ? 'secondary' : 'surface'}
+        leftRadius={active ? 17 : 10}
+        rightRadius={active ? 17 : 10}
+        pressRadius={8}
         style={{
           ...styles.listItem,
           backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container'],
-          borderColor: active ? 'transparent' : theme['m3-outline-variant'],
-          borderWidth: active ? 0 : 0.6,
         }}
-        activeOpacity={0.75}
         onPress={handlePress}
       >
         <Text
@@ -61,7 +64,7 @@ const ListItem = memo(({ id, activeId, showBadge, onPress, onItemLayout }: {
         {showBadge
           ? <View style={{ ...styles.badgeDot, backgroundColor: badgeColor }} />
           : null}
-      </TouchableOpacity>
+      </ExpressiveButton>
     </View>
   )
 }, (prevProps, nextProps) => {
@@ -166,12 +169,9 @@ const styles = createStyle({
     gap: 8,
   },
   listItem: {
-    height: 34,
+    minHeight: 34,
     paddingHorizontal: 15,
-    borderRadius: M3Radius.full,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 5,
   },
   listText: {
     fontWeight: '500',
@@ -183,6 +183,5 @@ const styles = createStyle({
     width: 7,
     height: 7,
     borderRadius: M3Radius.full,
-    marginLeft: 5,
   },
 })

@@ -1,46 +1,32 @@
 import { memo, useMemo } from 'react'
 
-import { StyleSheet, View } from 'react-native'
-
 import SubTitle from '../../components/SubTitle'
-import CheckBox from '@/components/common/CheckBox'
-import type { I18n } from '@/lang'
-import { useI18n, langList } from '@/lang'
+import { ExpressiveButtonGroup } from '@/components/common/m3e/ExpressiveButtonGroup'
+import { langList, useI18n } from '@/lang'
 import { setLanguage } from '@/core/common'
 import { useSettingValue } from '@/store/setting/hook'
-
-const useActive = (id: I18n['locale']) => {
-  const activeLangId = useSettingValue('common.langId')
-  const isActive = useMemo(() => activeLangId == id, [activeLangId, id])
-  return isActive
-}
-
-const Item = ({ id, name }: {
-  id: I18n['locale']
-  name: string
-}) => {
-  const isActive = useActive(id)
-  // const [toggleCheckBox, setToggleCheckBox] = useState(false)
-  return <CheckBox marginRight={8} check={isActive} label={name} onChange={() => { setLanguage(id) }} need />
-}
+import { useTheme } from '@/store/theme/hook'
 
 export default memo(() => {
   const t = useI18n()
+  const theme = useTheme()
+  const activeLangId = useSettingValue('common.langId')
+
+  const options = useMemo(() => {
+    return langList.map(({ locale, name }) => ({ id: locale, label: name }))
+  }, [])
 
   return (
     <SubTitle title={t('setting_basic_lang')}>
-      <View style={styles.list}>
-        {
-          langList.map(({ locale, name }) => <Item name={name} id={locale} key={locale} />)
-        }
-      </View>
+      <ExpressiveButtonGroup
+        size="sm"
+        tone="secondary"
+        containerColor={theme['m3-surface-container-high']}
+        value={activeLangId ?? 'zh_cn'}
+        onChange={setLanguage}
+        options={options}
+        style={{ maxWidth: 340, marginRight: 25 }}
+      />
     </SubTitle>
   )
-})
-
-const styles = StyleSheet.create({
-  list: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
 })

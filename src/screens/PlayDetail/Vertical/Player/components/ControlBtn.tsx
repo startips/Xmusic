@@ -11,16 +11,18 @@ import { SpringActionButton, SpringTogglePlayButton } from '@/components/player/
 
 const PrevBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
-  const btnSize = size * 0.86
   return (
     <SpringActionButton
-      width={btnSize}
-      height={btnSize}
+      width={size * 0.96}
+      height={size * 0.88}
       borderRadius={M3Radius.full}
-      backgroundColor={withAlpha(theme['m3-surface-container-high'], 0.85)}
+      topRightRadius={18}
+      bottomRightRadius={18}
+      pressRadius={14}
+      backgroundColor={withAlpha(theme['m3-secondary-container'], 0.9)}
       iconName="prevMusic"
-      iconColor={theme['m3-on-surface']}
-      iconSize={btnSize * 0.48}
+      iconColor={theme['m3-on-secondary-container']}
+      iconSize={size * 0.44}
       onPress={() => { void playPrev() }}
     />
   )
@@ -28,16 +30,18 @@ const PrevBtn = ({ size }: { size: number }) => {
 
 const NextBtn = ({ size }: { size: number }) => {
   const theme = useTheme()
-  const btnSize = size * 0.86
   return (
     <SpringActionButton
-      width={btnSize}
-      height={btnSize}
+      width={size * 0.96}
+      height={size * 0.88}
       borderRadius={M3Radius.full}
-      backgroundColor={withAlpha(theme['m3-surface-container-high'], 0.85)}
+      topLeftRadius={18}
+      bottomLeftRadius={18}
+      pressRadius={14}
+      backgroundColor={withAlpha(theme['m3-secondary-container'], 0.9)}
       iconName="nextMusic"
-      iconColor={theme['m3-on-surface']}
-      iconSize={btnSize * 0.48}
+      iconColor={theme['m3-on-secondary-container']}
+      iconSize={size * 0.44}
       onPress={() => { void playNext() }}
     />
   )
@@ -48,13 +52,13 @@ const TogglePlayBtn = ({ size }: { size: number }) => {
   const isPlay = useIsPlay()
   return (
     <SpringTogglePlayButton
-      width={size * 1.18}
-      height={size}
-      playRadius={M3Radius.lg}
+      width={size * 1.28}
+      height={size * 1.04}
+      playRadius={22}
       pauseRadius={M3Radius.full}
       isPlay={isPlay}
-      backgroundColor={theme['m3-primary-container']}
-      iconColor={theme['m3-on-primary-container']}
+      backgroundColor={theme['m3-primary']}
+      iconColor={theme['m3-on-primary']}
       iconSize={size * 0.5}
       onPress={togglePlay}
     />
@@ -90,11 +94,11 @@ const styles = createStyle({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 18,
+    gap: 26,
     flexGrow: 1,
     flexShrink: 1,
     paddingHorizontal: '4%',
-    paddingTop: 10,
+    paddingTop: 14,
     paddingBottom: 4,
   },
 })

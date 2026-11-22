@@ -1,10 +1,11 @@
-import { View, TouchableOpacity } from 'react-native'
+import { View } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { isUpdateAvailable, useHasNewVersion } from '@/store/version/hook'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import { Icon } from '@/components/common/Icon'
+import { ExpressiveIconButton } from '@/components/common/m3e/ExpressiveButton'
 import Text from '@/components/common/Text'
 import StatusBar from '@/components/common/StatusBar'
 import { scaleSizeH } from '@/utils/pixelRatio'
@@ -57,9 +58,9 @@ const Header = () => {
         </View>
         <View style={styles.right}>
           {headerComponents[id] ?? null}
-          <TouchableOpacity
-            style={{ ...styles.iconBtn, backgroundColor: theme['m3-surface-container'] }}
-            activeOpacity={0.7}
+          <ExpressiveIconButton
+            size={36}
+            backgroundColor={theme['m3-surface-container']}
             onPress={handleOpenSetting}
           >
             <Icon color={theme['m3-on-surface-variant']} name="setting" size={17} />
@@ -75,7 +76,7 @@ const Header = () => {
                   />
                 )
               : null}
-          </TouchableOpacity>
+          </ExpressiveIconButton>
         </View>
       </View>
     </>
@@ -102,13 +103,6 @@ const styles = createStyle({
     alignItems: 'center',
     gap: 8,
     height: '100%',
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: M3Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   updateDot: {
     position: 'absolute',

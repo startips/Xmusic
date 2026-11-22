@@ -1,11 +1,10 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { ScrollView, TouchableOpacity } from 'react-native'
+import { ScrollView } from 'react-native'
 import songlistState, { type SortInfo, type Source } from '@/store/songlist/state'
 import { useI18n } from '@/lang'
 import { useTheme } from '@/store/theme/hook'
-import Text from '@/components/common/Text'
+import { ExpressiveButton } from '@/components/common/m3e/ExpressiveButton'
 import { createStyle } from '@/utils/tools'
-import { M3Radius } from '@/theme/m3'
 
 export interface SortTabProps {
   onSortChange: (id: string) => void
@@ -14,7 +13,6 @@ export interface SortTabProps {
 export interface SortTabType {
   setSource: (source: Source, activeTab: SortInfo['id']) => void
 }
-
 
 export default forwardRef<SortTabType, SortTabProps>(({ onSortChange }, ref) => {
   const [sortList, setSortList] = useState<SortInfo[]>([])
@@ -41,34 +39,41 @@ export default forwardRef<SortTabType, SortTabProps>(({ onSortChange }, ref) => 
   }
 
   return (
-    <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps={'always'} horizontal showsHorizontalScrollIndicator={false}>
-      {
-        sorts.map(s => {
-          const active = activeId == s.id
-          return (
-            <TouchableOpacity
-              style={{
-                ...styles.button,
-                backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container'],
-              }}
-              onPress={() => { handleSortChange(s.id) }}
-              key={s.id}
-            >
-              <Text
-                size={13}
-                style={active ? styles.buttonTextActive : styles.buttonText}
-                color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
-              >
-                {s.label}
-              </Text>
-            </TouchableOpacity>
-          )
-        })
-      }
+    <ScrollView
+      ref={scrollViewRef}
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      keyboardShouldPersistTaps={'always'}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+    >
+      {sorts.map(s => {
+        const active = activeId == s.id
+        return (
+          <ExpressiveButton
+            key={s.id}
+            size="sm"
+            variant={active ? 'secondary' : 'surface'}
+            leftRadius={active ? 16 : 10}
+            rightRadius={active ? 16 : 10}
+            pressRadius={8}
+            textSize={13}
+            style={{
+              backgroundColor: active ? theme['m3-secondary-container'] : theme['m3-surface-container'],
+            }}
+            textStyle={{
+              fontWeight: active ? '600' : '400',
+              color: active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant'],
+            }}
+            onPress={() => { handleSortChange(s.id) }}
+          >
+            {s.label}
+          </ExpressiveButton>
+        )
+      })}
     </ScrollView>
   )
 })
-
 
 const styles = createStyle({
   container: {
@@ -78,19 +83,5 @@ const styles = createStyle({
   contentContainer: {
     alignItems: 'center',
     gap: 6,
-  },
-  button: {
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: M3Radius.full,
-  },
-  buttonText: {
-    textAlign: 'center',
-    fontWeight: '400',
-  },
-  buttonTextActive: {
-    textAlign: 'center',
-    fontWeight: '600',
   },
 })

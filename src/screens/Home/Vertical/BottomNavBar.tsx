@@ -36,21 +36,37 @@ const NavTab = memo(({
   useEffect(() => {
     Animated.spring(indicatorAnim, {
       toValue: active ? 1 : 0,
-      ...M3Motion.spatialFast,
+      damping: 12,
+      stiffness: 290,
+      mass: 0.75,
+      useNativeDriver: true,
     }).start()
   }, [active, indicatorAnim])
 
   const pillScaleX = indicatorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.65, 1],
+    outputRange: [0.45, 1],
+  })
+  const pillScaleY = indicatorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.76, 1],
+  })
+  const iconTranslateY = indicatorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1.5, 0],
   })
 
   return (
     <Pressable
       style={styles.tab}
       onPress={() => { onPress(id) }}
-      onPressIn={() => { M3Motion.pressSpring(pressScale, 0.92).start() }}
-      onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
+      onPressIn={() => { M3Motion.pressSpring(pressScale, 0.91).start() }}
+      onPressOut={() => {
+        Animated.spring(pressScale, {
+          toValue: 1,
+          ...M3Motion.expressiveBounce,
+        }).start()
+      }}
     >
       <Animated.View style={{ ...styles.tabInner, transform: [{ scale: pressScale }] }}>
         <View style={styles.pillWrap}>
@@ -59,14 +75,16 @@ const NavTab = memo(({
               ...styles.pill,
               backgroundColor: theme['m3-secondary-container'],
               opacity: indicatorAnim,
-              transform: [{ scaleX: pillScaleX }],
+              transform: [{ scaleX: pillScaleX }, { scaleY: pillScaleY }],
             }}
           />
-          <Icon
-            name={icon}
-            size={19}
-            color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
-          />
+          <Animated.View style={{ transform: [{ translateY: iconTranslateY }] }}>
+            <Icon
+              name={icon}
+              size={19}
+              color={active ? theme['m3-on-secondary-container'] : theme['m3-on-surface-variant']}
+            />
+          </Animated.View>
         </View>
         <Text
           size={11}
@@ -104,7 +122,6 @@ export default memo(() => {
         ...styles.container,
         paddingBottom: 8 + navBarHeight,
         backgroundColor: theme['m3-surface-container-low'],
-        borderTopColor: theme['m3-outline-variant'],
       }}
     >
       {BOTTOM_NAV_MENUS.map(menu => (
@@ -128,7 +145,6 @@ const styles = createStyle({
     paddingTop: 10,
     paddingBottom: 8,
     paddingHorizontal: 8,
-    borderTopWidth: 0.5,
   },
   tab: {
     flex: 1,

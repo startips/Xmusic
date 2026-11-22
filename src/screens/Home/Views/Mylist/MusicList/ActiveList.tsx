@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'r
 import { TouchableOpacity } from 'react-native'
 
 import { Icon } from '@/components/common/Icon'
+import { ExpressiveButton, ExpressiveIconButton } from '@/components/common/m3e/ExpressiveButton'
 import { useTheme } from '@/store/theme/hook'
 import { M3Radius } from '@/theme/m3'
 import { useActiveListId, useListFetching } from '@/store/list/hook'
@@ -14,7 +15,6 @@ import { LIST_IDS } from '@/config/constant'
 import Loading from '@/components/common/Loading'
 import { useSettingValue } from '@/store/setting/hook'
 import { useI18n } from '@/lang'
-import { hapticLight } from '@/utils/haptics'
 
 export interface ActiveListProps {
   onShowSearchBar: () => void
@@ -67,37 +67,40 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
       onPress={showList}
       onLongPress={onScrollToTop}
       disabled={!visibleBar}
-      activeOpacity={0.75}
+      activeOpacity={0.78}
       style={{
         ...styles.currentList,
         opacity: visibleBar ? 1 : 0,
         backgroundColor: theme['m3-surface-container'],
-        borderColor: theme['m3-outline-variant'],
       }}
     >
       <Icon style={styles.currentListIcon} color={theme['m3-on-surface-variant']} name="chevron-right" size={12} />
-      { fetching ? <Loading color={theme['m3-primary']} style={styles.loading} /> : null }
+      {fetching ? <Loading color={theme['m3-primary']} style={styles.loading} /> : null}
       <Text style={styles.currentListText} size={14} numberOfLines={1} color={theme['m3-on-surface']}>{currentListName}</Text>
-      <TouchableOpacity
+      <ExpressiveButton
+        size="sm"
+        variant="tonal"
+        icon="leaderboard"
+        iconSize={12}
+        textSize={11.5}
         disabled={!visibleBar}
-        style={{ ...styles.statsPill, backgroundColor: theme['m3-primary-container'] }}
-        onPress={() => {
-          hapticLight()
-          onOpenStats()
-        }}
+        onPress={onOpenStats}
+        style={styles.statsPill}
       >
-        <Icon color={theme['m3-on-primary-container']} name="leaderboard" size={12} />
-        <Text size={11.5} color={theme['m3-on-primary-container']} style={styles.statsPillText}>
-          {t('stats_entry_btn')}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity disabled={!visibleBar} style={{ ...styles.currentListBtns, backgroundColor: theme['m3-secondary-container'] }} onPress={onShowSearchBar}>
-        <Icon color={theme['m3-on-secondary-container']} name="search-2" size={14} />
-      </TouchableOpacity>
+        {t('stats_entry_btn')}
+      </ExpressiveButton>
+      <ExpressiveIconButton
+        size={32}
+        icon="search-2"
+        iconSize={14}
+        disabled={!visibleBar}
+        backgroundColor={theme['m3-secondary-container']}
+        color={theme['m3-on-secondary-container']}
+        onPress={onShowSearchBar}
+      />
     </TouchableOpacity>
   )
 })
-
 
 const styles = createStyle({
   currentList: {
@@ -109,7 +112,6 @@ const styles = createStyle({
     paddingRight: 5,
     height: 42,
     borderRadius: M3Radius.full,
-    borderWidth: 0.8,
     alignItems: 'center',
   },
   currentListIcon: {
@@ -124,22 +126,9 @@ const styles = createStyle({
     marginRight: 5,
   },
   statsPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 30,
+    minHeight: 30,
     paddingHorizontal: 10,
+    paddingVertical: 4,
     marginRight: 6,
-    borderRadius: M3Radius.full,
-  },
-  statsPillText: {
-    fontWeight: '700',
-  },
-  currentListBtns: {
-    width: 32,
-    height: 32,
-    borderRadius: M3Radius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 })

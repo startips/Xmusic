@@ -23,8 +23,9 @@ const styles = createStyle({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: 2,
-    paddingBottom: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    paddingBottom: 12,
   },
 })

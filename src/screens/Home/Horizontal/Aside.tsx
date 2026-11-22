@@ -4,6 +4,7 @@ import { useNavActiveId, useNavigationBarHeight, useSafeAreaInsets } from '@/sto
 import { isUpdateAvailable, useHasNewVersion } from '@/store/version/hook'
 import { useTheme } from '@/store/theme/hook'
 import { Icon } from '@/components/common/Icon'
+import { ExpressiveIconButton } from '@/components/common/m3e/ExpressiveButton'
 import { XmusicMark } from '@/components/common/XmusicMark'
 import { createStyle } from '@/utils/tools'
 import { NAV_MENUS } from '@/config/constant'
@@ -62,8 +63,8 @@ const styles = createStyle({
   },
   updateDot: {
     position: 'absolute',
-    top: 3,
-    right: 10,
+    top: 5,
+    right: 5,
     width: 8.5,
     height: 8.5,
     borderRadius: M3Radius.full,
@@ -148,8 +149,8 @@ export default memo(() => {
           {NAV_MENUS.map(menu => <MenuItem key={menu.id} id={menu.id} icon={menu.icon} onPress={handlePress} />)}
         </View>
       </ScrollView>
-      <TouchableOpacity style={styles.menuItem} onPress={handleOpenSetting}>
-        <View style={styles.iconContent}>
+      <View style={styles.menuItem}>
+        <ExpressiveIconButton size={40} backgroundColor="transparent" onPress={handleOpenSetting}>
           <Icon name="setting" size={19} color={theme['m3-on-surface-variant']} />
           {hasNewVersion
             ? (
@@ -163,8 +164,8 @@ export default memo(() => {
                 />
               )
             : null}
-        </View>
-      </TouchableOpacity>
+        </ExpressiveIconButton>
+      </View>
     </View>
   )
 })

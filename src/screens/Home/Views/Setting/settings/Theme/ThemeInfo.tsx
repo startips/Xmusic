@@ -34,7 +34,7 @@ export default memo(() => {
 
   return (
     <SubTitle title={t('setting_basic_theme')}>
-      <View style={{ ...styles.card, backgroundColor: theme['m3-surface-container'], borderColor: theme['m3-outline-variant'] }}>
+      <View style={{ ...styles.card, backgroundColor: theme['m3-surface-container-high'] }}>
         <View style={styles.swatches}>
           {swatches.map((color, index) => (
             <View key={index} style={{ ...styles.swatch, backgroundColor: color }} />
@@ -61,8 +61,8 @@ export default memo(() => {
               accessibilityState={{ selected }}
               style={{
                 ...styles.seedBtn,
-                backgroundColor: selected ? theme['m3-secondary-container'] : theme['m3-surface-container'],
-                borderColor: selected ? theme['m3-primary'] : theme['m3-outline-variant'],
+                backgroundColor: selected ? theme['m3-secondary-container'] : theme['m3-surface-container-high'],
+                borderRadius: selected ? M3Radius.full : 10,
               }}
             >
               <View style={{ ...styles.seedDot, backgroundColor: option.seed }} />
@@ -85,8 +85,7 @@ const styles = createStyle({
   card: {
     marginRight: 25,
     padding: 14,
-    borderRadius: M3Radius.lg,
-    borderWidth: 0.8,
+    borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
@@ -121,8 +120,6 @@ const styles = createStyle({
     gap: 6,
     paddingHorizontal: 11,
     paddingVertical: 6,
-    borderRadius: M3Radius.full,
-    borderWidth: 1,
     overflow: 'hidden',
   },
   seedDot: {

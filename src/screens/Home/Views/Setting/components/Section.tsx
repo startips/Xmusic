@@ -5,7 +5,6 @@ import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
 import { M3Radius, withAlpha } from '@/theme/m3'
 
-
 interface Props {
   title: string
   children: React.ReactNode | React.ReactNode[]
@@ -16,12 +15,11 @@ export default ({ title, children }: Props) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title} color={theme['m3-primary']} size={14}>{title}</Text>
+      <Text style={styles.title} color={theme['m3-primary']} size={13.5}>{title}</Text>
       <View
         style={{
           ...styles.card,
-          backgroundColor: withAlpha(theme['m3-surface-container'], 0.78),
-          borderColor: theme['m3-outline-variant'],
+          backgroundColor: withAlpha(theme['m3-surface-container'], 0.82),
         }}
       >
         {children}
@@ -29,7 +27,6 @@ export default ({ title, children }: Props) => {
     </View>
   )
 }
-
 
 const styles = createStyle({
   container: {
@@ -42,9 +39,7 @@ const styles = createStyle({
   },
   card: {
     borderRadius: M3Radius.lg,
-    borderWidth: 0.6,
-    paddingTop: 12,
-    paddingHorizontal: 8,
-    paddingBottom: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
 })

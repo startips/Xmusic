@@ -89,7 +89,6 @@ export default forwardRef<HeaderType, HeaderProps>(({ componentId }: { component
         style={{
           ...styles.heroCard,
           backgroundColor: withAlpha(theme['m3-surface-container'], 0.85),
-          borderColor: theme['m3-outline-variant'],
         }}
       >
         <View style={styles.heroTopRow}>
@@ -117,8 +116,7 @@ const styles = createStyle({
     paddingBottom: 6,
   },
   heroCard: {
-    borderRadius: M3Radius.lg,
-    borderWidth: 0.6,
+    borderRadius: 22,
     padding: 14,
   },
   heroTopRow: {

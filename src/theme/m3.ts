@@ -363,6 +363,18 @@ export const M3Motion = {
     mass: 1,
     useNativeDriver: true,
   },
+  expressiveBounce: {
+    damping: 13,
+    stiffness: 320,
+    mass: 0.78,
+    useNativeDriver: true,
+  },
+  shapeMorph: {
+    damping: 17,
+    stiffness: 290,
+    mass: 0.8,
+    useNativeDriver: false,
+  },
   effectsFast: {
     duration: 180,
     useNativeDriver: true,
@@ -370,9 +382,9 @@ export const M3Motion = {
   pressSpring(anim: Animated.Value, toValue: number) {
     return Animated.spring(anim, {
       toValue,
-      damping: 16,
-      stiffness: 320,
-      mass: 0.75,
+      damping: 14,
+      stiffness: 340,
+      mass: 0.72,
       useNativeDriver: true,
     })
   },

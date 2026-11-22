@@ -1,8 +1,8 @@
-import { memo, useRef, type ReactNode } from 'react'
+import { memo, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Animated, Pressable } from 'react-native'
 import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
-import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
+import { M3Motion, withAlpha } from '@/theme/m3'
 import { hapticConfirm, triggerHaptic, type HapticType } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
 
@@ -21,8 +21,8 @@ export interface ActionPillButtonProps {
 }
 
 /**
- * Circular M3 Expressive action button supporting active theme highlight,
- * spring press animation, and optional custom icon children (e.g. SolidHeartIcon).
+ * Circular M3 Expressive action button with active theme highlight,
+ * bouncy spring press animation, and circle <-> squircle corner morphing.
  */
 export default memo(({
   size,
@@ -38,11 +38,31 @@ export default memo(({
   children,
 }: ActionPillButtonProps) => {
   const theme = useTheme()
+  const [pressed, setPressed] = useState(false)
   const pressScale = useRef(new Animated.Value(1)).current
+  const morphAnim = useRef(new Animated.Value(active ? 1 : 0)).current
+
+  const circleRadius = Math.max(1, size / 2)
+  const squircleRadius = Math.max(6, Math.round(size * 0.3))
+
+  useEffect(() => {
+    Animated.spring(morphAnim, {
+      toValue: active || pressed ? 1 : 0,
+      ...M3Motion.shapeMorph,
+    }).start()
+  }, [active, pressed, morphAnim])
+
+  const animatedRadius = morphAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circleRadius, squircleRadius],
+    extrapolate: 'clamp',
+  })
 
   const backgroundColor = active
-    ? withAlpha(theme['m3-primary-container'], 0.92)
-    : (inactiveBackgroundColor ?? withAlpha(theme['m3-surface-container-high'], 0.72))
+    ? withAlpha(theme['m3-primary-container'], 0.94)
+    : pressed && inactiveBackgroundColor === 'transparent'
+      ? withAlpha(theme['m3-on-surface'], 0.1)
+      : (inactiveBackgroundColor ?? withAlpha(theme['m3-surface-container-high'], 0.72))
 
   const iconColor = color ?? (
     active
@@ -60,20 +80,30 @@ export default memo(({
         hapticConfirm()
         onLongPress()
       } : undefined}
-      onPressIn={() => { M3Motion.pressSpring(pressScale, 0.9).start() }}
-      onPressOut={() => { M3Motion.pressSpring(pressScale, 1).start() }}
+      onPressIn={() => {
+        setPressed(true)
+        M3Motion.pressSpring(pressScale, 0.88).start()
+      }}
+      onPressOut={() => {
+        setPressed(false)
+        Animated.spring(pressScale, {
+          toValue: 1,
+          ...M3Motion.expressiveBounce,
+        }).start()
+      }}
     >
-      <Animated.View
-        style={{
-          ...styles.button,
-          width: size,
-          height: size,
-          borderRadius: M3Radius.full,
-          backgroundColor,
-          transform: [{ scale: pressScale }],
-        }}
-      >
-        {children ?? (icon ? <Icon name={icon} color={iconColor} size={iconSize} /> : null)}
+      <Animated.View style={{ transform: [{ scale: pressScale }] }}>
+        <Animated.View
+          style={{
+            ...styles.button,
+            width: size,
+            height: size,
+            borderRadius: animatedRadius,
+            backgroundColor,
+          }}
+        >
+          {children ?? (icon ? <Icon name={icon} color={iconColor} size={iconSize} /> : null)}
+        </Animated.View>
       </Animated.View>
     </Pressable>
   )

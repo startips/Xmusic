@@ -1,13 +1,14 @@
 import { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react'
 import ConfirmAlert, { type ConfirmAlertType } from '@/components/common/ConfirmAlert'
 import Text from '@/components/common/Text'
-import { View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import Input, { type InputType } from '@/components/common/Input'
+import ExpressiveSwitch from './common/m3e/ExpressiveSwitch'
+import { hapticTick } from '@/utils/haptics'
 import { createStyle, toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { cancelTimeoutExit, getTimeoutExitTime, onTimeUpdate, startTimeoutExit, stopTimeoutExit, useTimeoutExitTimeInfo } from '@/core/player/timeoutExit'
 import { useI18n } from '@/lang'
-import CheckBox from './common/CheckBox'
 import { useSettingValue } from '@/store/setting/hook'
 import { updateSetting } from '@/core/common'
 import settingState from '@/store/setting/state'
@@ -84,15 +85,25 @@ const TimeInput = forwardRef<TimeInputType, {}>((props, ref) => {
 
 const Setting = () => {
   const t = useI18n()
+  const theme = useTheme()
   const timeoutExitPlayed = useSettingValue('player.timeoutExitPlayed')
   const onCheckChange = (check: boolean) => {
     updateSetting({ 'player.timeoutExitPlayed': check })
   }
 
   return (
-    <View style={styles.checkbox}>
-      <CheckBox check={timeoutExitPlayed} label={t('timeout_exit_label_isPlayed')} onChange={onCheckChange} />
-    </View>
+    <Pressable
+      onPress={() => {
+        hapticTick()
+        onCheckChange(!timeoutExitPlayed)
+      }}
+      style={styles.checkbox}
+    >
+      <Text size={13.5} color={theme['m3-on-surface']} style={styles.checkboxLabel}>
+        {t('timeout_exit_label_isPlayed')}
+      </Text>
+      <ExpressiveSwitch value={timeoutExitPlayed} onValueChange={onCheckChange} />
+    </Pressable>
   )
 }
 
@@ -239,7 +250,14 @@ const styles = createStyle({
     marginBottom: 8,
   },
   checkbox: {
-    marginTop: 5,
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  checkboxLabel: {
+    flex: 1,
   },
   inputContent: {
     marginTop: 8,

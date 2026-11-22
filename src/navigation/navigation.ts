@@ -416,6 +416,57 @@ export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem
     })
   })
 }
+const buildPageSlidePushAnimation = (winWidth: number) => {
+  const safeW = Math.max(Math.round(winWidth), 320)
+  const parallaxX = -Math.round(safeW * 0.28)
+  return {
+    waitForRender: true,
+    content: {
+      enter: {
+        translationX: {
+          from: safeW,
+          to: 0,
+          duration: 300,
+          interpolation: { type: 'decelerate' as const, factor: 2.2 },
+        },
+      },
+      exit: {
+        translationX: {
+          from: 0,
+          to: parallaxX,
+          duration: 300,
+          interpolation: { type: 'decelerate' as const, factor: 2.2 },
+        },
+      },
+    },
+  }
+}
+
+const buildPageSlidePopAnimation = (winWidth: number) => {
+  const safeW = Math.max(Math.round(winWidth), 320)
+  const parallaxX = -Math.round(safeW * 0.28)
+  return {
+    content: {
+      exit: {
+        translationX: {
+          from: 0,
+          to: safeW,
+          duration: 250,
+          interpolation: { type: 'fastOutSlowIn' as const },
+        },
+      },
+      enter: {
+        translationX: {
+          from: parallaxX,
+          to: 0,
+          duration: 250,
+          interpolation: { type: 'fastOutSlowIn' as const },
+        },
+      },
+    },
+  }
+}
+
 export function pushCommentScreen(componentId: string) {
   /*
     Navigation.setDefaultOptions({
@@ -451,6 +502,7 @@ export function pushCommentScreen(componentId: string) {
   */
   requestAnimationFrame(() => {
     const theme = themeState.theme
+    const winWidth = Math.max(windowSizeTools.getSize().width, 320)
 
     void Navigation.push(componentId, {
       component: {
@@ -475,24 +527,8 @@ export function pushCommentScreen(componentId: string) {
             componentBackgroundColor: getScreenSurfaceBackground(theme),
           },
           animations: {
-            push: {
-              content: {
-                translationX: {
-                  from: windowSizeTools.getSize().width,
-                  to: 0,
-                  duration: 300,
-                },
-              },
-            },
-            pop: {
-              content: {
-                translationX: {
-                  from: 0,
-                  to: windowSizeTools.getSize().width,
-                  duration: 300,
-                },
-              },
-            },
+            push: buildPageSlidePushAnimation(winWidth),
+            pop: buildPageSlidePopAnimation(winWidth),
           },
         },
       },
@@ -527,42 +563,21 @@ export function pushSettingScreen(componentId: string) {
             componentBackgroundColor: getScreenSurfaceBackground(theme),
           },
           animations: {
-            push: {
-              content: {
-                translationX: {
-                  from: Math.round(winWidth * 0.22),
-                  to: 0,
-                  duration: 280,
-                  interpolation: { type: 'fastOutSlowIn' as const },
-                },
-                alpha: {
-                  from: 0,
-                  to: 1,
-                  duration: 220,
-                  interpolation: { type: 'decelerate' as const, factor: 1.4 },
-                },
-              },
-            },
-            pop: {
-              content: {
-                translationX: {
-                  from: 0,
-                  to: Math.round(winWidth * 0.22),
-                  duration: 240,
-                  interpolation: { type: 'accelerate' as const, factor: 1.2 },
-                },
-                alpha: {
-                  from: 1,
-                  to: 0,
-                  duration: 200,
-                  interpolation: { type: 'accelerate' as const },
-                },
-              },
-            },
+            push: buildPageSlidePushAnimation(winWidth),
+            pop: buildPageSlidePopAnimation(winWidth),
           },
         },
       },
     })
+  })
+}
+
+export function popSettingScreen(componentId: string) {
+  const { width } = windowSizeTools.getSize()
+  void Navigation.pop(componentId, {
+    animations: {
+      pop: buildPageSlidePopAnimation(width),
+    },
   })
 }
 
