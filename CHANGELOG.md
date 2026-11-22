@@ -6,6 +6,13 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.2.1](https://github.com/startips/Xmusic/compare/v2.2.0...v2.2.1) - 2026-11-22
+
+### 修复
+
+- 修复开启「封面流转主题色」后，在歌单/列表中点击切歌时因封面异步拉取空窗期导致界面瞬间闪回旧静态预设主题色的问题，并避免歌词加载完成打断正在进行的封面取色
+- 修复应用更新检查受 Android OkHttp 本地缓存及 jsDelivr `@master` 边缘节点缓存影响导致新版本发布后仍显示旧版本号的问题：新增防缓存请求头、jsDelivr Tag 不可变版本拉取与 GitHub Releases 实时回退源
+
 ## [2.2.0](https://github.com/startips/Xmusic/compare/v2.1.0...v2.2.0) - 2026-11-22
 
 ### 新增
