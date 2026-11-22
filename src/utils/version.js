@@ -10,8 +10,6 @@ const FORK_REPO = 'Xmusic'
 const abis = [
   'arm64-v8a',
   'armeabi-v7a',
-  'x86_64',
-  'x86',
   'universal',
 ]
 
