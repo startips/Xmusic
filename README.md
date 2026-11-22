@@ -1,4 +1,4 @@
-<p align="center"><a href="https://github.com/startips/Xmusic"><img width="160" src="./doc/images/icon.png" alt="Xmusic logo"></a></p>
+<p align="center"><a href="https://github.com/startips/Xmusic"><img width="160" src="./doc/images/xmusic-logo.png" alt="Xmusic logo"></a></p>
 
 <h1 align="center">Xmusic</h1>
 
