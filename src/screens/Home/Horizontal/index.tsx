@@ -5,6 +5,7 @@ import StatusBar from '@/components/common/StatusBar'
 import Header from './Header'
 import Main from './Main'
 import { createStyle } from '@/utils/tools'
+import { useSafeAreaInsets } from '@/store/common/hook'
 
 const styles = createStyle({
   container: {
@@ -18,12 +19,13 @@ const styles = createStyle({
 })
 
 export default () => {
+  const safeInsets = useSafeAreaInsets()
   return (
     <>
       <StatusBar />
       <View style={styles.container}>
         <Aside />
-        <View style={styles.content}>
+        <View style={{ ...styles.content, paddingRight: safeInsets.right }}>
           <Header />
           <Main />
           <PlayerBar isHome />

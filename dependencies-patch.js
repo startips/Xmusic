@@ -46,6 +46,10 @@ const rnnPresenter = path.join(
   rootPath,
   'node_modules/react-native-navigation/lib/android/app/src/main/java/com/reactnativenavigation/viewcontrollers/viewcontroller/Presenter.java',
 )
+const rnnComponentViewController = path.join(
+  rootPath,
+  'node_modules/react-native-navigation/lib/android/app/src/main/java/com/reactnativenavigation/viewcontrollers/component/ComponentViewController.java',
+)
 
 const patchs = [
   // 1. 同时写入 MEDIA_METADATA_KEY_ART，部分系统（含 HyperOS 超级岛）只读取该字段
@@ -320,6 +324,12 @@ const patchs = [
     playerMetadata,
     '    public void updatePlayback(boolean playing) {\n        this.lastPlaying = playing;\n        List<Integer> compact = new ArrayList<>();',
     '    public void updatePlayback(boolean playing) {\n        this.lastPlaying = playing;\n        broadcastWidgetState();\n        List<Integer> compact = new ArrayList<>();',
+  ],
+  // 23. 横屏四边沉浸：清零 ComponentViewController 传递给页面根容器的左右系统栏/挖孔 inset，由页面自身按安全区避让内容
+  [
+    rnnComponentViewController,
+    '        WindowInsetsCompat finalInsets = new WindowInsetsCompat.Builder()\n                .setInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime(),\n                        Insets.of(systemBarsInsets.left,\n                                systemWindowInsetTop,\n                                systemBarsInsets.right,\n                                Math.max(systemWindowInsetBottom - getBottomInset(), 0)))\n                .build();',
+    '        WindowInsetsCompat finalInsets = new WindowInsetsCompat.Builder()\n                .setInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime(),\n                        Insets.of(0,\n                                systemWindowInsetTop,\n                                0,\n                                Math.max(systemWindowInsetBottom - getBottomInset(), 0)))\n                .build();',
   ],
 ]
 

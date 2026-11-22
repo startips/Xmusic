@@ -49,7 +49,7 @@ export default ({ componentId }: { componentId: string }) => {
       onEdgeDismiss={triggerDismiss}
       style={{ flex: 1 }}
     >
-      <PageContent>
+      <PageContent horizontalSafeArea={false}>
         <StatusBar />
         {
           isHorizontalMode

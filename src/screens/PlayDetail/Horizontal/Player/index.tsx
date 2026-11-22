@@ -6,7 +6,6 @@ import { createStyle } from '@/utils/tools'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import PlayInfo from './PlayInfo'
 import ControlBtn from './ControlBtn'
-import { marginLeftRaw } from '../constant'
 
 
 export default memo(() => {
@@ -22,9 +21,8 @@ const styles = createStyle({
   container: {
     flexShrink: 0,
     flexGrow: 1,
-    marginLeft: marginLeftRaw,
-    marginRight: marginLeftRaw,
+    marginLeft: 0,
+    marginRight: 8,
     paddingTop: 4,
-    // backgroundColor: 'rgba(0,0,0,0.1)',
   },
 })

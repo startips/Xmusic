@@ -77,6 +77,10 @@ export const setNavigationBarHeight = (size: number) => {
   commonActions.setNavigationBarHeight(size)
 }
 
+export const setSafeAreaInsets = (insets: CommonStateType['safeAreaInsets']) => {
+  commonActions.setSafeAreaInsets(insets)
+}
+
 export const setComponentId = (name: keyof CommonStateType['componentIds'], id: string) => {
   commonActions.setComponentId(name, id)
   navigations.syncScreenNavigationTheme()

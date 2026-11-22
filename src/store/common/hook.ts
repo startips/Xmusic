@@ -41,6 +41,19 @@ export const useNavigationBarHeight = () => {
   return value
 }
 
+export const useSafeAreaInsets = () => {
+  const [value, update] = useState(state.safeAreaInsets)
+
+  useEffect(() => {
+    global.state_event.on('safeAreaInsetsUpdated', update)
+    return () => {
+      global.state_event.off('safeAreaInsetsUpdated', update)
+    }
+  }, [])
+
+  return value
+}
+
 export const useComponentIds = () => {
   const [value, update] = useState(state.componentIds)
 

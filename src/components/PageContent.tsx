@@ -1,58 +1,64 @@
 import { useMemo } from 'react'
-import { View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 import ImageBackground from '@/components/common/ImageBackground'
 import FluidBackground from '@/components/common/FluidBackground'
 import { useSettingValue } from '@/store/setting/hook'
 import { useTheme } from '@/store/theme/hook'
-import { useWindowSize } from '@/utils/hooks'
+import { useSafeAreaInsets } from '@/store/common/hook'
 import SizeView from './SizeView'
 
 interface Props {
   children: React.ReactNode
+  horizontalSafeArea?: boolean
 }
 
-export default ({ children }: Props) => {
+export default ({ children, horizontalSafeArea = true }: Props) => {
   const theme = useTheme()
-  const windowSize = useWindowSize()
   const isDynamicBg = useSettingValue('theme.dynamicBg')
+  const safeInsets = useSafeAreaInsets()
+  const padLeft = horizontalSafeArea ? safeInsets.left : 0
+  const padRight = horizontalSafeArea ? safeInsets.right : 0
 
   const staticThemeComponent = useMemo(() => (
     <View style={{ flex: 1, overflow: 'hidden' }}>
       <ImageBackground
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          height: windowSize.height,
-          width: windowSize.width,
-          backgroundColor: theme['c-content-background'],
-        }}
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: theme['c-content-background'] },
+        ]}
         source={theme['bg-image']}
         resizeMode="cover"
       />
-      <View style={{ flex: 1, flexDirection: 'column', backgroundColor: theme['c-main-background'] }}>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'column',
+          backgroundColor: theme['c-main-background'],
+          paddingLeft: padLeft,
+          paddingRight: padRight,
+        }}
+      >
         {children}
       </View>
     </View>
-  ), [children, theme, windowSize.height, windowSize.width])
+  ), [children, padLeft, padRight, theme])
 
   const fluidComponent = useMemo(() => (
     <View style={{ flex: 1, overflow: 'hidden', backgroundColor: theme['m3-background'] }}>
-      <FluidBackground
+      <FluidBackground style={StyleSheet.absoluteFill} />
+      <View
         style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: windowSize.width,
-          height: windowSize.height,
+          flex: 1,
+          flexDirection: 'column',
+          paddingLeft: padLeft,
+          paddingRight: padRight,
         }}
-      />
-      <View style={{ flex: 1, flexDirection: 'column' }}>
+      >
         {children}
       </View>
     </View>
-  ), [children, theme, windowSize.height, windowSize.width])
+  ), [children, padLeft, padRight, theme])
 
   return (
     <>

@@ -31,7 +31,7 @@ export default ({ componentId }: Props) => {
   }, [isHorizontalMode])
 
   return (
-    <PageContent>
+    <PageContent horizontalSafeArea={!isHorizontalMode}>
       {
         isHorizontalMode
           ? <Horizontal />

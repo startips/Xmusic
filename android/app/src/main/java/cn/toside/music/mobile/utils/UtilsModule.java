@@ -9,6 +9,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.display.DisplayManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -20,10 +21,13 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.Display;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.Window;
@@ -70,6 +74,9 @@ import java.util.concurrent.Executors;
 public class UtilsModule extends ReactContextBaseJavaModule {
   private final ReactApplicationContext reactContext;
   private BroadcastReceiver screenOnOffReceiver = null;
+  private DisplayManager displayManager = null;
+  private DisplayManager.DisplayListener displayListener = null;
+  private int lastDisplayRotation = -1;
   private final ExecutorService paletteExecutor = Executors.newFixedThreadPool(2);
   private final Map<String, CachedPalette> paletteCache = Collections.synchronizedMap(
     new LinkedHashMap<String, CachedPalette>(48, 0.75f, true) {
@@ -119,6 +126,7 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     this.reactContext = reactContext;
     utilsEvent = new UtilsEvent(reactContext);
     registerScreenBroadcastReceiver();
+    registerDisplayListener();
   }
 
   @Override
@@ -134,8 +142,48 @@ public class UtilsModule extends ReactContextBaseJavaModule {
       } catch (Exception ignored) {}
       screenOnOffReceiver = null;
     }
+    if (displayManager != null && displayListener != null) {
+      try {
+        displayManager.unregisterDisplayListener(displayListener);
+      } catch (Exception ignored) {}
+      displayListener = null;
+    }
     paletteExecutor.shutdownNow();
     super.invalidate();
+  }
+
+  private void registerDisplayListener() {
+    try {
+      displayManager = (DisplayManager) reactContext.getSystemService(Context.DISPLAY_SERVICE);
+      if (displayManager == null) return;
+      Display initialDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+      if (initialDisplay != null) {
+        lastDisplayRotation = initialDisplay.getRotation();
+      }
+      displayListener = new DisplayManager.DisplayListener() {
+        @Override
+        public void onDisplayAdded(int displayId) {}
+
+        @Override
+        public void onDisplayRemoved(int displayId) {}
+
+        @Override
+        public void onDisplayChanged(int displayId) {
+          if (displayId != Display.DEFAULT_DISPLAY || displayManager == null) return;
+          Display display = displayManager.getDisplay(displayId);
+          if (display == null) return;
+          int rotation = display.getRotation();
+          if (rotation == lastDisplayRotation) return;
+          lastDisplayRotation = rotation;
+          if (reactContext.hasActiveReactInstance()) {
+            WritableMap params = Arguments.createMap();
+            params.putInt("rotation", rotation);
+            utilsEvent.sendEvent(utilsEvent.DISPLAY_CHANGED, params);
+          }
+        }
+      };
+      displayManager.registerDisplayListener(displayListener, new Handler(Looper.getMainLooper()));
+    } catch (Exception ignored) {}
   }
 
   @ReactMethod
@@ -511,6 +559,48 @@ public class UtilsModule extends ReactContextBaseJavaModule {
       int decorHeight = window.getDecorView().getHeight();
       int navBarHeight = decorHeight > 0 ? Math.max(0, decorHeight - rect.bottom) : 0;
       promise.resolve(navBarHeight);
+    });
+  }
+
+  @ReactMethod
+  public void getSafeAreaInsets(Promise promise) {
+    UiThreadUtil.runOnUiThread(() -> {
+      WritableMap params = Arguments.createMap();
+      Activity currentActivity = reactContext.getCurrentActivity();
+      if (currentActivity == null || currentActivity.getWindow() == null) {
+        params.putInt("top", 0);
+        params.putInt("bottom", 0);
+        params.putInt("left", 0);
+        params.putInt("right", 0);
+        params.putBoolean("hasInsets", false);
+        promise.resolve(params);
+        return;
+      }
+      Window window = currentActivity.getWindow();
+      View decorView = window.getDecorView();
+      WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(decorView);
+      if (insets != null) {
+        Insets safe = insets.getInsets(
+          WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+        );
+        params.putInt("top", safe.top);
+        params.putInt("bottom", safe.bottom);
+        params.putInt("left", safe.left);
+        params.putInt("right", safe.right);
+        params.putBoolean("hasInsets", true);
+        promise.resolve(params);
+        return;
+      }
+      Rect rect = new Rect();
+      decorView.getWindowVisibleDisplayFrame(rect);
+      int decorW = decorView.getWidth();
+      int decorH = decorView.getHeight();
+      params.putInt("top", Math.max(0, rect.top));
+      params.putInt("bottom", decorH > 0 ? Math.max(0, decorH - rect.bottom) : 0);
+      params.putInt("left", Math.max(0, rect.left));
+      params.putInt("right", decorW > 0 ? Math.max(0, decorW - rect.right) : 0);
+      params.putBoolean("hasInsets", false);
+      promise.resolve(params);
     });
   }
 

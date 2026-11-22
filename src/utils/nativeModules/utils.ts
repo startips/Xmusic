@@ -72,6 +72,33 @@ export const getNavigationBarHeight = async(): Promise<number> => {
   return UtilsModule.getNavigationBarHeight()
 }
 
+export interface NativeSafeAreaInsets {
+  top: number
+  bottom: number
+  left: number
+  right: number
+  hasInsets: boolean
+}
+
+export const getSafeAreaInsets = async(): Promise<NativeSafeAreaInsets> => {
+  if (!UtilsModule.getSafeAreaInsets) {
+    return { top: 0, bottom: 0, left: 0, right: 0, hasInsets: false }
+  }
+  return UtilsModule.getSafeAreaInsets()
+}
+
+export const onDisplayChange = (handler: (rotation: number) => void): () => void => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  const eventEmitter = new NativeEventEmitter(UtilsModule)
+  const eventListener = eventEmitter.addListener('display-changed', event => {
+    handler((event?.rotation as number) ?? 0)
+  })
+
+  return () => {
+    eventListener.remove()
+  }
+}
+
 export const onWindowSizeChange = (handler: (size: { width: number, height: number }) => void): () => void => {
   UtilsModule.listenWindowSizeChanged()
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

@@ -36,6 +36,10 @@ export class StateEvent extends Event {
     this.emit('navigationBarHeightUpdated', size)
   }
 
+  safeAreaInsetsUpdated(insets: CommonState['safeAreaInsets']) {
+    this.emit('safeAreaInsetsUpdated', insets)
+  }
+
   apiSourceUpdated(source: LX.AppSetting['common.apiSource']) {
     this.emit('apiSourceUpdated', source)
   }

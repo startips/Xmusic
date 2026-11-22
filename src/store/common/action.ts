@@ -17,6 +17,17 @@ export default {
     state.navigationBarHeight = size
     global.state_event.navigationBarHeightUpdated(size)
   },
+  setSafeAreaInsets(insets: InitState['safeAreaInsets']) {
+    const cur = state.safeAreaInsets
+    if (
+      cur.top == insets.top &&
+      cur.bottom == insets.bottom &&
+      cur.left == insets.left &&
+      cur.right == insets.right
+    ) return
+    state.safeAreaInsets = { ...insets }
+    global.state_event.safeAreaInsetsUpdated(state.safeAreaInsets)
+  },
   setComponentId(name: COMPONENT_IDS, id: string) {
     state.componentIds[name] = id
     global.state_event.componentIdsUpdated({ ...state.componentIds })

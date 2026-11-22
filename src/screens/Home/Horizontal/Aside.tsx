@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
-import { useNavActiveId, useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
+import { useNavActiveId, useNavigationBarHeight, useSafeAreaInsets } from '@/store/common/hook'
 import { isUpdateAvailable, useHasNewVersion } from '@/store/version/hook'
 import { useTheme } from '@/store/theme/hook'
 import { Icon } from '@/components/common/Icon'
@@ -11,8 +11,10 @@ import commonState, { type InitState } from '@/store/common/state'
 import { setNavActiveId } from '@/core/common'
 import { navigations } from '@/navigation'
 import { M3Radius } from '@/theme/m3'
+import { scaleSizeW } from '@/utils/pixelRatio'
 
 const NAV_WIDTH = 74
+const SCALED_NAV_WIDTH = scaleSizeW(NAV_WIDTH)
 
 const styles = createStyle({
   container: {
@@ -74,9 +76,9 @@ const styles = createStyle({
 
 const Header = () => {
   const theme = useTheme()
-  const statusBarHeight = useStatusbarHeight()
+  const safeInsets = useSafeAreaInsets()
   return (
-    <View style={{ paddingTop: statusBarHeight }}>
+    <View style={{ paddingTop: Math.max(4, safeInsets.top) }}>
       <View style={styles.header}>
         <View style={[styles.brandBadge, { backgroundColor: theme['m3-primary-container'] }]}>
           <XmusicMark size={40} />
@@ -113,6 +115,7 @@ const MenuItem = ({ id, icon, onPress }: {
 export default memo(() => {
   const theme = useTheme()
   const navBarHeight = useNavigationBarHeight()
+  const safeInsets = useSafeAreaInsets()
   const hasNewVersion = useHasNewVersion()
   const badgeColor = theme.isDark ? '#FF453A' : '#E53935'
 
@@ -132,7 +135,9 @@ export default memo(() => {
     <View
       style={{
         ...styles.container,
-        paddingBottom: 12 + navBarHeight,
+        width: SCALED_NAV_WIDTH + safeInsets.left,
+        paddingLeft: safeInsets.left,
+        paddingBottom: 12 + Math.max(navBarHeight, safeInsets.bottom),
         backgroundColor: theme['m3-surface-container-low'],
         borderRightColor: theme['m3-outline-variant'],
       }}
