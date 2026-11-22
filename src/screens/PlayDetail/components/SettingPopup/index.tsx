@@ -7,7 +7,6 @@ import { useI18n } from '@/lang'
 
 import SettingLyricProgress from './settings/SettingLyricProgress'
 import SettingKaraokeLyric from './settings/SettingKaraokeLyric'
-import SettingVolume from './settings/SettingVolume'
 import SettingPlaybackRate from './settings/SettingPlaybackRate'
 import SettingLrcFontSize from './settings/SettingLrcFontSize'
 import SettingLrcAlign from './settings/SettingLrcAlign'
@@ -68,7 +67,6 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
                 <SettingKaraokeLyric />
                 <SettingLyricProgress />
                 <SettingTimeoutExit onOpenModal={handleOpenTimeoutModal} />
-                <SettingVolume />
                 <SettingPlaybackRate />
                 <SettingLrcFontSize direction={direction} />
                 <SettingLrcAlign />

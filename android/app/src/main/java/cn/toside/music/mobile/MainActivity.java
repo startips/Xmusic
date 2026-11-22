@@ -1,6 +1,7 @@
 package cn.toside.music.mobile;
 
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Window;
@@ -19,6 +20,7 @@ public class MainActivity extends NavigationActivity {
       preWindow.setNavigationBarColor(Color.TRANSPARENT);
     }
     super.onCreate(savedInstanceState);
+    setVolumeControlStream(AudioManager.STREAM_MUSIC);
     Window window = getWindow();
     if (window != null) {
       WindowCompat.setDecorFitsSystemWindows(window, false);

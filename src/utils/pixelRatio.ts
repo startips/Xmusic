@@ -42,7 +42,7 @@ export function getTextSize(size: number) {
   const scaleWidth = screenW / designWidth
   const scaleHeight = screenH / designHeight
   const textScale = Math.min(scaleWidth, scaleHeight, 1.3)
-  return Math.floor((size * textScale) / fontScale)
+  return Math.round(((size * textScale) / fontScale) * 2) / 2
 }
 
 export function setSpText(size: number) {

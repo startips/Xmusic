@@ -24,7 +24,6 @@ export default memo(() => {
 
   const eqEnabled = useSettingValue('player.eqEnabled')
   const eqPreset = useSettingValue('player.eqPreset')
-  const isSoftPlayPause = useSettingValue('player.isSoftPlayPause')
   const crossfadeDuration = useSettingValue('player.crossfadeDuration')
   const enableHaptics = useSettingValue('common.enableHaptics')
 
@@ -40,15 +39,6 @@ export default memo(() => {
           </Text>
         </View>
       </SubTitle>
-
-      <CheckBoxItem
-        check={isSoftPlayPause}
-        label={t('setting_play_soft_play_pause')}
-        onChange={(val) => {
-          hapticTick()
-          updateSetting({ 'player.isSoftPlayPause': val })
-        }}
-      />
 
       <SubTitle title={t('setting_play_crossfade')}>
         <View

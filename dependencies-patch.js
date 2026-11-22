@@ -38,6 +38,18 @@ const playerLocalPlayback = path.join(
   rootPath,
   'node_modules/react-native-track-player/android/src/main/java/com/guichaguri/trackplayer/service/player/LocalPlayback.java',
 )
+const playerMusicManager = path.join(
+  rootPath,
+  'node_modules/react-native-track-player/android/src/main/java/com/guichaguri/trackplayer/service/MusicManager.java',
+)
+const playerDspConfig = path.join(
+  rootPath,
+  'node_modules/react-native-track-player/android/src/main/java/com/guichaguri/trackplayer/service/player/XmusicDspConfig.java',
+)
+const playerDspProcessor = path.join(
+  rootPath,
+  'node_modules/react-native-track-player/android/src/main/java/com/guichaguri/trackplayer/service/player/XmusicDspAudioProcessor.java',
+)
 const rnnSystemUiUtils = path.join(
   rootPath,
   'node_modules/react-native-navigation/lib/android/app/src/main/java/com/reactnativenavigation/utils/SystemUiUtils.kt',
@@ -246,6 +258,7 @@ const patchs = [
   [
     playerLocalPlayback,
     '    private SimpleCache cache;\n    private boolean prepared = false;',
+    '    private SimpleCache cache;\n    private boolean prepared = false;\n    private float userVolume = 1.0F;\n    private float rampFactor = 1.0F;\n    private float eofFactor = 1.0F;\n    private boolean softPlayPause = true;\n    private int crossfadeMs = 2000;\n    private boolean pauseRamping = false;\n    private boolean freshTrack = true;\n    private int pendingPlayRampMs = 0;\n    private final android.os.Handler rampHandler = new android.os.Handler(android.os.Looper.getMainLooper());\n    private Runnable activeRampTask = null;\n    private final Runnable eofMonitorTask = new Runnable() {\n        @Override\n        public void run() {\n            rampHandler.removeCallbacks(this);\n            if (crossfadeMs <= 0 || pauseRamping || !player.isPlaying()) {\n                if (eofFactor != 1.0F) {\n                    eofFactor = 1.0F;\n                    applyEffectiveVolume();\n                }\n                return;\n            }\n            long duration = getDuration();\n            long pos = player.getCurrentPosition();\n            if (duration > 8000 && pos > 0) {\n                long remaining = duration - pos;\n                if (remaining > 0 && remaining <= crossfadeMs) {\n                    eofFactor = Math.max(0.05F, Math.min(1.0F, (float) remaining / (float) crossfadeMs));\n                    applyEffectiveVolume();\n                } else if (eofFactor != 1.0F) {\n                    eofFactor = 1.0F;\n                    applyEffectiveVolume();\n                }\n            }\n            rampHandler.postDelayed(this, 100);\n        }\n    };',
     '    private SimpleCache cache;\n    private boolean prepared = false;\n    private float userVolume = 1.0F;\n    private float rampFactor = 1.0F;\n    private float eofFactor = 1.0F;\n    private boolean softPlayPause = true;\n    private int crossfadeMs = 2000;\n    private boolean pauseRamping = false;\n    private boolean freshTrack = true;\n    private final android.os.Handler rampHandler = new android.os.Handler(android.os.Looper.getMainLooper());\n    private Runnable activeRampTask = null;\n    private final Runnable eofMonitorTask = new Runnable() {\n        @Override\n        public void run() {\n            rampHandler.removeCallbacks(this);\n            if (crossfadeMs <= 0 || pauseRamping || !player.isPlaying()) {\n                if (eofFactor != 1.0F) {\n                    eofFactor = 1.0F;\n                    applyEffectiveVolume();\n                }\n                return;\n            }\n            long duration = getDuration();\n            long pos = player.getCurrentPosition();\n            if (duration > 8000 && pos > 0) {\n                long remaining = duration - pos;\n                if (remaining > 0 && remaining <= crossfadeMs) {\n                    eofFactor = Math.max(0.05F, Math.min(1.0F, (float) remaining / (float) crossfadeMs));\n                    applyEffectiveVolume();\n                } else if (eofFactor != 1.0F) {\n                    eofFactor = 1.0F;\n                    applyEffectiveVolume();\n                }\n            }\n            rampHandler.postDelayed(this, 100);\n        }\n    };',
   ],
   [
@@ -256,7 +269,13 @@ const patchs = [
   [
     playerLocalPlayback,
     '    @Override\n    public void play() {\n        prepare();\n        super.play();\n    }\n\n    @Override\n    public void stop() {\n        super.stop();\n        prepared = false;\n    }',
+    '    private void cancelActiveRamp() {\n        if (activeRampTask != null) {\n            rampHandler.removeCallbacks(activeRampTask);\n            activeRampTask = null;\n        }\n    }\n\n    private void applyEffectiveVolume() {\n        float effective = Math.max(0.0F, Math.min(1.0F, userVolume * volumeMultiplier * rampFactor * eofFactor));\n        player.setVolume(effective);\n    }\n\n    private void broadcastAudioSession(int sessionId) {\n        try {\n            android.content.Intent intent = new android.content.Intent("com.startips.xmusic.AUDIO_SESSION_CHANGED");\n            intent.setPackage(context.getPackageName());\n            intent.putExtra("audioSessionId", sessionId);\n            context.sendBroadcast(intent);\n        } catch (Exception ignored) {}\n    }\n\n    @Override\n    public int getAudioSessionId() {\n        return player.getAudioSessionId();\n    }\n\n    @Override\n    public void onAudioSessionIdChanged(int audioSessionId) {\n        broadcastAudioSession(audioSessionId);\n    }\n\n    @Override\n    public void onIsPlayingChanged(boolean isPlaying) {\n        if (isPlaying) {\n            maybeStartPendingPlayRamp();\n        }\n    }\n\n    private void startFadeInRamp(final float startFactor, final int durationMs) {\n        cancelActiveRamp();\n        rampFactor = startFactor;\n        applyEffectiveVolume();\n        final long startTime = android.os.SystemClock.uptimeMillis();\n        activeRampTask = new Runnable() {\n            @Override\n            public void run() {\n                long elapsed = android.os.SystemClock.uptimeMillis() - startTime;\n                float t = Math.min(1.0F, (float) elapsed / (float) durationMs);\n                float eased = 1.0F - (1.0F - t) * (1.0F - t) * (1.0F - t);\n                rampFactor = startFactor + (1.0F - startFactor) * eased;\n                applyEffectiveVolume();\n                if (t < 1.0F) {\n                    rampHandler.postDelayed(this, 16);\n                } else {\n                    activeRampTask = null;\n                }\n            }\n        };\n        rampHandler.postDelayed(activeRampTask, 16);\n    }\n\n    private void maybeStartPendingPlayRamp() {\n        if (pendingPlayRampMs <= 0 || pauseRamping || !player.isPlaying()) return;\n        int dur = pendingPlayRampMs;\n        pendingPlayRampMs = 0;\n        startFadeInRamp(0.0F, dur);\n        if (crossfadeMs > 0) rampHandler.postDelayed(eofMonitorTask, 120);\n    }\n\n    @Override\n    public void setAudioTransitionConfig(boolean softPlayPause, int crossfadeMs) {\n        this.softPlayPause = softPlayPause;\n        this.crossfadeMs = Math.max(0, Math.min(crossfadeMs, 6000));\n        if (this.crossfadeMs <= 0 && eofFactor != 1.0F) {\n            eofFactor = 1.0F;\n            applyEffectiveVolume();\n        } else if (this.crossfadeMs > 0 && player.isPlaying() && !pauseRamping) {\n            rampHandler.post(eofMonitorTask);\n        }\n    }\n\n    @Override\n    protected boolean isPauseRamping() {\n        return pauseRamping;\n    }\n\n    @Override\n    public void skip(int index, Promise promise) {\n        cancelActiveRamp();\n        pauseRamping = false;\n        pendingPlayRampMs = 0;\n        freshTrack = true;\n        eofFactor = 1.0F;\n        rampFactor = 1.0F;\n        super.skip(index, promise);\n    }\n\n    @Override\n    public void play() {\n        cancelActiveRamp();\n        boolean wasPauseRamping = pauseRamping;\n        pauseRamping = false;\n        pendingPlayRampMs = 0;\n        eofFactor = 1.0F;\n        prepare();\n        boolean useTrackFadeIn = freshTrack && crossfadeMs > 0;\n        freshTrack = false;\n        final int durationMs = useTrackFadeIn ? Math.min(crossfadeMs, 1400) : (softPlayPause ? 240 : 0);\n        if (durationMs <= 0) {\n            rampFactor = 1.0F;\n            applyEffectiveVolume();\n            super.play();\n            if (crossfadeMs > 0) rampHandler.postDelayed(eofMonitorTask, 120);\n            return;\n        }\n        if (player.isPlaying()) {\n            final float startFactor = wasPauseRamping ? Math.max(0.0F, rampFactor) : Math.max(0.0F, rampFactor);\n            super.play();\n            startFadeInRamp(startFactor, durationMs);\n            if (crossfadeMs > 0) rampHandler.postDelayed(eofMonitorTask, 120);\n            return;\n        }\n        rampFactor = 0.0F;\n        pendingPlayRampMs = durationMs;\n        applyEffectiveVolume();\n        super.play();\n        maybeStartPendingPlayRamp();\n    }\n\n    @Override\n    public void pause() {\n        pendingPlayRampMs = 0;\n        rampHandler.removeCallbacks(eofMonitorTask);\n        if (!softPlayPause || !player.isPlaying() || !player.getPlayWhenReady()) {\n            cancelActiveRamp();\n            pauseRamping = false;\n            rampFactor = 1.0F;\n            eofFactor = 1.0F;\n            super.pause();\n            applyEffectiveVolume();\n            return;\n        }\n        if (pauseRamping) return;\n        cancelActiveRamp();\n        pauseRamping = true;\n        previousState = android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED;\n        manager.onPause();\n        manager.onStateChange(previousState);\n        final float startFactor = Math.max(0.05F, rampFactor * eofFactor);\n        final int durationMs = 200;\n        final long startTime = android.os.SystemClock.uptimeMillis();\n        activeRampTask = new Runnable() {\n            @Override\n            public void run() {\n                if (!pauseRamping) return;\n                long elapsed = android.os.SystemClock.uptimeMillis() - startTime;\n                float t = Math.min(1.0F, (float) elapsed / (float) durationMs);\n                float eased = (1.0F - t) * (1.0F - t);\n                rampFactor = startFactor * eased;\n                applyEffectiveVolume();\n                if (t < 1.0F) {\n                    rampHandler.postDelayed(this, 16);\n                } else {\n                    activeRampTask = null;\n                    pauseRamping = false;\n                    LocalPlayback.super.pause();\n                    rampFactor = 1.0F;\n                    eofFactor = 1.0F;\n                    applyEffectiveVolume();\n                }\n            }\n        };\n        rampHandler.postDelayed(activeRampTask, 16);\n    }\n\n    @Override\n    public void stop() {\n        cancelActiveRamp();\n        rampHandler.removeCallbacks(eofMonitorTask);\n        pendingPlayRampMs = 0;\n        pauseRamping = false;\n        freshTrack = true;\n        rampFactor = 1.0F;\n        eofFactor = 1.0F;\n        super.stop();\n        applyEffectiveVolume();\n        prepared = false;\n    }',
     '    private void cancelActiveRamp() {\n        if (activeRampTask != null) {\n            rampHandler.removeCallbacks(activeRampTask);\n            activeRampTask = null;\n        }\n    }\n\n    private void applyEffectiveVolume() {\n        float effective = Math.max(0.0F, Math.min(1.0F, userVolume * volumeMultiplier * rampFactor * eofFactor));\n        player.setVolume(effective);\n    }\n\n    private void broadcastAudioSession(int sessionId) {\n        try {\n            android.content.Intent intent = new android.content.Intent("com.startips.xmusic.AUDIO_SESSION_CHANGED");\n            intent.setPackage(context.getPackageName());\n            intent.putExtra("audioSessionId", sessionId);\n            context.sendBroadcast(intent);\n        } catch (Exception ignored) {}\n    }\n\n    @Override\n    public int getAudioSessionId() {\n        return player.getAudioSessionId();\n    }\n\n    @Override\n    public void onAudioSessionIdChanged(int audioSessionId) {\n        broadcastAudioSession(audioSessionId);\n    }\n\n    @Override\n    public void setAudioTransitionConfig(boolean softPlayPause, int crossfadeMs) {\n        this.softPlayPause = softPlayPause;\n        this.crossfadeMs = Math.max(0, Math.min(crossfadeMs, 6000));\n        if (this.crossfadeMs <= 0 && eofFactor != 1.0F) {\n            eofFactor = 1.0F;\n            applyEffectiveVolume();\n        } else if (this.crossfadeMs > 0 && player.isPlaying() && !pauseRamping) {\n            rampHandler.post(eofMonitorTask);\n        }\n    }\n\n    @Override\n    protected boolean isPauseRamping() {\n        return pauseRamping;\n    }\n\n    @Override\n    public void skip(int index, Promise promise) {\n        cancelActiveRamp();\n        pauseRamping = false;\n        freshTrack = true;\n        eofFactor = 1.0F;\n        rampFactor = 1.0F;\n        super.skip(index, promise);\n    }\n\n    @Override\n    public void play() {\n        cancelActiveRamp();\n        boolean wasPauseRamping = pauseRamping;\n        pauseRamping = false;\n        eofFactor = 1.0F;\n        prepare();\n        boolean useTrackFadeIn = freshTrack && crossfadeMs > 0;\n        freshTrack = false;\n        final int durationMs = useTrackFadeIn ? Math.min(crossfadeMs, 1400) : (softPlayPause ? 220 : 0);\n        if (durationMs <= 0) {\n            rampFactor = 1.0F;\n            applyEffectiveVolume();\n            super.play();\n            if (crossfadeMs > 0) rampHandler.postDelayed(eofMonitorTask, 120);\n            return;\n        }\n        final float startFactor = wasPauseRamping ? Math.max(0.04F, rampFactor) : (player.isPlaying() ? Math.max(0.08F, rampFactor) : 0.04F);\n        rampFactor = startFactor;\n        applyEffectiveVolume();\n        super.play();\n        final long startTime = android.os.SystemClock.uptimeMillis();\n        activeRampTask = new Runnable() {\n            @Override\n            public void run() {\n                long elapsed = android.os.SystemClock.uptimeMillis() - startTime;\n                float t = Math.min(1.0F, (float) elapsed / (float) durationMs);\n                float eased = 1.0F - (1.0F - t) * (1.0F - t) * (1.0F - t);\n                rampFactor = startFactor + (1.0F - startFactor) * eased;\n                applyEffectiveVolume();\n                if (t < 1.0F) {\n                    rampHandler.postDelayed(this, 16);\n                } else {\n                    activeRampTask = null;\n                }\n            }\n        };\n        rampHandler.postDelayed(activeRampTask, 16);\n        if (crossfadeMs > 0) rampHandler.postDelayed(eofMonitorTask, 120);\n    }\n\n    @Override\n    public void pause() {\n        rampHandler.removeCallbacks(eofMonitorTask);\n        if (!softPlayPause || !player.isPlaying() || !player.getPlayWhenReady()) {\n            cancelActiveRamp();\n            pauseRamping = false;\n            rampFactor = 1.0F;\n            eofFactor = 1.0F;\n            super.pause();\n            applyEffectiveVolume();\n            return;\n        }\n        if (pauseRamping) return;\n        cancelActiveRamp();\n        pauseRamping = true;\n        previousState = android.support.v4.media.session.PlaybackStateCompat.STATE_PAUSED;\n        manager.onPause();\n        manager.onStateChange(previousState);\n        final float startFactor = Math.max(0.05F, rampFactor * eofFactor);\n        final int durationMs = 200;\n        final long startTime = android.os.SystemClock.uptimeMillis();\n        activeRampTask = new Runnable() {\n            @Override\n            public void run() {\n                if (!pauseRamping) return;\n                long elapsed = android.os.SystemClock.uptimeMillis() - startTime;\n                float t = Math.min(1.0F, (float) elapsed / (float) durationMs);\n                float eased = (1.0F - t) * (1.0F - t);\n                rampFactor = startFactor * eased;\n                applyEffectiveVolume();\n                if (t < 1.0F) {\n                    rampHandler.postDelayed(this, 16);\n                } else {\n                    activeRampTask = null;\n                    pauseRamping = false;\n                    LocalPlayback.super.pause();\n                    rampFactor = 1.0F;\n                    eofFactor = 1.0F;\n                    applyEffectiveVolume();\n                }\n            }\n        };\n        rampHandler.postDelayed(activeRampTask, 16);\n    }\n\n    @Override\n    public void stop() {\n        cancelActiveRamp();\n        rampHandler.removeCallbacks(eofMonitorTask);\n        pauseRamping = false;\n        freshTrack = true;\n        rampFactor = 1.0F;\n        eofFactor = 1.0F;\n        super.stop();\n        applyEffectiveVolume();\n        prepared = false;\n    }',
+  ],
+  [
+    playerLocalPlayback,
+    '    @Override\n    public void seekTo(long time) {\n        prepare();\n        super.seekTo(time);\n    }',
+    '    @Override\n    public void seekTo(long time) {\n        prepare();\n        if (softPlayPause && player.getPlayWhenReady() && !pauseRamping) {\n            cancelActiveRamp();\n            rampFactor = 0.0F;\n            pendingPlayRampMs = Math.max(pendingPlayRampMs, 200);\n            applyEffectiveVolume();\n            super.seekTo(time);\n            rampHandler.postDelayed(this::maybeStartPendingPlayRamp, 48);\n            return;\n        }\n        super.seekTo(time);\n    }',
   ],
   [
     playerLocalPlayback,
@@ -266,6 +285,7 @@ const patchs = [
   [
     playerLocalPlayback,
     '    @Override\n    public void destroy() {\n        super.destroy();',
+    '    @Override\n    public void destroy() {\n        cancelActiveRamp();\n        rampHandler.removeCallbacks(eofMonitorTask);\n        pendingPlayRampMs = 0;\n        broadcastAudioSession(0);\n        super.destroy();',
     '    @Override\n    public void destroy() {\n        cancelActiveRamp();\n        rampHandler.removeCallbacks(eofMonitorTask);\n        broadcastAudioSession(0);\n        super.destroy();',
   ],
   // 21. MusicBinder 与 MusicModule 转发音频渐变配置与 AudioSession 查询
@@ -331,10 +351,469 @@ const patchs = [
     '        WindowInsetsCompat finalInsets = new WindowInsetsCompat.Builder()\n                .setInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime(),\n                        Insets.of(systemBarsInsets.left,\n                                systemWindowInsetTop,\n                                systemBarsInsets.right,\n                                Math.max(systemWindowInsetBottom - getBottomInset(), 0)))\n                .build();',
     '        WindowInsetsCompat finalInsets = new WindowInsetsCompat.Builder()\n                .setInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime(),\n                        Insets.of(0,\n                                systemWindowInsetTop,\n                                0,\n                                Math.max(systemWindowInsetBottom - getBottomInset(), 0)))\n                .build();',
   ],
+  // 24. MusicManager 挂载内置 32-bit Float DSP 音频处理器，并在恢复播放时通知 PCM 样本级静音包络
+  [
+    playerMusicManager,
+    '        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(service);',
+    '        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(service) {\n            @Override\n            protected androidx.media3.exoplayer.audio.AudioSink buildAudioSink(\n                    Context context, boolean enableFloatOutput, boolean enableAudioTrackPlaybackParams) {\n                return new androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(context)\n                        .setEnableFloatOutput(enableFloatOutput)\n                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)\n                        .setAudioProcessors(new androidx.media3.common.audio.AudioProcessor[]{\n                                com.guichaguri.trackplayer.service.player.XmusicDspAudioProcessor.getInstance()\n                        })\n                        .build();\n            }\n        };',
+  ],
+  [
+    playerLocalPlayback,
+    '        rampFactor = 0.0F;\n        pendingPlayRampMs = durationMs;\n        applyEffectiveVolume();\n        super.play();\n        maybeStartPendingPlayRamp();',
+    '        rampFactor = 0.0F;\n        pendingPlayRampMs = durationMs;\n        applyEffectiveVolume();\n        XmusicDspAudioProcessor.getInstance().notifyPlayResume();\n        super.play();\n        maybeStartPendingPlayRamp();',
+  ],
 ]
+
+const dspConfigSource = `package com.guichaguri.trackplayer.service.player;
+
+/**
+ * Pure Java thread-safe DSP parameter store shared across app React bridge and ExoPlayer audio thread.
+ */
+public final class XmusicDspConfig {
+    public static final int[] CENTER_FREQS_HZ = new int[]{60, 230, 910, 3600, 14000};
+    public static final int NUM_EQ_BANDS = 5;
+
+    private static final Object LOCK = new Object();
+    private static boolean enabled = false;
+    private static final int[] bandsMb = new int[]{0, 0, 0, 0, 0};
+    private static int bassStrength = 0;
+    private static int loudnessGainMb = 0;
+    private static volatile int configVersion = 1;
+
+    private XmusicDspConfig() {}
+
+    public static void updateConfig(boolean isEnabled, int[] nextBandsMb, int nextBassStrength, int nextLoudnessGainMb) {
+        synchronized (LOCK) {
+            enabled = isEnabled;
+            for (int i = 0; i < NUM_EQ_BANDS; i++) {
+                int v = (nextBandsMb != null && i < nextBandsMb.length) ? nextBandsMb[i] : 0;
+                bandsMb[i] = Math.max(-1500, Math.min(1500, v));
+            }
+            bassStrength = Math.max(0, Math.min(1000, nextBassStrength));
+            loudnessGainMb = Math.max(0, Math.min(1200, nextLoudnessGainMb));
+            configVersion++;
+        }
+    }
+
+    public static int getConfigVersion() {
+        return configVersion;
+    }
+
+    public static boolean isEnabled() {
+        synchronized (LOCK) {
+            return enabled;
+        }
+    }
+
+    public static int copySnapshot(int[] bandsOut, int[] extraOut) {
+        synchronized (LOCK) {
+            if (bandsOut != null) {
+                System.arraycopy(bandsMb, 0, bandsOut, 0, Math.min(bandsOut.length, NUM_EQ_BANDS));
+            }
+            if (extraOut != null && extraOut.length >= 3) {
+                extraOut[0] = enabled ? 1 : 0;
+                extraOut[1] = bassStrength;
+                extraOut[2] = loudnessGainMb;
+            }
+            return configVersion;
+        }
+    }
+}
+`
+
+const dspProcessorSource = `package com.guichaguri.trackplayer.service.player;
+
+import androidx.media3.common.C;
+import androidx.media3.common.audio.AudioProcessor;
+import androidx.media3.common.audio.BaseAudioProcessor;
+import androidx.media3.common.util.UnstableApi;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+/**
+ * In-engine 64-bit internal / 32-bit float DSP processor for ExoPlayer DefaultAudioSink.
+ * Runs parametric 5-band EQ, low-shelf bass boost, loudness gain, soft-knee limiter,
+ * and sample-accurate silence pre-roll + raised-cosine fade-in directly in PCM stream,
+ * completely eliminating Android HAL/NXP AudioEffect cold-start and seek pops.
+ */
+@UnstableApi
+public final class XmusicDspAudioProcessor extends BaseAudioProcessor {
+    private static final int NUM_EQ_BANDS = XmusicDspConfig.NUM_EQ_BANDS;
+    private static final int NUM_STAGES = 6; // 5 peaking EQ bands + 1 low-shelf bass boost
+    private static final int MAX_CHANNELS = 8;
+    private static final double PEAKING_Q = 0.85;
+    private static final double BASS_SHELF_HZ = 85.0;
+    private static final double BASS_SHELF_Q = 0.7071067811865476;
+
+    private static final XmusicDspAudioProcessor INSTANCE = new XmusicDspAudioProcessor();
+
+    public static XmusicDspAudioProcessor getInstance() {
+        return INSTANCE;
+    }
+
+    private volatile boolean pendingResumeRamp = false;
+
+    // Audio-thread-only DSP state
+    private int appliedConfigVersion = -1;
+    private int appliedSampleRate = 0;
+    private boolean localEnabled = false;
+    private final int[] localBandsSnapshot = new int[NUM_EQ_BANDS];
+    private final int[] localExtraSnapshot = new int[3];
+    private double loudnessLinear = 1.0;
+
+    private final double[] b0 = new double[NUM_STAGES];
+    private final double[] b1 = new double[NUM_STAGES];
+    private final double[] b2 = new double[NUM_STAGES];
+    private final double[] a1 = new double[NUM_STAGES];
+    private final double[] a2 = new double[NUM_STAGES];
+    private final boolean[] stageActive = new boolean[NUM_STAGES];
+    private final double[][] z1 = new double[NUM_STAGES][MAX_CHANNELS];
+    private final double[][] z2 = new double[NUM_STAGES][MAX_CHANNELS];
+
+    private float wetMix = 0.0f;
+    private int prerollFramesRemaining = 0;
+    private int rampTotalFrames = 0;
+    private int rampFramesDone = 0;
+
+    private XmusicDspAudioProcessor() {
+        for (int s = 0; s < NUM_STAGES; s++) {
+            b0[s] = 1.0;
+        }
+    }
+
+    public void notifyPlayResume() {
+        pendingResumeRamp = true;
+    }
+
+    private void zeroDelayLines() {
+        for (int s = 0; s < NUM_STAGES; s++) {
+            for (int c = 0; c < MAX_CHANNELS; c++) {
+                z1[s][c] = 0.0;
+                z2[s][c] = 0.0;
+            }
+        }
+    }
+
+    private void setIdentityStage(int s) {
+        b0[s] = 1.0;
+        b1[s] = 0.0;
+        b2[s] = 0.0;
+        a1[s] = 0.0;
+        a2[s] = 0.0;
+        stageActive[s] = false;
+    }
+
+    private void rebuildCoeffsIfNeeded(int sampleRate) {
+        int ver = XmusicDspConfig.getConfigVersion();
+        if (appliedConfigVersion == ver && appliedSampleRate == sampleRate) {
+            return;
+        }
+        ver = XmusicDspConfig.copySnapshot(localBandsSnapshot, localExtraSnapshot);
+        boolean en = localExtraSnapshot[0] != 0;
+        int bass = localExtraSnapshot[1];
+        int loud = localExtraSnapshot[2];
+
+        if (!localEnabled && en && wetMix <= 0.001f && prerollFramesRemaining <= 0) {
+            zeroDelayLines();
+        }
+
+        localEnabled = en;
+        appliedSampleRate = sampleRate;
+        appliedConfigVersion = ver;
+
+        if (!en || sampleRate < 20000) {
+            for (int s = 0; s < NUM_STAGES; s++) {
+                setIdentityStage(s);
+            }
+            loudnessLinear = 1.0;
+            return;
+        }
+
+        for (int i = 0; i < NUM_EQ_BANDS; i++) {
+            int mb = localBandsSnapshot[i];
+            double freq = XmusicDspConfig.CENTER_FREQS_HZ[i];
+            if (Math.abs(mb) < 5 || freq >= sampleRate * 0.45) {
+                setIdentityStage(i);
+                continue;
+            }
+            double gainDb = mb / 100.0;
+            double amp = Math.pow(10.0, gainDb / 40.0);
+            double w0 = (2.0 * Math.PI * freq) / sampleRate;
+            double cosW0 = Math.cos(w0);
+            double alpha = Math.sin(w0) / (2.0 * PEAKING_Q);
+            double a0 = 1.0 + alpha / amp;
+            b0[i] = (1.0 + alpha * amp) / a0;
+            b1[i] = (-2.0 * cosW0) / a0;
+            b2[i] = (1.0 - alpha * amp) / a0;
+            a1[i] = b1[i];
+            a2[i] = (1.0 - alpha / amp) / a0;
+            stageActive[i] = true;
+        }
+
+        if (bass <= 0 || BASS_SHELF_HZ >= sampleRate * 0.45) {
+            setIdentityStage(5);
+        } else {
+            double gainDb = (bass / 1000.0) * 9.0;
+            double amp = Math.pow(10.0, gainDb / 40.0);
+            double w0 = (2.0 * Math.PI * BASS_SHELF_HZ) / sampleRate;
+            double cosW0 = Math.cos(w0);
+            double sinW0 = Math.sin(w0);
+            double twoSqrtAAlpha = 2.0 * Math.sqrt(amp) * (sinW0 / (2.0 * BASS_SHELF_Q));
+            double a0 = (amp + 1.0) + (amp - 1.0) * cosW0 + twoSqrtAAlpha;
+            b0[5] = (amp * ((amp + 1.0) - (amp - 1.0) * cosW0 + twoSqrtAAlpha)) / a0;
+            b1[5] = (2.0 * amp * ((amp - 1.0) - (amp + 1.0) * cosW0)) / a0;
+            b2[5] = (amp * ((amp + 1.0) - (amp - 1.0) * cosW0 - twoSqrtAAlpha)) / a0;
+            a1[5] = (-2.0 * ((amp - 1.0) + (amp + 1.0) * cosW0)) / a0;
+            a2[5] = ((amp + 1.0) + (amp - 1.0) * cosW0 - twoSqrtAAlpha) / a0;
+            stageActive[5] = true;
+        }
+
+        loudnessLinear = loud > 0 ? Math.pow(10.0, loud / 2000.0) : 1.0;
+    }
+
+    @Override
+    protected AudioFormat onConfigure(AudioFormat inputAudioFormat) throws UnhandledAudioFormatException {
+        if (inputAudioFormat.channelCount < 1
+                || inputAudioFormat.channelCount > MAX_CHANNELS
+                || inputAudioFormat.sampleRate <= 0) {
+            return AudioFormat.NOT_SET;
+        }
+        int enc = inputAudioFormat.encoding;
+        if (enc != C.ENCODING_PCM_16BIT
+                && enc != C.ENCODING_PCM_24BIT
+                && enc != C.ENCODING_PCM_32BIT
+                && enc != C.ENCODING_PCM_FLOAT) {
+            return AudioFormat.NOT_SET;
+        }
+        return inputAudioFormat;
+    }
+
+    @Override
+    protected void onFlush() {
+        zeroDelayLines();
+        appliedConfigVersion = -1;
+        appliedSampleRate = 0;
+        boolean initEnabled = XmusicDspConfig.isEnabled();
+        localEnabled = initEnabled;
+        wetMix = initEnabled ? 1.0f : 0.0f;
+
+        int sr = this.inputAudioFormat.sampleRate > 0 ? this.inputAudioFormat.sampleRate : 44100;
+        prerollFramesRemaining = (sr * 28) / 1000;
+        rampTotalFrames = Math.max(1, (sr * 180) / 1000);
+        rampFramesDone = 0;
+        pendingResumeRamp = false;
+    }
+
+    @Override
+    protected void onReset() {
+        zeroDelayLines();
+        appliedConfigVersion = -1;
+        appliedSampleRate = 0;
+        wetMix = 0.0f;
+        prerollFramesRemaining = 0;
+        rampTotalFrames = 0;
+        rampFramesDone = 0;
+        pendingResumeRamp = false;
+    }
+
+    @Override
+    public void queueInput(ByteBuffer inputBuffer) {
+        int remaining = inputBuffer.remaining();
+        if (remaining == 0) {
+            return;
+        }
+
+        AudioFormat fmt = this.inputAudioFormat;
+        int sr = fmt.sampleRate;
+        int chCount = fmt.channelCount;
+        int bytesPerFrame = fmt.bytesPerFrame;
+        if (sr <= 0 || chCount <= 0 || chCount > MAX_CHANNELS || bytesPerFrame <= 0) {
+            inputBuffer.position(inputBuffer.limit());
+            return;
+        }
+
+        inputBuffer.order(ByteOrder.nativeOrder());
+        int frames = remaining / bytesPerFrame;
+        if (frames <= 0) {
+            inputBuffer.position(inputBuffer.limit());
+            return;
+        }
+
+        // Mute low-rate placeholder audio (11025 Hz defaultUrl) completely to digital zeros
+        if (sr < 20000) {
+            ByteBuffer outZero = replaceOutputBuffer(remaining);
+            for (int i = 0; i < remaining; i++) {
+                outZero.put((byte) 0);
+            }
+            inputBuffer.position(inputBuffer.limit());
+            outZero.flip();
+            return;
+        }
+
+        rebuildCoeffsIfNeeded(sr);
+
+        if (pendingResumeRamp) {
+            pendingResumeRamp = false;
+            int minPreroll = (sr * 16) / 1000;
+            int minRamp = Math.max(1, (sr * 140) / 1000);
+            if (prerollFramesRemaining < minPreroll) {
+                prerollFramesRemaining = minPreroll;
+            }
+            if (rampFramesDone >= rampTotalFrames || rampTotalFrames < minRamp) {
+                rampTotalFrames = minRamp;
+                rampFramesDone = 0;
+            }
+        }
+
+        if (!localEnabled
+                && wetMix <= 0.0001f
+                && prerollFramesRemaining <= 0
+                && rampFramesDone >= rampTotalFrames) {
+            wetMix = 0.0f;
+            ByteBuffer outPass = replaceOutputBuffer(remaining);
+            outPass.put(inputBuffer);
+            outPass.flip();
+            return;
+        }
+
+        ByteBuffer out = replaceOutputBuffer(remaining);
+        float targetWet = localEnabled ? 1.0f : 0.0f;
+        float wetStep = 1.0f / Math.max(64.0f, sr * 0.035f);
+        int encoding = fmt.encoding;
+
+        for (int f = 0; f < frames; f++) {
+            if (wetMix < targetWet) {
+                wetMix = Math.min(targetWet, wetMix + wetStep);
+            } else if (wetMix > targetWet) {
+                wetMix = Math.max(targetWet, wetMix - wetStep);
+            }
+
+            double env;
+            if (prerollFramesRemaining > 0) {
+                prerollFramesRemaining--;
+                env = 0.0;
+            } else if (rampFramesDone < rampTotalFrames) {
+                rampFramesDone++;
+                double p = (double) rampFramesDone / (double) rampTotalFrames;
+                env = 0.5 * (1.0 - Math.cos(Math.PI * p));
+            } else {
+                env = 1.0;
+            }
+
+            boolean runDsp = wetMix > 0.0001f || (localEnabled && env == 0.0);
+
+            for (int c = 0; c < chCount; c++) {
+                double x;
+                switch (encoding) {
+                    case C.ENCODING_PCM_16BIT:
+                        x = inputBuffer.getShort() / 32768.0;
+                        break;
+                    case C.ENCODING_PCM_24BIT: {
+                        int b0Byte = inputBuffer.get() & 0xFF;
+                        int b1Byte = inputBuffer.get() & 0xFF;
+                        int b2Byte = inputBuffer.get();
+                        int s24 = b0Byte | (b1Byte << 8) | (b2Byte << 16);
+                        x = s24 / 8388608.0;
+                        break;
+                    }
+                    case C.ENCODING_PCM_32BIT:
+                        x = inputBuffer.getInt() / 2147483648.0;
+                        break;
+                    case C.ENCODING_PCM_FLOAT:
+                    default:
+                        x = inputBuffer.getFloat();
+                        break;
+                }
+
+                double sample;
+                if (runDsp) {
+                    double wet = x;
+                    for (int s = 0; s < NUM_STAGES; s++) {
+                        if (!stageActive[s]) continue;
+                        double v = b0[s] * wet + z1[s][c];
+                        double nz1 = b1[s] * wet - a1[s] * v + z2[s][c];
+                        double nz2 = b2[s] * wet - a2[s] * v;
+                        if (Double.isNaN(v) || Double.isInfinite(v)) {
+                            z1[s][c] = 0.0;
+                            z2[s][c] = 0.0;
+                            v = wet;
+                        } else {
+                            z1[s][c] = nz1;
+                            z2[s][c] = nz2;
+                        }
+                        wet = v;
+                    }
+                    wet *= loudnessLinear;
+                    double absW = Math.abs(wet);
+                    if (absW > 0.85) {
+                        double excess = (absW - 0.85) / 0.15;
+                        double limited = 0.85 + 0.15 * Math.tanh(excess);
+                        wet = wet >= 0.0 ? limited : -limited;
+                    }
+                    sample = x + (wet - x) * wetMix;
+                } else {
+                    sample = x;
+                }
+
+                double y = sample * env;
+                if (y > 1.0) y = 1.0;
+                else if (y < -1.0) y = -1.0;
+
+                switch (encoding) {
+                    case C.ENCODING_PCM_16BIT:
+                        out.putShort((short) Math.max(-32768, Math.min(32767, Math.round(y * 32767.0))));
+                        break;
+                    case C.ENCODING_PCM_24BIT: {
+                        int o24 = (int) Math.max(-8388608L, Math.min(8388607L, Math.round(y * 8388607.0)));
+                        out.put((byte) (o24 & 0xFF));
+                        out.put((byte) ((o24 >> 8) & 0xFF));
+                        out.put((byte) ((o24 >> 16) & 0xFF));
+                        break;
+                    }
+                    case C.ENCODING_PCM_32BIT:
+                        out.putInt((int) Math.max(-2147483648L, Math.min(2147483647L, Math.round(y * 2147483647.0))));
+                        break;
+                    case C.ENCODING_PCM_FLOAT:
+                    default:
+                        out.putFloat((float) y);
+                        break;
+                }
+            }
+        }
+
+        if (inputBuffer.hasRemaining()) {
+            while (inputBuffer.hasRemaining()) {
+                out.put(inputBuffer.get());
+            }
+        }
+        out.flip();
+    }
+}
+`
 
 ;(async() => {
   let hasError = false
+  for (const [targetPath, targetSource] of [
+    [playerDspConfig, dspConfigSource],
+    [playerDspProcessor, dspProcessorSource],
+  ]) {
+    console.log(`Syncing ${targetPath.replace(rootPath, '')}`)
+    try {
+      let existing = null
+      try {
+        existing = (await fs.promises.readFile(targetPath)).toString().replace(/\r\n/g, '\n')
+      } catch {}
+      if (existing === targetSource) {
+        console.log('  already patched, skip')
+      } else {
+        await fs.promises.writeFile(targetPath, targetSource)
+      }
+    } catch (err) {
+      hasError = true
+      console.error(`Write ${targetPath.replace(rootPath, '')} failed: ${err.message}`)
+    }
+  }
   for (const [filePath, fromStr, toStr, legacyPatchedStr] of patchs) {
     console.log(`Patching ${filePath.replace(rootPath, '')}`)
     try {
@@ -351,13 +830,10 @@ const patchs = [
         (filePath === playerMusicService && fromStr.includes('public int onStartCommand') && file.includes('ACTION_TOGGLE_FAVORITE')) ||
         (filePath === playerMusicService && fromStr.includes('emit(MusicEvents.BUTTON_TOGGLE_FAVORITE, null);') && file.includes('startsWith("xmusic_widget_")')) ||
         (filePath === playerMusicBinder && fromStr.includes('private final MusicService service;') && file.includes('private boolean softPlayPause = true;')) ||
-        (filePath === playerMusicModule && fromStr.includes('private Bundle options;') && file.includes('private boolean favoriteState = false;'))
+        (filePath === playerMusicModule && fromStr.includes('private Bundle options;') && file.includes('private boolean favoriteState = false;')) ||
+        (filePath === playerLocalPlayback && fromStr.includes('public void play()') && file.includes('notifyPlayResume()'))
       ) {
         console.log('  already patched, skip')
-        continue
-      }
-      if (file.includes(fromStr)) {
-        await fs.promises.writeFile(filePath, file.replace(fromStr, toStr))
         continue
       }
       if (legacyPatchedStr && file.includes(legacyPatchedStr)) {
@@ -369,6 +845,10 @@ const patchs = [
           : file.replace(legacyPatchedStr, toStr)
         await fs.promises.writeFile(filePath, upgraded)
         console.log('  upgraded existing patch')
+        continue
+      }
+      if (file.includes(fromStr)) {
+        await fs.promises.writeFile(filePath, file.replace(fromStr, toStr))
         continue
       }
       throw new Error('target snippet not found')

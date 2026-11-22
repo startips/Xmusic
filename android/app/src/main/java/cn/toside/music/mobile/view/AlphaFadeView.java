@@ -17,8 +17,8 @@ import com.facebook.react.views.view.ReactViewGroup;
  */
 public class AlphaFadeView extends ReactViewGroup {
   private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-  private final float[] posScratch = new float[12];
-  private final int[] colorScratch = new int[12];
+  private final float[] posScratch = new float[24];
+  private final int[] colorScratch = new int[24];
 
   private float topFadeStart = 0.0f;
   private float topFadeEnd = 0.0f;
@@ -100,12 +100,18 @@ public class AlphaFadeView extends ReactViewGroup {
         colorScratch[count++] = 0x00FFFFFF;
       }
       float tSpan = tEnd - tStart;
-      posScratch[count] = tStart + tSpan * 0.25f;
-      colorScratch[count++] = 0x45FFFFFF;
-      posScratch[count] = tStart + tSpan * 0.58f;
-      colorScratch[count++] = 0xADFFFFFF;
-      posScratch[count] = tStart + tSpan * 0.85f;
-      colorScratch[count++] = 0xE8FFFFFF;
+      posScratch[count] = tStart + tSpan * 0.12f;
+      colorScratch[count++] = 0x06FFFFFF;
+      posScratch[count] = tStart + tSpan * 0.24f;
+      colorScratch[count++] = 0x18FFFFFF;
+      posScratch[count] = tStart + tSpan * 0.38f;
+      colorScratch[count++] = 0x3EFFFFFF;
+      posScratch[count] = tStart + tSpan * 0.52f;
+      colorScratch[count++] = 0x76FFFFFF;
+      posScratch[count] = tStart + tSpan * 0.67f;
+      colorScratch[count++] = 0xB4FFFFFF;
+      posScratch[count] = tStart + tSpan * 0.83f;
+      colorScratch[count++] = 0xE6FFFFFF;
       posScratch[count] = tEnd;
       colorScratch[count++] = 0xFFFFFFFF;
     } else {
@@ -119,10 +125,18 @@ public class AlphaFadeView extends ReactViewGroup {
         posScratch[count] = bStart;
         colorScratch[count++] = 0xFFFFFFFF;
       }
-      posScratch[count] = bStart + bSpan * 0.35f;
-      colorScratch[count++] = 0xB8FFFFFF;
-      posScratch[count] = bStart + bSpan * 0.70f;
-      colorScratch[count++] = 0x40FFFFFF;
+      posScratch[count] = bStart + bSpan * 0.17f;
+      colorScratch[count++] = 0xE6FFFFFF;
+      posScratch[count] = bStart + bSpan * 0.33f;
+      colorScratch[count++] = 0xB4FFFFFF;
+      posScratch[count] = bStart + bSpan * 0.48f;
+      colorScratch[count++] = 0x76FFFFFF;
+      posScratch[count] = bStart + bSpan * 0.62f;
+      colorScratch[count++] = 0x3EFFFFFF;
+      posScratch[count] = bStart + bSpan * 0.76f;
+      colorScratch[count++] = 0x18FFFFFF;
+      posScratch[count] = bStart + bSpan * 0.88f;
+      colorScratch[count++] = 0x06FFFFFF;
       posScratch[count] = bEnd;
       colorScratch[count++] = 0x00FFFFFF;
       if (bEnd < 0.999f) {

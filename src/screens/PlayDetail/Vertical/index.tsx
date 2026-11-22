@@ -1,7 +1,7 @@
 import { memo, useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { View, AppState, Animated, Pressable } from 'react-native'
 
-import Header, { HEADER_HEIGHT } from './components/Header'
+import Header from './components/Header'
 import Player from './Player'
 import PagerView, { type PagerViewOnPageSelectedEvent } from 'react-native-pager-view'
 import Pic from './Pic'
@@ -11,7 +11,6 @@ import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
-import { useStatusbarHeight } from '@/store/common/hook'
 import LinearGradientOverlay from '@/components/common/LinearGradientOverlay'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
 
@@ -89,16 +88,15 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
     lyricShareRef.current?.show(lineIndex)
   }, [])
   const theme = useTheme()
-  const statusBarHeight = useStatusbarHeight()
 
   const topScrimColors = useMemo(() => {
     const base = theme['m3-background']
-    return [withAlpha(base, 0.9), withAlpha(base, 0.56), withAlpha(base, 0.16), withAlpha(base, 0)]
+    return [withAlpha(base, 0.88), withAlpha(base, 0.56), withAlpha(base, 0.2), withAlpha(base, 0)]
   }, [theme])
 
   const bottomScrimColors = useMemo(() => {
     const base = theme['m3-background']
-    return [withAlpha(base, 0), withAlpha(base, 0.42), withAlpha(base, 0.78), withAlpha(base, 0.9)]
+    return [withAlpha(base, 0), withAlpha(base, 0.24), withAlpha(base, 0.64), withAlpha(base, 0.9)]
   }, [theme])
 
   const onPageSelected = ({ nativeEvent }: PagerViewOnPageSelectedEvent) => {
@@ -147,13 +145,13 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
       <LinearGradientOverlay
         pointerEvents="none"
         colors={topScrimColors}
-        locations={[0, 0.42, 0.78, 1]}
-        style={{ ...styles.topScrim, height: HEADER_HEIGHT + statusBarHeight + 44 }}
+        locations={[0, 0.44, 0.76, 1]}
+        style={styles.topScrim}
       />
       <LinearGradientOverlay
         pointerEvents="none"
         colors={bottomScrimColors}
-        locations={[0, 0.35, 0.75, 1]}
+        locations={[0, 0.30, 0.66, 1]}
         style={styles.bottomScrim}
       />
       <View style={styles.container}>
@@ -188,13 +186,14 @@ const styles = createStyle({
     top: 0,
     left: 0,
     right: 0,
+    height: '32%',
   },
   bottomScrim: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '46%',
+    height: '40%',
   },
   pagerView: {
     flex: 1,
@@ -205,8 +204,8 @@ const styles = createStyle({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
-    paddingTop: 2,
-    paddingBottom: 4,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   pageIndicatorBtn: {
     paddingHorizontal: 6,

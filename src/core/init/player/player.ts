@@ -1,5 +1,6 @@
 import { LIST_IDS } from '@/config/constant'
 import { syncAudioEffectsFromSetting, syncAudioTransitionFromSetting } from '@/core/audioEffects'
+import { syncNativeAudioSession } from '@/utils/nativeModules/audioEffect'
 import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
 import { pause, playNext } from '@/core/player/player'
@@ -18,7 +19,7 @@ export default async(setting: LX.AppSetting) => {
   const setPlayStatus = () => {
     setIsPlay(true)
     if (settingState.setting['player.eqEnabled']) {
-      syncAudioEffectsFromSetting(settingState.setting)
+      void syncNativeAudioSession()
     }
   }
   const setPauseStatus = () => {

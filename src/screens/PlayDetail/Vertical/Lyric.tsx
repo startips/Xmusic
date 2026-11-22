@@ -14,13 +14,14 @@ import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useStatusbarHeight } from '@/store/common/hook'
 import { useSettingValue } from '@/store/setting/hook'
+import { useWindowSize } from '@/utils/hooks'
 import { AnimatedColorText } from '@/components/common/Text'
 import { setSpText } from '@/utils/pixelRatio'
 import playerState from '@/store/player/state'
 import { scrollTo } from '@/utils/scroll'
 import PlayLine, { type PlayLineType } from '../components/PlayLine'
 import KaraokeLineText from '../components/KaraokeLineText'
-import { HEADER_HEIGHT } from './components/Header'
+import { HEADER_HEIGHT, getVerticalHeaderTopExtra } from './components/Header'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
 import { lookupKaraokeTokens, useKaraokeLyricMap, type KaraokeToken } from '@/utils/karaokeLyric'
 import { hapticHeavy, hapticTick } from '@/utils/haptics'
@@ -190,6 +191,7 @@ const wait = async() => new Promise(resolve => setTimeout(resolve, 100))
 
 export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) => void }) => {
   const statusBarHeight = useStatusbarHeight()
+  const winSize = useWindowSize()
   const lyricLines = useLrcSet()
   const { line } = useLrcPlay()
   const isShowKaraoke = useSettingValue('playDetail.isShowKaraokeLyric')
@@ -225,7 +227,7 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
       if (canCustomScroll && scrollInfoRef.current) {
         offset += (listLayoutInfoRef.current.lineHeights[index] ?? 0) / 2
         try {
-          scrollCancelRef.current = scrollTo(flatListRef.current, scrollInfoRef.current, offset - scrollInfoRef.current.layoutMeasurement.height * 0.42, 600, () => {
+          scrollCancelRef.current = scrollTo(flatListRef.current, scrollInfoRef.current, offset - scrollInfoRef.current.layoutMeasurement.height * 0.46, 600, () => {
             scrollCancelRef.current = null
           })
         } catch {}
@@ -238,7 +240,7 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
           flatListRef.current.scrollToIndex({
             index,
             animated: true,
-            viewPosition: 0.42,
+            viewPosition: 0.46,
           })
         } catch {}
       }
@@ -410,7 +412,7 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
   ), [handleSpaceLayout])
 
   return (
-    <View style={[styles.wrapper, { paddingTop: statusBarHeight + HEADER_HEIGHT }]}>
+    <View style={[styles.wrapper, { paddingTop: statusBarHeight + getVerticalHeaderTopExtra(winSize.height) + HEADER_HEIGHT }]}>
       <View style={styles.lyricBody}>
         <FlatList
           data={lyricLines}

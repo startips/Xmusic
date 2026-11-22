@@ -12,9 +12,11 @@ import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import commonState from '@/store/common/state'
 import SettingPopup, { type SettingPopupType } from '../../components/SettingPopup'
 import { useStatusbarHeight } from '@/store/common/hook'
+import { useWindowSize } from '@/utils/hooks'
 import Btn from './Btn'
 
 export const HEADER_HEIGHT = scaleSizeH(52)
+export const getVerticalHeaderTopExtra = (winHeight: number) => Math.round(Math.min(48, Math.max(28, winHeight * 0.048)))
 
 
 const Title = () => {
@@ -33,6 +35,8 @@ const Title = () => {
 export default memo(({ onBack }: { onBack?: () => void }) => {
   const popupRef = useRef<SettingPopupType>(null)
   const statusBarHeight = useStatusbarHeight()
+  const winSize = useWindowSize()
+  const topOffset = statusBarHeight + getVerticalHeaderTopExtra(winSize.height)
 
   const back = () => {
     if (onBack) {
@@ -49,8 +53,8 @@ export default memo(({ onBack }: { onBack?: () => void }) => {
     <View
       style={{
         ...styles.wrapper,
-        height: HEADER_HEIGHT + statusBarHeight,
-        paddingTop: statusBarHeight,
+        height: HEADER_HEIGHT + topOffset,
+        paddingTop: topOffset,
       }}
       nativeID={NAV_SHEAR_NATIVE_IDS.playDetail_header}
       pointerEvents="box-none"
@@ -78,7 +82,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 24,
     gap: 6,
     height: '100%',
   },

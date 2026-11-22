@@ -31,8 +31,8 @@ public class FadeImageView extends ReactImageView {
   private final Path clipPath = new Path();
   private final RectF clipRectF = new RectF();
   private final Rect clipBoundsRect = new Rect();
-  private final float[] posScratch = new float[12];
-  private final int[] colorScratch = new int[12];
+  private final float[] posScratch = new float[24];
+  private final int[] colorScratch = new int[24];
 
   private float topFadeStart = 0.04f;
   private float topFadeEnd = 0.22f;
@@ -162,12 +162,18 @@ public class FadeImageView extends ReactImageView {
         colorScratch[count++] = lerpAlphaColor(0x00, progress);
       }
       float tSpan = tEnd - tStart;
-      posScratch[count] = tStart + tSpan * 0.25f;
-      colorScratch[count++] = lerpAlphaColor(0x45, progress);
-      posScratch[count] = tStart + tSpan * 0.58f;
-      colorScratch[count++] = lerpAlphaColor(0xAD, progress);
-      posScratch[count] = tStart + tSpan * 0.85f;
-      colorScratch[count++] = lerpAlphaColor(0xE8, progress);
+      posScratch[count] = tStart + tSpan * 0.12f;
+      colorScratch[count++] = lerpAlphaColor(0x06, progress);
+      posScratch[count] = tStart + tSpan * 0.24f;
+      colorScratch[count++] = lerpAlphaColor(0x18, progress);
+      posScratch[count] = tStart + tSpan * 0.38f;
+      colorScratch[count++] = lerpAlphaColor(0x3E, progress);
+      posScratch[count] = tStart + tSpan * 0.52f;
+      colorScratch[count++] = lerpAlphaColor(0x76, progress);
+      posScratch[count] = tStart + tSpan * 0.67f;
+      colorScratch[count++] = lerpAlphaColor(0xB4, progress);
+      posScratch[count] = tStart + tSpan * 0.83f;
+      colorScratch[count++] = lerpAlphaColor(0xE6, progress);
       posScratch[count] = tEnd;
       colorScratch[count++] = 0xFFFFFFFF;
     } else {
@@ -181,10 +187,18 @@ public class FadeImageView extends ReactImageView {
         posScratch[count] = bStart;
         colorScratch[count++] = 0xFFFFFFFF;
       }
-      posScratch[count] = bStart + bSpan * 0.35f;
-      colorScratch[count++] = lerpAlphaColor(0xB8, progress);
-      posScratch[count] = bStart + bSpan * 0.70f;
-      colorScratch[count++] = lerpAlphaColor(0x40, progress);
+      posScratch[count] = bStart + bSpan * 0.17f;
+      colorScratch[count++] = lerpAlphaColor(0xE6, progress);
+      posScratch[count] = bStart + bSpan * 0.33f;
+      colorScratch[count++] = lerpAlphaColor(0xB4, progress);
+      posScratch[count] = bStart + bSpan * 0.48f;
+      colorScratch[count++] = lerpAlphaColor(0x76, progress);
+      posScratch[count] = bStart + bSpan * 0.62f;
+      colorScratch[count++] = lerpAlphaColor(0x3E, progress);
+      posScratch[count] = bStart + bSpan * 0.76f;
+      colorScratch[count++] = lerpAlphaColor(0x18, progress);
+      posScratch[count] = bStart + bSpan * 0.88f;
+      colorScratch[count++] = lerpAlphaColor(0x06, progress);
       posScratch[count] = bEnd;
       colorScratch[count++] = lerpAlphaColor(0x00, progress);
       if (bEnd < 0.999f) {

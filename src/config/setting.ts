@@ -105,6 +105,19 @@ export const initSetting = async() => {
 
   // console.log(setting)
   const updatedSetting = updateSetting(setting, true)
+  Object.assign(updatedSetting.setting, {
+    'common.sourceNameType': 'alias',
+    'common.shareType': 'system',
+    'common.autoHidePlayBar': true,
+    'common.drawerLayoutPosition': 'left',
+    'common.homePageScroll': true,
+    'common.alwaysKeepStatusbarHeight': false,
+    'player.startupPushPlayDetailScreen': false,
+    'player.volume': 1,
+    'player.isSoftPlayPause': true,
+    'player.isShowNotificationImage': true,
+    'player.isAutoCleanPlayedList': false,
+  })
   void saveData(storageDataPrefix.setting, updatedSetting.setting)
 
   return updatedSetting
