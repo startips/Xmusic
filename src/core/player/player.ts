@@ -28,6 +28,8 @@ import { checkIgnoringBatteryOptimization, checkNotificationPermission, debounce
 import { LIST_IDS } from '@/config/constant'
 import { addListMusics, removeListMusics } from '@/core/list'
 import { addDislikeInfo } from '@/core/dislikeList'
+import { setBgPic } from '@/core/common'
+import { setCoverPalette } from '@/core/theme'
 
 // import { checkMusicFileAvailable } from '@renderer/utils/music'
 
@@ -153,6 +155,13 @@ export const setMusicUrl = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
   })
 }
 
+const clearCoverThemeIfNoPic = (musicId: string) => {
+  if (musicId != playerState.playMusicInfo.musicInfo?.id) return
+  if (playerState.musicInfo.pic && playerState.musicInfo.pic != playerState.loadErrorPicUrl) return
+  setBgPic(null)
+  setCoverPalette(null, null)
+}
+
 // 恢复上次播放的状态
 const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
   const musicInfo = playerState.playMusicInfo.musicInfo
@@ -167,13 +176,16 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
   void initTrackInfo(musicInfo, playerState.musicInfo)
 
   void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
-    if (
-      musicInfo.id != playMusicInfo.musicInfo?.id ||
-      playerState.musicInfo.pic == url ||
-      playerState.loadErrorPicUrl == url
-    ) return
+    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
+    if (!url || playerState.loadErrorPicUrl == url) {
+      clearCoverThemeIfNoPic(musicInfo.id)
+      return
+    }
+    if (playerState.musicInfo.pic == url) return
     setMusicInfo({ pic: url })
     global.app_event.picUpdated()
+  }).catch(() => {
+    clearCoverThemeIfNoPic(musicInfo.id)
   })
 
   void getLyricInfo({ musicInfo }).then((lyricInfo) => {
@@ -200,12 +212,16 @@ const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) =>
   setMusicUrl(musicInfo)
 
   void getPicPath({ musicInfo, listId: playerState.playMusicInfo.listId }).then((url: string) => {
-    if (
-      musicInfo.id != playerState.playMusicInfo.musicInfo?.id ||
-      playerState.musicInfo.pic == url ||
-      playerState.loadErrorPicUrl == url) return
+    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
+    if (!url || playerState.loadErrorPicUrl == url) {
+      clearCoverThemeIfNoPic(musicInfo.id)
+      return
+    }
+    if (playerState.musicInfo.pic == url) return
     setMusicInfo({ pic: url })
     global.app_event.picUpdated()
+  }).catch(() => {
+    clearCoverThemeIfNoPic(musicInfo.id)
   })
 
   void getLyricInfo({ musicInfo }).then((lyricInfo) => {

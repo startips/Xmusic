@@ -8,7 +8,8 @@ const formatUri = <T extends string | null>(url: T) => {
 }
 
 export default async(setting: LX.AppSetting) => {
-  let pic = playerState.musicInfo.pic
+  let currentMusicId: string | null = null
+  let pic: string | null = null
   let isDynamicBg = setting['theme.dynamicBg']
   let isDynamicCoverColor = setting['theme.dynamicCoverColor']
   let paletteReqSeq = 0
@@ -39,10 +40,40 @@ export default async(setting: LX.AppSetting) => {
   }
 
   const handlePicUpdate = () => {
-    if (playerState.musicInfo.pic && playerState.musicInfo.pic != playerState.loadErrorPicUrl) {
-      pic = playerState.musicInfo.pic
+    const nextId = playerState.musicInfo.id
+    const nextPic = (playerState.musicInfo.pic && playerState.musicInfo.pic != playerState.loadErrorPicUrl)
+      ? playerState.musicInfo.pic
+      : null
+
+    if (nextPic) {
+      currentMusicId = nextId
+      if (nextPic == pic) return
+      pic = nextPic
       handleUpdatePic(pic)
-    } else {
+      return
+    }
+
+    if (!nextId) {
+      currentMusicId = null
+      pic = null
+      paletteReqSeq++
+      setBgPic(null)
+      setCoverPalette(null, null)
+      return
+    }
+
+    if (nextId != currentMusicId) {
+      // Track switched and its cover URL is not resolved yet: keep the previous
+      // cover palette until getPicPath resolves or fails so the theme does not
+      // flash back to the static preset seed during track transitions.
+      currentMusicId = nextId
+      pic = null
+      paletteReqSeq++
+      return
+    }
+
+    if (pic != null) {
+      // Same track's previously known cover was cleared (e.g. image load error).
       pic = null
       paletteReqSeq++
       setBgPic(null)
