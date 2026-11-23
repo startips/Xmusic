@@ -1,5 +1,5 @@
-import { memo, useEffect, useRef } from 'react'
-import { Animated, Pressable, View } from 'react-native'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { Animated, Pressable, View, type LayoutChangeEvent } from 'react-native'
 import { BOTTOM_NAV_MENUS } from '@/config/constant'
 import { setNavActiveId } from '@/core/common'
 import { useI18n } from '@/lang'
@@ -10,51 +10,43 @@ import { useSettingValue } from '@/store/setting/hook'
 import { useKeyboard } from '@/utils/hooks'
 import { hapticTick } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
+import { scaleSizeH, scaleSizeW } from '@/utils/pixelRatio'
+import { windowSizeTools } from '@/utils/windowSizeTools'
 import { Icon } from '@/components/common/Icon'
 import Text from '@/components/common/Text'
 import { M3Motion, M3Radius } from '@/theme/m3'
+import { homePillProgress } from './pagerMotion'
 
 type BottomNavId = typeof BOTTOM_NAV_MENUS[number]['id']
 
+const PILL_WIDTH = scaleSizeW(58)
+const PILL_HEIGHT = scaleSizeH(30)
+const PILL_MARGIN_BOTTOM = scaleSizeH(3)
+const CONTAINER_PAD_H = scaleSizeW(8)
+
 const NavTab = memo(({
   id,
+  index,
   icon,
   label,
   active,
   onPress,
 }: {
   id: BottomNavId
+  index: number
   icon: string
   label: string
   active: boolean
   onPress: (id: InitState['navActiveId']) => void
 }) => {
   const theme = useTheme()
-  const indicatorAnim = useRef(new Animated.Value(active ? 1 : 0)).current
   const pressScale = useRef(new Animated.Value(1)).current
 
-  useEffect(() => {
-    Animated.spring(indicatorAnim, {
-      toValue: active ? 1 : 0,
-      damping: 12,
-      stiffness: 290,
-      mass: 0.75,
-      useNativeDriver: true,
-    }).start()
-  }, [active, indicatorAnim])
-
-  const pillScaleX = indicatorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.45, 1],
-  })
-  const pillScaleY = indicatorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.76, 1],
-  })
-  const iconTranslateY = indicatorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1.5, 0],
-  })
+  const iconTranslateY = useMemo(() => homePillProgress.interpolate({
+    inputRange: [index - 0.6, index, index + 0.6],
+    outputRange: [1.5, 0, 1.5],
+    extrapolate: 'clamp',
+  }), [index])
 
   return (
     <Pressable
@@ -69,15 +61,14 @@ const NavTab = memo(({
       }}
     >
       <Animated.View style={{ ...styles.tabInner, transform: [{ scale: pressScale }] }}>
-        <View style={styles.pillWrap}>
-          <Animated.View
-            style={{
-              ...styles.pill,
-              backgroundColor: theme['m3-secondary-container'],
-              opacity: indicatorAnim,
-              transform: [{ scaleX: pillScaleX }, { scaleY: pillScaleY }],
-            }}
-          />
+        <View
+          style={{
+            ...styles.pillWrap,
+            width: PILL_WIDTH,
+            height: PILL_HEIGHT,
+            marginBottom: PILL_MARGIN_BOTTOM,
+          }}
+        >
           <Animated.View style={{ transform: [{ translateY: iconTranslateY }] }}>
             <Icon
               name={icon}
@@ -106,34 +97,85 @@ export default memo(() => {
   const t = useI18n()
   const { keyboardShown } = useKeyboard()
   const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
+  const [rowWidth, setRowWidth] = useState(() =>
+    Math.max(windowSizeTools.getSize().width - CONTAINER_PAD_H * 2, 240),
+  )
+
+  const handleRowLayout = useCallback(({ nativeEvent }: LayoutChangeEvent) => {
+    const nextWidth = nativeEvent.layout.width
+    if (nextWidth > 0 && Math.abs(nextWidth - rowWidth) > 0.5) {
+      setRowWidth(nextWidth)
+    }
+  }, [rowWidth])
+
+  const slotWidth = rowWidth / BOTTOM_NAV_MENUS.length
+
+  const pillTranslateX = useMemo(() => homePillProgress.interpolate({
+    inputRange: [0, 1, 2, 3],
+    outputRange: [0, 1, 2, 3].map(i => (i + 0.5) * slotWidth - PILL_WIDTH / 2),
+    extrapolate: 'clamp',
+  }), [slotWidth])
+
+  const pillScaleX = useMemo(() => homePillProgress.interpolate({
+    inputRange: [0, 0.5, 1, 1.5, 2, 2.5, 3],
+    outputRange: [1, 1.22, 1, 1.22, 1, 1.22, 1],
+    extrapolate: 'clamp',
+  }), [])
+
+  const pillScaleY = useMemo(() => homePillProgress.interpolate({
+    inputRange: [0, 0.5, 1, 1.5, 2, 2.5, 3],
+    outputRange: [1, 0.88, 1, 0.88, 1, 0.88, 1],
+    extrapolate: 'clamp',
+  }), [])
+
+  const handlePress = useCallback((id: InitState['navActiveId']) => {
+    if (id != activeId) hapticTick()
+    setNavActiveId(id)
+  }, [activeId])
 
   if (autoHidePlayBar && keyboardShown) {
     return null
-  }
-
-  const handlePress = (id: InitState['navActiveId']) => {
-    if (id != activeId) hapticTick()
-    setNavActiveId(id)
   }
 
   return (
     <View
       style={{
         ...styles.container,
+        paddingHorizontal: CONTAINER_PAD_H,
         paddingBottom: 8 + navBarHeight,
         backgroundColor: theme['m3-surface-container-low'],
       }}
     >
-      {BOTTOM_NAV_MENUS.map(menu => (
-        <NavTab
-          key={menu.id}
-          id={menu.id}
-          icon={menu.icon}
-          label={t(menu.id)}
-          active={activeId == menu.id}
-          onPress={handlePress}
+      <View style={styles.tabsRow} onLayout={handleRowLayout}>
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: PILL_WIDTH,
+            height: PILL_HEIGHT,
+            borderRadius: M3Radius.full,
+            backgroundColor: theme['m3-secondary-container'],
+            transform: [
+              { translateX: pillTranslateX },
+              { scaleX: pillScaleX },
+              { scaleY: pillScaleY },
+            ],
+          }}
         />
-      ))}
+        {BOTTOM_NAV_MENUS.map((menu, index) => (
+          <NavTab
+            key={menu.id}
+            index={index}
+            id={menu.id}
+            icon={menu.icon}
+            label={t(menu.id)}
+            active={activeId == menu.id}
+            onPress={handlePress}
+          />
+        ))}
+      </View>
     </View>
   )
 })
@@ -144,7 +186,12 @@ const styles = createStyle({
     alignItems: 'center',
     paddingTop: 10,
     paddingBottom: 8,
-    paddingHorizontal: 8,
+  },
+  tabsRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
   },
   tab: {
     flex: 1,
@@ -157,17 +204,8 @@ const styles = createStyle({
     justifyContent: 'center',
   },
   pillWrap: {
-    width: 58,
-    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 3,
-  },
-  pill: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    borderRadius: M3Radius.full,
   },
   label: {
     fontWeight: '400',

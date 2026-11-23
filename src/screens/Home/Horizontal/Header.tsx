@@ -1,4 +1,5 @@
-import { View } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { Animated, Easing, View } from 'react-native'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
@@ -10,6 +11,7 @@ import { scaleSizeH } from '@/utils/pixelRatio'
 import { HEADER_HEIGHT as _HEADER_HEIGHT } from '@/config/constant'
 import { type InitState as CommonState } from '@/store/common/state'
 import SearchTypeSelector from '@/screens/Home/Views/Search/SearchTypeSelector'
+import { HOME_NAV_INDEX_MAP } from '../Vertical/pagerMotion'
 
 const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNode>> = {
   nav_search: <SearchTypeSelector />,
@@ -17,31 +19,47 @@ const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNo
 
 const HEADER_HEIGHT = _HEADER_HEIGHT * 0.8
 
-const LeftHeader = () => {
-  const id = useNavActiveId()
-  const theme = useTheme()
-  const t = useI18n()
-  const statusBarHeight = useStatusbarHeight()
+const useHorizontalHeaderMotion = (id: CommonState['navActiveId']) => {
+  const prevIdRef = useRef(id)
+  const translateY = useRef(new Animated.Value(0)).current
+  const opacity = useRef(new Animated.Value(1)).current
 
-  return (
-    <View style={{
-      ...styles.container,
-      height: scaleSizeH(HEADER_HEIGHT) + statusBarHeight,
-      paddingTop: statusBarHeight,
-    }}>
-      <View style={styles.left}>
-        <Text style={styles.leftTitle} size={18} color={theme['m3-on-surface']}>{t(id)}</Text>
-      </View>
-      {headerComponents[id] ?? null}
-    </View>
-  )
+  useEffect(() => {
+    if (prevIdRef.current === id) return
+    const prevIdx = HOME_NAV_INDEX_MAP[prevIdRef.current] ?? 0
+    const nextIdx = HOME_NAV_INDEX_MAP[id] ?? 0
+    const direction = nextIdx >= prevIdx ? 1 : -1
+    prevIdRef.current = id
+    translateY.stopAnimation()
+    opacity.stopAnimation()
+    translateY.setValue(direction * 10)
+    opacity.setValue(0)
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 160,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [id, opacity, translateY])
+
+  return { opacity, translateY }
 }
 
-const RightHeader = () => {
-  const t = useI18n()
+const SideHeader = ({ titleStyle }: { titleStyle: typeof styles.leftTitle | typeof styles.rightTitle }) => {
   const id = useNavActiveId()
   const theme = useTheme()
+  const t = useI18n()
   const statusBarHeight = useStatusbarHeight()
+  const { opacity, translateY } = useHorizontalHeaderMotion(id)
+  const rightAccessory = headerComponents[id]
 
   return (
     <View style={{
@@ -50,9 +68,17 @@ const RightHeader = () => {
       paddingTop: statusBarHeight,
     }}>
       <View style={styles.left}>
-        <Text style={styles.rightTitle} size={18} color={theme['m3-on-surface']}>{t(id)}</Text>
+        <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+          <Text style={titleStyle} size={18} color={theme['m3-on-surface']}>{t(id)}</Text>
+        </Animated.View>
       </View>
-      {headerComponents[id] ?? null}
+      {rightAccessory
+        ? (
+            <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+              {rightAccessory}
+            </Animated.View>
+          )
+        : null}
     </View>
   )
 }
@@ -63,12 +89,7 @@ const Header = () => {
   return (
     <>
       <StatusBar />
-      {
-        drawerLayoutPosition == 'left'
-          ? <LeftHeader />
-          : <RightHeader />
-      }
-
+      <SideHeader titleStyle={drawerLayoutPosition == 'left' ? styles.leftTitle : styles.rightTitle} />
     </>
   )
 }

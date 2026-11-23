@@ -1,4 +1,5 @@
-import { View } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { Animated, Easing, View } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { isUpdateAvailable, useHasNewVersion } from '@/store/version/hook'
@@ -13,6 +14,7 @@ import commonState, { type InitState as CommonState } from '@/store/common/state
 import SearchTypeSelector from '@/screens/Home/Views/Search/SearchTypeSelector'
 import { navigations } from '@/navigation'
 import { M3Radius } from '@/theme/m3'
+import { HOME_NAV_INDEX_MAP } from './pagerMotion'
 
 const TOP_BAR_HEIGHT = 50
 
@@ -28,6 +30,36 @@ const Header = () => {
   const hasNewVersion = useHasNewVersion()
   const badgeColor = theme.isDark ? '#FF453A' : '#E53935'
 
+  const prevIdRef = useRef(id)
+  const headerTranslateX = useRef(new Animated.Value(0)).current
+  const headerOpacity = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    if (prevIdRef.current === id) return
+    const prevIdx = HOME_NAV_INDEX_MAP[prevIdRef.current] ?? 0
+    const nextIdx = HOME_NAV_INDEX_MAP[id] ?? 0
+    const direction = nextIdx >= prevIdx ? 1 : -1
+    prevIdRef.current = id
+    headerTranslateX.stopAnimation()
+    headerOpacity.stopAnimation()
+    headerTranslateX.setValue(direction * 14)
+    headerOpacity.setValue(0)
+    Animated.parallel([
+      Animated.timing(headerTranslateX, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerOpacity, {
+        toValue: 1,
+        duration: 170,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [headerOpacity, headerTranslateX, id])
+
   const handleOpenSetting = () => {
     if (Boolean(commonState.componentIds.setting) || !commonState.componentIds.home) return
     if (isUpdateAvailable()) {
@@ -35,6 +67,8 @@ const Header = () => {
     }
     navigations.pushSettingScreen(commonState.componentIds.home)
   }
+
+  const rightAccessory = headerComponents[id]
 
   return (
     <>
@@ -47,17 +81,25 @@ const Header = () => {
         }}
       >
         <View style={styles.left}>
-          <Text
-            style={styles.title}
-            size={21}
-            color={theme['m3-on-surface']}
-            numberOfLines={1}
-          >
-            {t(id)}
-          </Text>
+          <Animated.View style={{ opacity: headerOpacity, transform: [{ translateX: headerTranslateX }] }}>
+            <Text
+              style={styles.title}
+              size={21}
+              color={theme['m3-on-surface']}
+              numberOfLines={1}
+            >
+              {t(id)}
+            </Text>
+          </Animated.View>
         </View>
         <View style={styles.right}>
-          {headerComponents[id] ?? null}
+          {rightAccessory
+            ? (
+                <Animated.View style={{ opacity: headerOpacity, transform: [{ translateX: headerTranslateX }] }}>
+                  {rightAccessory}
+                </Animated.View>
+              )
+            : null}
           <ExpressiveIconButton
             size={36}
             backgroundColor={theme['m3-surface-container']}
