@@ -125,7 +125,7 @@ export default forwardRef<ListMusicSearchType, ListMusicSearchProps>(({ onScroll
 
 const styles = createStyle({
   item: {
-    height: ITEM_HEIGHT,
+    height: 46,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 15,

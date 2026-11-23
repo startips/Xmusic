@@ -32,10 +32,22 @@ const rgbToHex = (r: number, g: number, b: number): string => {
 const LyricShareBody = memo(({ initialLine }: { initialLine: number }) => {
   const t = useI18n()
   const theme = useTheme()
-  const coverPalette = useCoverPalette()
-  const musicInfo = usePlayerMusicInfo()
-  const allLines = useLrcSet()
+  const liveCoverPalette = useCoverPalette()
+  const liveMusicInfo = usePlayerMusicInfo()
+  const liveAllLines = useLrcSet()
+  // Freeze a static snapshot when opened so track changes in background never mutate the card mid-selection
+  const [snapshot] = useState(() => ({
+    musicInfo: { ...liveMusicInfo },
+    allLines: liveAllLines.map(l => ({ ...l, extendedLyrics: [...l.extendedLyrics] })),
+    coverPalette: liveCoverPalette ? [...liveCoverPalette] : null,
+  }))
+  const { musicInfo, allLines, coverPalette } = snapshot
+
   const posterRef = useRef<View>(null)
+  const pickerScrollRef = useRef<ScrollView>(null)
+  const scrollReadyRef = useRef(false)
+  const targetYRef = useRef<number | null>(null)
+  const didAutoScrollRef = useRef(false)
   const [busy, setBusy] = useState(false)
 
   const validLines = useMemo(() => {
@@ -87,14 +99,21 @@ const LyricShareBody = memo(({ initialLine }: { initialLine: number }) => {
     }
   }, [coverPalette, theme])
 
-  // Show neighbor lines starting 1 row above initialLine so the selected line is immediately visible
-  const pickerWindow = useMemo(() => {
+  // Target row 2 lines above initialLine so users can freely scroll the entire song while seeing context immediately
+  const targetScrollRowIdx = useMemo(() => {
     const centerPos = validLines.findIndex(v => v.idx === initialLine)
     const pos = centerPos >= 0 ? centerPos : 0
-    const start = Math.max(0, pos - 1)
-    const end = Math.min(validLines.length, start + 12)
-    return validLines.slice(start, end)
+    return validLines[Math.max(0, pos - 2)]?.idx ?? -1
   }, [initialLine, validLines])
+
+  const tryInitialScroll = useCallback(() => {
+    if (didAutoScrollRef.current || !scrollReadyRef.current || targetYRef.current == null) return
+    didAutoScrollRef.current = true
+    const y = Math.max(0, targetYRef.current - 6)
+    requestAnimationFrame(() => {
+      pickerScrollRef.current?.scrollTo({ y, animated: false })
+    })
+  }, [])
 
   const capturePosterFile = useCallback(async(): Promise<string | null> => {
     const node = findNodeHandle(posterRef.current)
@@ -141,17 +160,29 @@ const LyricShareBody = memo(({ initialLine }: { initialLine: number }) => {
         </Text>
 
         <ScrollView
+          ref={pickerScrollRef}
           horizontal={false}
           nestedScrollEnabled
+          onLayout={() => {
+            scrollReadyRef.current = true
+            tryInitialScroll()
+          }}
           style={{ ...styles.pickerBox, backgroundColor: theme['m3-surface-container'] }}
           contentContainerStyle={styles.pickerContent}
         >
-          {pickerWindow.map(({ item, idx }) => {
+          {validLines.map(({ item, idx }) => {
             const checked = selectedIndices.includes(idx)
+            const isScrollTarget = idx === targetScrollRowIdx
             return (
               <TouchableOpacity
                 key={idx}
                 activeOpacity={0.72}
+                onLayout={isScrollTarget ? (e) => {
+                  if (!didAutoScrollRef.current) {
+                    targetYRef.current = e.nativeEvent.layout.y
+                    tryInitialScroll()
+                  }
+                } : undefined}
                 onPress={() => { toggleLine(idx) }}
                 style={{
                   ...styles.pickerRow,
@@ -228,7 +259,7 @@ const LyricShareBody = memo(({ initialLine }: { initialLine: number }) => {
             <View style={styles.brandRow}>
               <XmusicMark size={20} />
               <Text size={11.5} color="rgba(255, 255, 255, 0.72)" style={styles.brandLabel}>
-                Xmusic · 歌词金句卡
+                {t('lyric_poster_brand_subtitle')}
               </Text>
             </View>
             <Text size={10.5} color={posterColors.accent} style={styles.brandTag}>

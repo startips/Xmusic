@@ -27,7 +27,7 @@ import com.facebook.react.views.image.ReactImageView;
 public class FadeImageView extends ReactImageView {
   private static final long TRANSITION_WINDOW_MS = 650L;
 
-  private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+  private final Paint maskPaint = new Paint(Paint.DITHER_FLAG);
   private final Path clipPath = new Path();
   private final RectF clipRectF = new RectF();
   private final Rect clipBoundsRect = new Rect();
@@ -215,7 +215,13 @@ public class FadeImageView extends ReactImageView {
     System.arraycopy(posScratch, 0, positions, 0, count);
     System.arraycopy(colorScratch, 0, colors, 0, count);
 
-    maskPaint.setShader(new LinearGradient(0f, top, 0f, top + height, colors, positions, Shader.TileMode.CLAMP));
+    float gradTop = hasTop && height > 6 ? (top + 2f) : top;
+    float gradBottom = hasBottom && height > 6 ? (top + height - 2f) : (top + height);
+    if (gradBottom <= gradTop + 1f) {
+      gradTop = top;
+      gradBottom = top + height;
+    }
+    maskPaint.setShader(new LinearGradient(0f, gradTop, 0f, gradBottom, colors, positions, Shader.TileMode.CLAMP));
   }
 
   @Override
@@ -254,8 +260,8 @@ public class FadeImageView extends ReactImageView {
         float progW = (drawW - initialClipWidth) / (float) denomW;
         float progH = (drawH - initialClipHeight) / (float) denomH;
         float rawProgress = Math.max(0f, Math.min(1f, Math.min(progW, progH)));
-        cornerProgress = rawProgress;
-        transitionProgress = rawProgress * rawProgress * (3f - 2f * rawProgress);
+        cornerProgress = rawProgress * rawProgress;
+        transitionProgress = 1f - (1f - rawProgress) * (1f - rawProgress);
       } else if (hasAnimatedClip) {
         transitionComplete = true;
       }
@@ -266,14 +272,24 @@ public class FadeImageView extends ReactImageView {
     boolean hasTop = (topFadeEnd - topFadeStart) > 0.005f;
     boolean hasBottom = (fadeEnd - fadeStart) > 0.005f;
     float cornerRadiusPx = startCornerRadiusPx * (1f - cornerProgress);
+    boolean isFlightClip = !transitionComplete && hasClip && drawW > 4 && drawH > 4;
+    float inset = isFlightClip ? 1f : 0f;
+    float contentLeft = drawLeft + inset;
+    float contentTop = drawTop + inset;
+    float contentRight = drawRight - inset;
+    float contentBottom = drawBottom - inset;
 
     if ((!hasTop && !hasBottom) || transitionProgress <= 0.001f) {
-      if (cornerRadiusPx > 0.5f) {
+      if (cornerRadiusPx > 0.5f || isFlightClip) {
         int save = canvas.save();
-        clipPath.reset();
-        clipRectF.set(drawLeft, drawTop, drawRight, drawBottom);
-        clipPath.addRoundRect(clipRectF, cornerRadiusPx, cornerRadiusPx, Path.Direction.CW);
-        canvas.clipPath(clipPath);
+        if (cornerRadiusPx > 0.5f) {
+          clipPath.reset();
+          clipRectF.set(contentLeft, contentTop, contentRight, contentBottom);
+          clipPath.addRoundRect(clipRectF, cornerRadiusPx, cornerRadiusPx, Path.Direction.CW);
+          canvas.clipPath(clipPath);
+        } else {
+          canvas.clipRect(contentLeft, contentTop, contentRight, contentBottom);
+        }
         super.onDraw(canvas);
         canvas.restoreToCount(save);
       } else {
@@ -282,23 +298,40 @@ public class FadeImageView extends ReactImageView {
       return;
     }
 
-    int shaderTop = transitionComplete ? 0 : drawTop;
-    int shaderHeight = transitionComplete ? viewH : drawH;
+    int shaderTop = transitionComplete ? 0 : Math.round(contentTop);
+    int shaderHeight = transitionComplete ? viewH : Math.max(1, Math.round(contentBottom - contentTop));
     int layerLeft = transitionComplete ? 0 : drawLeft;
     int layerTop = transitionComplete ? 0 : drawTop;
     int layerRight = transitionComplete ? viewW : drawRight;
     int layerBottom = transitionComplete ? viewH : drawBottom;
 
-    int saveCount = canvas.saveLayer(layerLeft, layerTop, layerRight, layerBottom, null);
-    if (cornerRadiusPx > 0.5f) {
-      clipPath.reset();
-      clipRectF.set(drawLeft, drawTop, drawRight, drawBottom);
-      clipPath.addRoundRect(clipRectF, cornerRadiusPx, cornerRadiusPx, Path.Direction.CW);
-      canvas.clipPath(clipPath);
+    // Expand offscreen layer & DST_IN mask beyond content bounds and restore the
+    // rounded/inset clip BEFORE applying DST_IN so anti-aliased clip edges never
+    // leave c*(1-c)*I unfeathered bright fringe pixels along the border.
+    int saveCount = canvas.saveLayer(
+      layerLeft - 4f,
+      layerTop - 4f,
+      layerRight + 4f,
+      layerBottom + 4f,
+      null
+    );
+    if (cornerRadiusPx > 0.5f || isFlightClip) {
+      int clipSave = canvas.save();
+      if (cornerRadiusPx > 0.5f) {
+        clipPath.reset();
+        clipRectF.set(contentLeft, contentTop, contentRight, contentBottom);
+        clipPath.addRoundRect(clipRectF, cornerRadiusPx, cornerRadiusPx, Path.Direction.CW);
+        canvas.clipPath(clipPath);
+      } else {
+        canvas.clipRect(contentLeft, contentTop, contentRight, contentBottom);
+      }
+      super.onDraw(canvas);
+      canvas.restoreToCount(clipSave);
+    } else {
+      super.onDraw(canvas);
     }
-    super.onDraw(canvas);
     ensureShader(shaderTop, shaderHeight, transitionProgress);
-    canvas.drawRect(layerLeft, layerTop, layerRight, layerBottom, maskPaint);
+    canvas.drawRect(layerLeft - 4f, layerTop - 4f, layerRight + 4f, layerBottom + 4f, maskPaint);
     canvas.restoreToCount(saveCount);
   }
 }

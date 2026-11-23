@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
+import com.facebook.react.uimanager.annotations.ReactProp;
 
 public class EdgeToEdgeModalViewManager extends SimpleViewManager<EdgeToEdgeModalView> {
   public static final String REACT_CLASS = "XmusicEdgeToEdgeModalView";
@@ -18,5 +19,10 @@ public class EdgeToEdgeModalViewManager extends SimpleViewManager<EdgeToEdgeModa
   @Override
   protected EdgeToEdgeModalView createViewInstance(@NonNull ThemedReactContext reactContext) {
     return new EdgeToEdgeModalView(reactContext);
+  }
+
+  @ReactProp(name = "darkStatusBarIcons", defaultBoolean = false)
+  public void setDarkStatusBarIcons(EdgeToEdgeModalView view, boolean darkStatusBarIcons) {
+    view.setDarkStatusBarIcons(darkStatusBarIcons);
   }
 }

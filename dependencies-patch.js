@@ -62,6 +62,14 @@ const rnnComponentViewController = path.join(
   rootPath,
   'node_modules/react-native-navigation/lib/android/app/src/main/java/com/reactnativenavigation/viewcontrollers/component/ComponentViewController.java',
 )
+const rnnExistingViewFinder = path.join(
+  rootPath,
+  'node_modules/react-native-navigation/lib/android/app/src/main/java/com/reactnativenavigation/views/element/finder/ExistingViewFinder.kt',
+)
+const rnnStackAnimator = path.join(
+  rootPath,
+  'node_modules/react-native-navigation/lib/android/app/src/main/java/com/reactnativenavigation/viewcontrollers/stack/StackAnimator.kt',
+)
 
 const patchs = [
   // 1. 同时写入 MEDIA_METADATA_KEY_ART，部分系统（含 HyperOS 超级岛）只读取该字段
@@ -361,6 +369,17 @@ const patchs = [
     playerLocalPlayback,
     '        rampFactor = 0.0F;\n        pendingPlayRampMs = durationMs;\n        applyEffectiveVolume();\n        super.play();\n        maybeStartPendingPlayRamp();',
     '        rampFactor = 0.0F;\n        pendingPlayRampMs = durationMs;\n        applyEffectiveVolume();\n        XmusicDspAudioProcessor.getInstance().notifyPlayResume();\n        super.play();\n        maybeStartPendingPlayRamp();',
+  ],
+  // 25. 修复 RNN 共享元素入场过渡卡死（ReactImageView/FadeImageView 已有宽高但 isLaidOut=false 时不再无限挂起导致播放页透明不可见）
+  [
+    rnnExistingViewFinder,
+    '            is ImageView -> {\n                if (hasMeasuredDrawable(view)) {\n                    resume(view, cont)\n                } else {\n                    resumeOnImageLoad(view, cont)\n                }\n            }\n            else -> cont.resume(view)\n        }\n    }\n\n    private fun resume(view: ImageView, cont: Continuation<View?>) {\n        if (view.drawable is RootDrawable) {\n            view.post { cont.resume(view) }\n        } else {\n            cont.resume(view)\n        }\n    }\n\n    private fun resumeOnImageLoad(view: ImageView, cont: Continuation<View?>) {\n        view.doOnPreDraw {\n            if (hasMeasuredDrawable(view)) {\n                view.post {\n                    cont.resume(view)\n                }\n            } else {\n                resumeOnImageLoad(view, cont)\n            }\n        }\n    }\n\n    private fun hasMeasuredDrawable(view: ImageView) = when (view.drawable) {\n        is RootDrawable -> view.isLaidOut && view.width > 0 && view.height > 0\n        else -> checkIfFastImageIsMeasured(view)\n    }',
+    '            is ImageView -> {\n                if (hasMeasuredDrawable(view)) {\n                    resume(view, cont)\n                } else {\n                    resumeOnImageLoad(view, cont, 0)\n                }\n            }\n            else -> cont.resume(view)\n        }\n    }\n\n    private fun resume(view: ImageView, cont: Continuation<View?>) {\n        if (view.drawable is RootDrawable) {\n            view.post { cont.resume(view) }\n        } else {\n            cont.resume(view)\n        }\n    }\n\n    private fun resumeOnImageLoad(view: ImageView, cont: Continuation<View?>, attempt: Int) {\n        if (!view.isAttachedToWindow || attempt >= 12) {\n            cont.resume(if (view.width > 0 && view.height > 0) view else null)\n            return\n        }\n        view.doOnPreDraw {\n            if (hasMeasuredDrawable(view)) {\n                view.post {\n                    cont.resume(view)\n                }\n            } else {\n                resumeOnImageLoad(view, cont, attempt + 1)\n            }\n        }\n    }\n\n    private fun hasMeasuredDrawable(view: ImageView) = when (view.drawable) {\n        is RootDrawable -> view.width > 0 && view.height > 0\n        else -> checkIfFastImageIsMeasured(view)\n    }',
+  ],
+  [
+    rnnStackAnimator,
+    '        appearing.awaitRender()\n        val fade = if (options.animations.push.content.enter.isFadeAnimation()) options.animations.push.content.enter else FadeAnimation.content.enter\n        val transitionAnimators = transitionAnimatorCreator.create(options.animations.push, fade, disappearing, appearing)\n        set.playTogether(fade.getAnimation(appearing.view), transitionAnimators)\n        transitionAnimators.listeners.forEach { listener: Animator.AnimatorListener -> set.addListener(listener) }\n        transitionAnimators.removeAllListeners()\n        set.start()',
+    '        appearing.awaitRender()\n        if (appearing.isDestroyed || !runningPushAnimations.containsKey(appearing)) return@launch\n        val fade = if (options.animations.push.content.enter.isFadeAnimation()) options.animations.push.content.enter else FadeAnimation.content.enter\n        val transitionAnimators = transitionAnimatorCreator.create(options.animations.push, fade, disappearing, appearing)\n        if (appearing.isDestroyed || !runningPushAnimations.containsKey(appearing)) return@launch\n        set.playTogether(fade.getAnimation(appearing.view), transitionAnimators)\n        transitionAnimators.listeners.forEach { listener: Animator.AnimatorListener -> set.addListener(listener) }\n        transitionAnimators.removeAllListeners()\n        set.doOnEnd {\n            if (!appearing.isDestroyed) appearing.view.alpha = 1f\n        }\n        set.start()',
   ],
 ]
 

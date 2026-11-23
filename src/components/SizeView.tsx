@@ -22,17 +22,21 @@ const resolveStatusbarHeight = (winHeight: number, layoutHeight: number, topInse
 }
 
 let latestMeasureSeq = 0
+const mountedSizeViews: symbol[] = []
+const topListeners = new Set<() => void>()
+const isTopSizeView = (id: symbol) => mountedSizeViews[mountedSizeViews.length - 1] === id
 
 export default memo(() => {
+  const instanceId = useRef(Symbol('SizeView')).current
   const sizeRef = useRef({ winHeight: 0, layoutHeight: 0, topInsetDp: 0, hasRootInsets: false })
   const lastLayoutRef = useRef({ width: 0, height: 0 })
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const runMeasure = useCallback((layoutWidth: number, layoutHeight: number) => {
-    if (layoutWidth <= 0 || layoutHeight <= 0) return
+    if (layoutWidth <= 0 || layoutHeight <= 0 || !isTopSizeView(instanceId)) return
     const seq = ++latestMeasureSeq
     void Promise.all([getWindowSize(), getNavigationBarHeight(), getSafeAreaInsets()]).then(([size, navBarPx, rawSafe]) => {
-      if (seq !== latestMeasureSeq) return
+      if (seq !== latestMeasureSeq || !isTopSizeView(instanceId)) return
       const scale = Dimensions.get('window').scale || 1
       const safeInsets = {
         top: pxToDp(rawSafe.top, scale),
@@ -66,37 +70,60 @@ export default memo(() => {
         }
       }
     })
-  }, [])
+  }, [instanceId])
 
   const scheduleMeasure = useCallback((width: number, height: number) => {
+    if (!isTopSizeView(instanceId)) return
     runMeasure(width, height)
     // Android may finish applying rotated DisplayCutout insets a frame after layout/rotation
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
     retryTimerRef.current = setTimeout(() => {
       retryTimerRef.current = null
+      if (!isTopSizeView(instanceId)) return
       const w = lastLayoutRef.current.width || width
       const h = lastLayoutRef.current.height || height
       runMeasure(w, h)
     }, 120)
-  }, [runMeasure])
+  }, [instanceId, runMeasure])
 
   const handleLayout = useCallback(({ nativeEvent: { layout } }: LayoutChangeEvent) => {
     if (lastLayoutRef.current.width === layout.width && lastLayoutRef.current.height === layout.height) return
     lastLayoutRef.current = { width: layout.width, height: layout.height }
+    if (!isTopSizeView(instanceId)) return
     scheduleMeasure(layout.width, layout.height)
-  }, [scheduleMeasure])
+  }, [instanceId, scheduleMeasure])
 
   useEffect(() => {
+    mountedSizeViews.push(instanceId)
+    const triggerTopMeasure = () => {
+      if (!isTopSizeView(instanceId)) return
+      const win = Dimensions.get('window')
+      const w = win.width > 0 ? win.width : lastLayoutRef.current.width
+      const h = win.height > 0 ? win.height : lastLayoutRef.current.height
+      if (w > 0 && h > 0) lastLayoutRef.current = { width: w, height: h }
+      scheduleMeasure(w, h)
+    }
+    topListeners.add(triggerTopMeasure)
+
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      scheduleMeasure(lastLayoutRef.current.width || window.width, lastLayoutRef.current.height || window.height)
+      if (!isTopSizeView(instanceId)) return
+      const w = window.width > 0 ? window.width : lastLayoutRef.current.width
+      const h = window.height > 0 ? window.height : lastLayoutRef.current.height
+      if (w > 0 && h > 0) lastLayoutRef.current = { width: w, height: h }
+      scheduleMeasure(w, h)
     })
 
     const unlistenDisplay = onDisplayChange(() => {
+      if (!isTopSizeView(instanceId)) return
       const win = Dimensions.get('window')
-      scheduleMeasure(lastLayoutRef.current.width || win.width, lastLayoutRef.current.height || win.height)
+      const w = win.width > 0 ? win.width : lastLayoutRef.current.width
+      const h = win.height > 0 ? win.height : lastLayoutRef.current.height
+      if (w > 0 && h > 0) lastLayoutRef.current = { width: w, height: h }
+      scheduleMeasure(w, h)
     })
 
     const handleSettingUpdate = (keys: Array<keyof LX.AppSetting>) => {
+      if (!isTopSizeView(instanceId)) return
       if (!keys.includes('common.alwaysKeepStatusbarHeight') || !sizeRef.current.layoutHeight) return
       const { winHeight, layoutHeight, topInsetDp, hasRootInsets } = sizeRef.current
       const height = resolveStatusbarHeight(winHeight, layoutHeight, topInsetDp, hasRootInsets)
@@ -107,6 +134,10 @@ export default memo(() => {
     global.state_event.on('configUpdated', handleSettingUpdate)
 
     return () => {
+      topListeners.delete(triggerTopMeasure)
+      const idx = mountedSizeViews.indexOf(instanceId)
+      const wasTop = idx === mountedSizeViews.length - 1
+      if (idx >= 0) mountedSizeViews.splice(idx, 1)
       if (retryTimerRef.current) {
         clearTimeout(retryTimerRef.current)
         retryTimerRef.current = null
@@ -114,8 +145,11 @@ export default memo(() => {
       subscription.remove()
       unlistenDisplay()
       global.state_event.off('configUpdated', handleSettingUpdate)
+      if (wasTop && mountedSizeViews.length > 0) {
+        for (const fn of [...topListeners]) fn()
+      }
     }
-  }, [scheduleMeasure])
+  }, [instanceId, scheduleMeasure])
 
   return (<View pointerEvents="none" style={StyleSheet.absoluteFill} onLayout={handleLayout} />)
 }, () => true)

@@ -30,8 +30,24 @@ public final class XmusicWidgetUpdater {
   public static final String ACTION_FAVORITE = "com.startips.xmusic.WIDGET_ACTION_FAVORITE";
 
   private static final int DEFAULT_ACCENT = 0xFF4DAF7C;
+  private static final Object COVER_LOCK = new Object();
+  private static long sCachedCoverMtime = -1L;
+  private static long sCachedCoverSize = -1L;
+  private static int sCachedVinylAccent = 0;
+  private static Bitmap sCachedRoundedCover = null;
+  private static Bitmap sCachedVinylCover = null;
 
   private XmusicWidgetUpdater() {}
+
+  public static void invalidateCoverCache() {
+    synchronized (COVER_LOCK) {
+      sCachedCoverMtime = -1L;
+      sCachedCoverSize = -1L;
+      sCachedVinylAccent = 0;
+      sCachedRoundedCover = null;
+      sCachedVinylCover = null;
+    }
+  }
 
   public static void savePartialState(
     Context context,
@@ -42,6 +58,19 @@ public final class XmusicWidgetUpdater {
     Boolean isFavorite,
     Integer accentColor
   ) {
+    saveStateAndRefresh(context, title, artist, lyric, isPlaying, isFavorite, accentColor, false);
+  }
+
+  public static void saveStateAndRefresh(
+    Context context,
+    String title,
+    String artist,
+    String lyric,
+    Boolean isPlaying,
+    Boolean isFavorite,
+    Integer accentColor,
+    boolean partialOnly
+  ) {
     SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     SharedPreferences.Editor editor = prefs.edit();
     if (title != null) editor.putString("title", title);
@@ -51,7 +80,73 @@ public final class XmusicWidgetUpdater {
     if (isFavorite != null) editor.putBoolean("isFavorite", isFavorite);
     if (accentColor != null && accentColor != 0) editor.putInt("accentColor", accentColor);
     editor.apply();
-    updateAllWidgets(context);
+    if (partialOnly) {
+      updateWidgetsLight(context);
+    } else {
+      updateAllWidgets(context);
+    }
+  }
+
+  public static void updateWidgetsLight(Context context) {
+    Context appCtx = context.getApplicationContext();
+    AppWidgetManager mgr = AppWidgetManager.getInstance(appCtx);
+    if (mgr == null) return;
+
+    int[] capsuleIds = mgr.getAppWidgetIds(new ComponentName(appCtx, XmusicCapsuleWidgetProvider.class));
+    int[] cardIds = mgr.getAppWidgetIds(new ComponentName(appCtx, XmusicCardWidgetProvider.class));
+    boolean hasCapsule = capsuleIds != null && capsuleIds.length > 0;
+    boolean hasCard = cardIds != null && cardIds.length > 0;
+    if (!hasCapsule && !hasCard) return;
+
+    SharedPreferences prefs = appCtx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    String title = prefs.getString("title", "");
+    String artist = prefs.getString("artist", "");
+    String lyric = prefs.getString("lyric", "");
+    boolean isPlaying = prefs.getBoolean("isPlaying", false);
+    boolean isFavorite = prefs.getBoolean("isFavorite", false);
+    int accent = prefs.getInt("accentColor", DEFAULT_ACCENT);
+
+    String displayTitle = (title == null || title.trim().isEmpty()) ? "Xmusic" : title;
+
+    if (hasCapsule) {
+      String displaySubtitle;
+      if (isPlaying && lyric != null && !lyric.trim().isEmpty()) {
+        displaySubtitle = "♪ " + lyric.trim();
+      } else if (artist != null && !artist.trim().isEmpty()) {
+        displaySubtitle = artist;
+      } else {
+        displaySubtitle = "轻触开启沉浸音乐之旅";
+      }
+      RemoteViews rv = new RemoteViews(appCtx.getPackageName(), R.layout.widget_xmusic_capsule);
+      rv.setTextViewText(R.id.widget_title, displayTitle);
+      rv.setTextViewText(R.id.widget_subtitle, displaySubtitle);
+      rv.setImageViewResource(
+        R.id.widget_btn_play_icon,
+        isPlaying ? R.drawable.ic_widget_pause : R.drawable.ic_widget_play
+      );
+      mgr.partiallyUpdateAppWidget(capsuleIds, rv);
+    }
+
+    if (hasCard) {
+      String displayArtist = (artist == null || artist.trim().isEmpty()) ? "随时聆听好音乐" : artist;
+      String displayLyric = (lyric == null || lyric.trim().isEmpty())
+        ? "♪ 轻触播放，实时同步桌面歌词"
+        : "♪ " + lyric.trim();
+      RemoteViews rv = new RemoteViews(appCtx.getPackageName(), R.layout.widget_xmusic_card);
+      rv.setTextViewText(R.id.widget_title, displayTitle);
+      rv.setTextViewText(R.id.widget_artist, displayArtist);
+      rv.setTextViewText(R.id.widget_lyric, displayLyric);
+      rv.setTextColor(R.id.widget_lyric, brightenForDarkCard(accent));
+      rv.setImageViewResource(
+        R.id.widget_btn_play_icon,
+        isPlaying ? R.drawable.ic_widget_pause : R.drawable.ic_widget_play
+      );
+      rv.setImageViewResource(
+        R.id.widget_btn_fav,
+        isFavorite ? R.drawable.ic_media_favorite_on : R.drawable.ic_media_favorite_off
+      );
+      mgr.partiallyUpdateAppWidget(cardIds, rv);
+    }
   }
 
   public static void updateAllWidgets(Context context) {
@@ -88,9 +183,7 @@ public final class XmusicWidgetUpdater {
       displaySubtitle = "轻触开启沉浸音乐之旅";
     }
 
-    Bitmap rawCover = loadCachedCover(context);
-    Bitmap roundedCover = rawCover != null ? buildRoundedSquareCover(rawCover, 128, 34f) : null;
-    if (rawCover != null && !rawCover.isRecycled()) rawCover.recycle();
+    Bitmap roundedCover = getCachedRoundedCover(context);
 
     for (int id : appWidgetIds) {
       RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.widget_xmusic_capsule);
@@ -101,7 +194,7 @@ public final class XmusicWidgetUpdater {
         R.id.widget_btn_play_icon,
         isPlaying ? R.drawable.ic_widget_pause : R.drawable.ic_widget_play
       );
-      if (roundedCover != null) {
+      if (roundedCover != null && !roundedCover.isRecycled()) {
         rv.setImageViewBitmap(R.id.widget_cover, roundedCover);
       } else {
         rv.setImageViewResource(R.id.widget_cover, R.drawable.ic_widget_disc);
@@ -131,9 +224,7 @@ public final class XmusicWidgetUpdater {
       ? "♪ 轻触播放，实时同步桌面歌词"
       : "♪ " + lyric.trim();
 
-    Bitmap rawCover = loadCachedCover(context);
-    Bitmap vinylCover = rawCover != null ? buildVinylCover(rawCover, 156, accent) : null;
-    if (rawCover != null && !rawCover.isRecycled()) rawCover.recycle();
+    Bitmap vinylCover = getCachedVinylCover(context, accent);
 
     int brightLyricColor = brightenForDarkCard(accent);
 
@@ -152,7 +243,7 @@ public final class XmusicWidgetUpdater {
         R.id.widget_btn_fav,
         isFavorite ? R.drawable.ic_media_favorite_on : R.drawable.ic_media_favorite_off
       );
-      if (vinylCover != null) {
+      if (vinylCover != null && !vinylCover.isRecycled()) {
         rv.setImageViewBitmap(R.id.widget_cover, vinylCover);
       } else {
         rv.setImageViewResource(R.id.widget_cover, R.drawable.ic_widget_disc);
@@ -175,9 +266,71 @@ public final class XmusicWidgetUpdater {
     return Color.argb(242, r, g, b);
   }
 
-  private static Bitmap loadCachedCover(Context context) {
-    try {
+  private static Bitmap getCachedRoundedCover(Context context) {
+    synchronized (COVER_LOCK) {
       File f = new File(context.getCacheDir(), "widget_cover.png");
+      if (!f.exists() || f.length() == 0) {
+        sCachedCoverMtime = -1L;
+        sCachedCoverSize = -1L;
+        sCachedRoundedCover = null;
+        sCachedVinylCover = null;
+        return null;
+      }
+      long mtime = f.lastModified();
+      long len = f.length();
+      if (mtime == sCachedCoverMtime && len == sCachedCoverSize && sCachedRoundedCover != null && !sCachedRoundedCover.isRecycled()) {
+        return sCachedRoundedCover;
+      }
+      Bitmap raw = loadCachedCover(f);
+      if (raw == null) return null;
+      if (mtime != sCachedCoverMtime || len != sCachedCoverSize) {
+        sCachedVinylCover = null;
+      }
+      sCachedCoverMtime = mtime;
+      sCachedCoverSize = len;
+      sCachedRoundedCover = buildRoundedSquareCover(raw, 128, 34f);
+      if (!raw.isRecycled()) raw.recycle();
+      return sCachedRoundedCover;
+    }
+  }
+
+  private static Bitmap getCachedVinylCover(Context context, int accent) {
+    synchronized (COVER_LOCK) {
+      File f = new File(context.getCacheDir(), "widget_cover.png");
+      if (!f.exists() || f.length() == 0) {
+        sCachedCoverMtime = -1L;
+        sCachedCoverSize = -1L;
+        sCachedRoundedCover = null;
+        sCachedVinylCover = null;
+        return null;
+      }
+      long mtime = f.lastModified();
+      long len = f.length();
+      if (
+        mtime == sCachedCoverMtime &&
+        len == sCachedCoverSize &&
+        sCachedVinylAccent == accent &&
+        sCachedVinylCover != null &&
+        !sCachedVinylCover.isRecycled()
+      ) {
+        return sCachedVinylCover;
+      }
+      Bitmap raw = loadCachedCover(f);
+      if (raw == null) return null;
+      if (mtime != sCachedCoverMtime || len != sCachedCoverSize) {
+        sCachedRoundedCover = null;
+      }
+      sCachedCoverMtime = mtime;
+      sCachedCoverSize = len;
+      sCachedVinylAccent = accent;
+      sCachedVinylCover = buildVinylCover(raw, 156, accent);
+      if (!raw.isRecycled()) raw.recycle();
+      return sCachedVinylCover;
+    }
+  }
+
+  private static Bitmap loadCachedCover(File f) {
+    try {
       if (!f.exists() || f.length() == 0) return null;
       return BitmapFactory.decodeFile(f.getAbsolutePath());
     } catch (Exception ignored) {

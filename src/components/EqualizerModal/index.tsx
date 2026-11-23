@@ -116,6 +116,14 @@ const EqualizerBody = () => {
   const [loudSliding, setLoudSliding] = useState(false)
 
   useEffect(() => {
+    if (!bassSliding) setBassSlider(bassBoost)
+  }, [bassBoost, bassSliding])
+
+  useEffect(() => {
+    if (!loudSliding) setLoudSlider(loudnessGain)
+  }, [loudSliding, loudnessGain])
+
+  useEffect(() => {
     void syncNativeAudioSession().then(async() => getNativeEffectInfo()).then((info) => {
       if (info.bands.length) setBandDefs(info.bands)
       setRange({ min: info.minLevel, max: info.maxLevel })
@@ -294,9 +302,15 @@ export default forwardRef<EqualizerModalType, EqualizerModalProps>((props, ref) 
     },
   }))
 
+  const { onHide: propOnHide } = props
+  const handleHide = useCallback(() => {
+    setVisible(false)
+    propOnHide?.()
+  }, [propOnHide])
+
   return visible
     ? (
-        <Popup ref={popupRef} title={t('eq_title')} {...props}>
+        <Popup ref={popupRef} title={t('eq_title')} {...props} onHide={handleHide}>
           <EqualizerBody />
         </Popup>
       )

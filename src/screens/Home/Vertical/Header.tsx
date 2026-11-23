@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Animated, Easing, View } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
@@ -34,7 +34,7 @@ const Header = () => {
   const headerTranslateX = useRef(new Animated.Value(0)).current
   const headerOpacity = useRef(new Animated.Value(1)).current
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (prevIdRef.current === id) return
     const prevIdx = HOME_NAV_INDEX_MAP[prevIdRef.current] ?? 0
     const nextIdx = HOME_NAV_INDEX_MAP[id] ?? 0

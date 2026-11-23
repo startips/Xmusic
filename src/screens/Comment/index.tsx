@@ -10,7 +10,7 @@ import { useTheme } from '@/store/theme/hook'
 import Text from '@/components/common/Text'
 import { useI18n } from '@/lang'
 import { COMPONENT_IDS } from '@/config/constant'
-import { setComponentId } from '@/core/common'
+import { removeComponentId, setComponentId } from '@/core/common'
 import PageContent from '@/components/PageContent'
 import EdgeSwipeContainer from '@/components/common/EdgeSwipeContainer'
 import playerState from '@/store/player/state'
@@ -103,6 +103,9 @@ export default memo(({ componentId }: {
 
   useEffect(() => {
     setComponentId(COMPONENT_IDS.comment, componentId)
+    return () => {
+      removeComponentId(componentId)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -189,6 +192,7 @@ export default memo(({ componentId }: {
     <EdgeSwipeContainer
       edgeWidth={24}
       dismissDistance={64}
+      mode="slide"
       onEdgeDismiss={handleBack}
       style={{ flex: 1 }}
     >

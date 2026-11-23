@@ -135,6 +135,8 @@ const Main = () => {
   const activeIndexRef = useRef<number>(initialIndex)
   const scrollStateRef = useRef<'idle' | 'dragging' | 'settling'>('idle')
   const slotRefs = useRef<Array<HomePageSlotRef | null>>([null, null, null, null])
+  const isProgrammaticJumpRef = useRef(false)
+  const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [mountedMap, setMountedMap] = useState<Partial<Record<NavId, boolean>>>(() => ({
     [commonState.navActiveId]: true,
@@ -167,6 +169,7 @@ const Main = () => {
   }, [])
 
   useEffect(() => {
+    global.lx.homePagerIdle = true
     syncHomePagerGestureProgress(activeIndexRef.current)
     const timer = setTimeout(() => {
       const idx = activeIndexRef.current
@@ -177,6 +180,7 @@ const Main = () => {
     }, 600)
     return () => {
       clearTimeout(timer)
+      global.lx.homePagerIdle = true
     }
   }, [ensureMounted])
 
@@ -213,9 +217,14 @@ const Main = () => {
     const idle = state == 'idle'
     if (global.lx.homePagerIdle != idle) global.lx.homePagerIdle = idle
     if (state === 'dragging') {
+      isProgrammaticJumpRef.current = false
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current)
+        programmaticTimerRef.current = null
+      }
       stopHomePillAnimation()
       slotRefs.current[activeIndexRef.current]?.resetEnter()
-    } else if (state === 'idle') {
+    } else if (state === 'idle' && !isProgrammaticJumpRef.current) {
       syncHomePagerGestureProgress(activeIndexRef.current)
     }
   }, [])
@@ -229,6 +238,12 @@ const Main = () => {
       const direction: 1 | -1 = nextIndex > activeIndexRef.current ? 1 : -1
       slotRefs.current[activeIndexRef.current]?.resetEnter()
       activeIndexRef.current = nextIndex
+      isProgrammaticJumpRef.current = true
+      if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current)
+      programmaticTimerRef.current = setTimeout(() => {
+        programmaticTimerRef.current = null
+        isProgrammaticJumpRef.current = false
+      }, 80)
       animateHomePillToIndex(nextIndex)
       pagerViewRef.current?.setPageWithoutAnimation(nextIndex)
       slotRefs.current[nextIndex]?.runEnter(direction)
@@ -240,6 +255,10 @@ const Main = () => {
     global.state_event.on('navActiveIdUpdated', handleUpdate)
     global.state_event.on('configUpdated', handleConfigUpdate)
     return () => {
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current)
+        programmaticTimerRef.current = null
+      }
       global.state_event.off('navActiveIdUpdated', handleUpdate)
       global.state_event.off('configUpdated', handleConfigUpdate)
     }

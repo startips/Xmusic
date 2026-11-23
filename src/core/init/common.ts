@@ -13,6 +13,14 @@ export default async(setting: LX.AppSetting) => {
   let isDynamicBg = setting['theme.dynamicBg']
   let isDynamicCoverColor = setting['theme.dynamicCoverColor']
   let paletteReqSeq = 0
+  let pendingResetTimer: ReturnType<typeof setTimeout> | null = null
+
+  const clearPendingReset = () => {
+    if (pendingResetTimer != null) {
+      clearTimeout(pendingResetTimer)
+      pendingResetTimer = null
+    }
+  }
 
   const handleUpdatePic = (targetPic: string) => {
     if (!targetPic) return
@@ -46,6 +54,7 @@ export default async(setting: LX.AppSetting) => {
       : null
 
     if (nextPic) {
+      clearPendingReset()
       currentMusicId = nextId
       if (nextPic == pic) return
       pic = nextPic
@@ -54,6 +63,7 @@ export default async(setting: LX.AppSetting) => {
     }
 
     if (!nextId) {
+      clearPendingReset()
       currentMusicId = null
       pic = null
       paletteReqSeq++
@@ -64,16 +74,30 @@ export default async(setting: LX.AppSetting) => {
 
     if (nextId != currentMusicId) {
       // Track switched and its cover URL is not resolved yet: keep the previous
-      // cover palette until getPicPath resolves or fails so the theme does not
-      // flash back to the static preset seed during track transitions.
+      // cover palette briefly so async getPicPath does not flash back to static seed,
+      // then self-heal if the new track stays coverless (e.g. local track with no art).
       currentMusicId = nextId
       pic = null
       paletteReqSeq++
+      clearPendingReset()
+      const targetId = nextId
+      pendingResetTimer = setTimeout(() => {
+        pendingResetTimer = null
+        if (currentMusicId != targetId) return
+        const resolvedPic = (playerState.musicInfo.pic && playerState.musicInfo.pic != playerState.loadErrorPicUrl)
+          ? playerState.musicInfo.pic
+          : null
+        if (!resolvedPic) {
+          setBgPic(null)
+          setCoverPalette(null, null)
+        }
+      }, 1200)
       return
     }
 
     if (pic != null) {
       // Same track's previously known cover was cleared (e.g. image load error).
+      clearPendingReset()
       pic = null
       paletteReqSeq++
       setBgPic(null)
@@ -98,6 +122,7 @@ export default async(setting: LX.AppSetting) => {
     if (isDynamicBg || isDynamicCoverColor) {
       if (pic) handleUpdatePic(pic)
     } else {
+      clearPendingReset()
       paletteReqSeq++
       setCoverPalette(null, null)
     }

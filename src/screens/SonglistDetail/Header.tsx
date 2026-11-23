@@ -59,6 +59,7 @@ const Pic = ({ componentId, playCount, imgUrl }: {
 
 export interface HeaderProps {
   componentId: string
+  onBack?: () => void
 }
 
 export interface HeaderType {
@@ -71,7 +72,7 @@ export interface DetailInfo {
   imgUrl?: string
 }
 
-export default forwardRef<HeaderType, HeaderProps>(({ componentId }: { componentId: string }, ref) => {
+export default forwardRef<HeaderType, HeaderProps>(({ componentId, onBack }: HeaderProps, ref) => {
   const statusBarHeight = useStatusbarHeight()
   const theme = useTheme()
   const info = useListInfo()
@@ -104,7 +105,7 @@ export default forwardRef<HeaderType, HeaderProps>(({ componentId }: { component
             }
           </View>
         </View>
-        <ButtonBar />
+        <ButtonBar onBack={onBack} />
       </View>
     </View>
   )

@@ -4,6 +4,8 @@ import { findNodeHandle, Platform, UIManager, View, type NativeMethods, type Vie
 export interface EdgeSwipeContainerProps extends ViewProps {
   edgeWidth?: number
   dismissDistance?: number
+  mode?: 'minimize' | 'slide'
+  swipeEnabled?: boolean
   onEdgeDismiss?: () => void
   children?: ReactNode
 }
@@ -25,6 +27,8 @@ const NativeEdgeSwipeView = Platform.OS === 'android' && UIManager.getViewManage
 export default forwardRef<EdgeSwipeContainerRef, EdgeSwipeContainerProps>(({
   edgeWidth = 42,
   dismissDistance = 64,
+  mode = 'minimize',
+  swipeEnabled = true,
   onEdgeDismiss,
   children,
   ...props
@@ -51,6 +55,8 @@ export default forwardRef<EdgeSwipeContainerRef, EdgeSwipeContainerProps>(({
       ref={nativeRef}
       edgeWidth={edgeWidth}
       dismissDistance={dismissDistance}
+      mode={mode}
+      swipeEnabled={swipeEnabled}
       onEdgeDismiss={onEdgeDismiss}
       {...props}
     >

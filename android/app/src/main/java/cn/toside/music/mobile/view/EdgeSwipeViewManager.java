@@ -66,4 +66,14 @@ public class EdgeSwipeViewManager extends ViewGroupManager<EdgeSwipeView> {
   public void setDismissDistance(EdgeSwipeView view, float dismissDistance) {
     view.setDismissDistance(dismissDistance);
   }
+
+  @ReactProp(name = "mode")
+  public void setMode(EdgeSwipeView view, @Nullable String mode) {
+    view.setMode(mode);
+  }
+
+  @ReactProp(name = "swipeEnabled", defaultBoolean = true)
+  public void setSwipeEnabled(EdgeSwipeView view, boolean swipeEnabled) {
+    view.setSwipeEnabled(swipeEnabled);
+  }
 }

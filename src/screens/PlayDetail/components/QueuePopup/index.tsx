@@ -184,7 +184,10 @@ const QueueRow = memo(({
   prev.index === next.index &&
   prev.isActive === next.isActive &&
   prev.isPlay === next.isPlay &&
-  prev.canRemove === next.canRemove
+  prev.canRemove === next.canRemove &&
+  prev.onPlayIndex === next.onPlayIndex &&
+  prev.onPlayLater === next.onPlayLater &&
+  prev.onRemoveItem === next.onRemoveItem
 ))
 
 const QueueBody = () => {
@@ -409,6 +412,12 @@ const QueueBody = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 getItemLayout={getItemLayout}
+                onScrollToIndexFailed={(info) => {
+                  flatListRef.current?.scrollToOffset({
+                    offset: ITEM_HEIGHT * info.index,
+                    animated: false,
+                  })
+                }}
                 initialNumToRender={14}
                 maxToRenderPerBatch={10}
                 windowSize={9}
@@ -439,9 +448,15 @@ export default forwardRef<QueuePopupType, QueuePopupProps>((props, ref) => {
     },
   }))
 
+  const { onHide: propOnHide } = props
+  const handleHide = useCallback(() => {
+    setVisible(false)
+    propOnHide?.()
+  }, [propOnHide])
+
   return visible
     ? (
-        <Popup ref={popupRef} title={t('queue_title')} {...props}>
+        <Popup ref={popupRef} title={t('queue_title')} {...props} onHide={handleHide}>
           <QueueBody />
         </Popup>
       )

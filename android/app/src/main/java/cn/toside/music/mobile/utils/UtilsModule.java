@@ -70,6 +70,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class UtilsModule extends ReactContextBaseJavaModule {
   private final ReactApplicationContext reactContext;
@@ -864,6 +865,8 @@ public class UtilsModule extends ReactContextBaseJavaModule {
   }
 
   private volatile String lastSyncedWidgetCoverUri = "";
+  private final AtomicInteger widgetCoverSeq = new AtomicInteger(0);
+  private final Object widgetCoverLock = new Object();
 
   @ReactMethod
   public void updateWidgetState(final ReadableMap map) {
@@ -874,43 +877,117 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     final Boolean isPlaying = map.hasKey("isPlaying") && !map.isNull("isPlaying") ? map.getBoolean("isPlaying") : null;
     final Boolean isFavorite = map.hasKey("isFavorite") && !map.isNull("isFavorite") ? map.getBoolean("isFavorite") : null;
     final Integer accentColor = map.hasKey("accentColor") && !map.isNull("accentColor") ? (int) (long) map.getDouble("accentColor") : null;
-    final String coverUri = map.hasKey("coverUri") && !map.isNull("coverUri") ? map.getString("coverUri") : null;
+    final boolean hasCoverKey = map.hasKey("coverUri") && !map.isNull("coverUri");
+    final String coverUri = hasCoverKey ? map.getString("coverUri") : null;
+    final boolean partialOnly = !hasCoverKey && title == null && artist == null && accentColor == null;
 
-    XmusicWidgetUpdater.savePartialState(
+    if (!hasCoverKey) {
+      XmusicWidgetUpdater.saveStateAndRefresh(
+        reactContext,
+        title,
+        artist,
+        lyric,
+        isPlaying,
+        isFavorite,
+        accentColor,
+        partialOnly
+      );
+      return;
+    }
+
+    final String trimmedUri = coverUri != null ? coverUri.trim() : "";
+    if (trimmedUri.isEmpty()) {
+      widgetCoverSeq.incrementAndGet();
+      synchronized (widgetCoverLock) {
+        lastSyncedWidgetCoverUri = "";
+        try {
+          File out = new File(reactContext.getCacheDir(), "widget_cover.png");
+          if (out.exists()) out.delete();
+        } catch (Exception ignored) {}
+        XmusicWidgetUpdater.invalidateCoverCache();
+      }
+      XmusicWidgetUpdater.saveStateAndRefresh(
+        reactContext,
+        title,
+        artist,
+        lyric,
+        isPlaying,
+        isFavorite,
+        accentColor,
+        false
+      );
+      return;
+    }
+
+    if (trimmedUri.equals(lastSyncedWidgetCoverUri)) {
+      XmusicWidgetUpdater.saveStateAndRefresh(
+        reactContext,
+        title,
+        artist,
+        lyric,
+        isPlaying,
+        isFavorite,
+        accentColor,
+        false
+      );
+      return;
+    }
+
+    final int seq = widgetCoverSeq.incrementAndGet();
+    synchronized (widgetCoverLock) {
+      lastSyncedWidgetCoverUri = "";
+      try {
+        File out = new File(reactContext.getCacheDir(), "widget_cover.png");
+        if (out.exists()) out.delete();
+      } catch (Exception ignored) {}
+      XmusicWidgetUpdater.invalidateCoverCache();
+    }
+    XmusicWidgetUpdater.saveStateAndRefresh(
       reactContext,
       title,
       artist,
       lyric,
       isPlaying,
       isFavorite,
-      accentColor
+      accentColor,
+      false
     );
 
-    if (coverUri != null && !coverUri.trim().isEmpty() && !coverUri.equals(lastSyncedWidgetCoverUri) && !paletteExecutor.isShutdown()) {
-      lastSyncedWidgetCoverUri = coverUri;
+    if (!paletteExecutor.isShutdown()) {
       paletteExecutor.execute(() -> {
+        if (seq != widgetCoverSeq.get()) return;
         Bitmap bmp = null;
         try {
-          bmp = decodeTinyCoverBitmap(coverUri.trim(), 192);
-          if (bmp != null && bmp.getWidth() > 0 && bmp.getHeight() > 0) {
-            File out = new File(reactContext.getCacheDir(), "widget_cover.png");
-            try (FileOutputStream fos = new FileOutputStream(out)) {
-              bmp.compress(Bitmap.CompressFormat.PNG, 92, fos);
+          bmp = decodeTinyCoverBitmap(trimmedUri, 192);
+          if (bmp != null && bmp.getWidth() > 0 && bmp.getHeight() > 0 && seq == widgetCoverSeq.get()) {
+            boolean updated = false;
+            synchronized (widgetCoverLock) {
+              if (seq == widgetCoverSeq.get()) {
+                File tmp = new File(reactContext.getCacheDir(), "widget_cover.tmp");
+                File out = new File(reactContext.getCacheDir(), "widget_cover.png");
+                try (FileOutputStream fos = new FileOutputStream(tmp)) {
+                  bmp.compress(Bitmap.CompressFormat.PNG, 92, fos);
+                  fos.flush();
+                }
+                if (out.exists()) out.delete();
+                if (tmp.renameTo(out)) {
+                  lastSyncedWidgetCoverUri = trimmedUri;
+                  XmusicWidgetUpdater.invalidateCoverCache();
+                  updated = true;
+                } else {
+                  tmp.delete();
+                }
+              }
             }
-            XmusicWidgetUpdater.updateAllWidgets(reactContext);
+            if (updated) {
+              XmusicWidgetUpdater.updateAllWidgets(reactContext);
+            }
           }
         } catch (Exception ignored) {
         } finally {
           if (bmp != null && !bmp.isRecycled()) bmp.recycle();
         }
       });
-    } else if (coverUri != null && coverUri.trim().isEmpty() && !lastSyncedWidgetCoverUri.isEmpty()) {
-      lastSyncedWidgetCoverUri = "";
-      try {
-        File out = new File(reactContext.getCacheDir(), "widget_cover.png");
-        if (out.exists()) out.delete();
-        XmusicWidgetUpdater.updateAllWidgets(reactContext);
-      } catch (Exception ignored) {}
     }
   }
 

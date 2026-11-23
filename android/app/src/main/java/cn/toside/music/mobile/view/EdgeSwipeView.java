@@ -33,14 +33,18 @@ public class EdgeSwipeView extends ReactViewGroup {
   private static final float MAX_DRAG_DISTANCE_DP = 180f;
   private static final float MAX_TRANSLATE_Y_DP = 56f;
   private static final float MAX_TRANSLATE_X_DP = 16f;
+  private static final float SLIDE_MAX_TRANSLATE_X_DP = 28f;
   private static final float DRAG_CORNER_RADIUS_DP = 32f;
   private static final float BOTTOM_CONTROLS_SAFE_DP = 136f;
+  private static final String MODE_MINIMIZE = "minimize";
+  private static final String MODE_SLIDE = "slide";
 
   private final int touchSlop;
   private final float cornerRadiusPx;
   private final float maxDragDistancePx;
   private final float maxTranslateYPx;
   private final float maxTranslateXPx;
+  private final float slideMaxTranslateXPx;
   private final float flingMinDistancePx;
   private final float flingMinVelocityPx;
   private final float bottomControlsSafePx;
@@ -48,6 +52,8 @@ public class EdgeSwipeView extends ReactViewGroup {
 
   private float edgeWidthPx = PixelUtil.toPixelFromDIP(24f);
   private float dismissDistancePx = PixelUtil.toPixelFromDIP(64f);
+  private String mode = MODE_MINIMIZE;
+  private boolean swipeEnabled = true;
 
   private int activeSide = 0; // -1 = left, 1 = right, 0 = none
   private boolean edgeCancelled = false;
@@ -66,6 +72,7 @@ public class EdgeSwipeView extends ReactViewGroup {
     maxDragDistancePx = PixelUtil.toPixelFromDIP(MAX_DRAG_DISTANCE_DP);
     maxTranslateYPx = PixelUtil.toPixelFromDIP(MAX_TRANSLATE_Y_DP);
     maxTranslateXPx = PixelUtil.toPixelFromDIP(MAX_TRANSLATE_X_DP);
+    slideMaxTranslateXPx = PixelUtil.toPixelFromDIP(SLIDE_MAX_TRANSLATE_X_DP);
     flingMinDistancePx = PixelUtil.toPixelFromDIP(FLING_MIN_DISTANCE_DP);
     flingMinVelocityPx = PixelUtil.toPixelFromDIP(FLING_MIN_VELOCITY_DP_PER_SEC);
     bottomControlsSafePx = PixelUtil.toPixelFromDIP(BOTTOM_CONTROLS_SAFE_DP);
@@ -86,6 +93,17 @@ public class EdgeSwipeView extends ReactViewGroup {
     this.dismissDistancePx = PixelUtil.toPixelFromDIP(Math.max(24f, dismissDistanceDp));
   }
 
+  public void setMode(String mode) {
+    this.mode = MODE_SLIDE.equals(mode) ? MODE_SLIDE : MODE_MINIMIZE;
+  }
+
+  public void setSwipeEnabled(boolean swipeEnabled) {
+    this.swipeEnabled = swipeEnabled;
+    if (!swipeEnabled && !isDragging) {
+      cancelEdgeTracking();
+    }
+  }
+
   public void prepareMinimize() {
     setPivotX(getWidth() * 0.5f);
     setPivotY(getHeight() * 0.5f);
@@ -95,6 +113,10 @@ public class EdgeSwipeView extends ReactViewGroup {
 
   @Override
   public boolean onInterceptTouchEvent(MotionEvent ev) {
+    if (!swipeEnabled) {
+      cancelEdgeTracking();
+      return false;
+    }
     if (dismissDispatched) return false;
 
     switch (ev.getActionMasked()) {
@@ -110,12 +132,18 @@ public class EdgeSwipeView extends ReactViewGroup {
         int height = getHeight();
         float x = ev.getX();
         float y = ev.getY();
-        // Exclude the bottom player seekbar / transport region so scrubbing near 0:00 or track end never triggers dismiss
-        if (width > 0 && height > 0 && y < Math.max(height * 0.65f, height - bottomControlsSafePx)) {
-          if (x <= edgeWidthPx) {
+        if (MODE_SLIDE.equals(mode)) {
+          if (width > 0 && height > 0 && x <= edgeWidthPx) {
             activeSide = -1;
-          } else if (x >= width - edgeWidthPx) {
-            activeSide = 1;
+          }
+        } else {
+          // Exclude the bottom player seekbar / transport region so scrubbing near 0:00 or track end never triggers dismiss
+          if (width > 0 && height > 0 && y < Math.max(height * 0.65f, height - bottomControlsSafePx)) {
+            if (x <= edgeWidthPx) {
+              activeSide = -1;
+            } else if (x >= width - edgeWidthPx) {
+              activeSide = 1;
+            }
           }
         }
         downRawX = ev.getRawX();
@@ -265,6 +293,14 @@ public class EdgeSwipeView extends ReactViewGroup {
 
   private void applyDragTransform(float inwardDx) {
     float progress = Math.max(0f, Math.min(1f, inwardDx / maxDragDistancePx));
+    if (MODE_SLIDE.equals(mode)) {
+      float scale = 1f - 0.05f * progress;
+      setScaleX(scale);
+      setScaleY(scale);
+      setTranslationX(slideMaxTranslateXPx * progress);
+      setTranslationY(0f);
+      return;
+    }
     float scale = 1f - (1f - MIN_SCALE) * progress;
     float txDirection = activeSide == -1 ? 1f : -1f;
     setScaleX(scale);

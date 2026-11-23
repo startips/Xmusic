@@ -7,7 +7,7 @@ import Horizontal from './Horizontal'
 import PageContent from '@/components/PageContent'
 import StatusBar from '@/components/common/StatusBar'
 import EdgeSwipeContainer, { type EdgeSwipeContainerRef } from '@/components/common/EdgeSwipeContainer'
-import { setComponentId } from '@/core/common'
+import { removeComponentId, setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
 import commonState from '@/store/common/state'
 import { navigations } from '@/navigation'
@@ -25,6 +25,7 @@ export default ({ componentId }: { componentId: string }) => {
     })
     return () => {
       registerPlayDetailMinimizePreparer(null)
+      removeComponentId(componentId)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -46,6 +47,7 @@ export default ({ componentId }: { componentId: string }) => {
       ref={edgeSwipeRef}
       edgeWidth={24}
       dismissDistance={64}
+      mode="minimize"
       onEdgeDismiss={triggerDismiss}
       style={{ flex: 1 }}
     >

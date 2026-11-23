@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import { Animated, Easing, PanResponder, StyleSheet, View } from 'react-native'
 
 import Modal, { type ModalType } from './Modal'
@@ -6,12 +6,27 @@ import { useKeyboard } from '@/utils/hooks'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
-import { useNavigationBarHeight, useStatusbarHeight } from '@/store/common/hook'
+import { useNavigationBarHeight, useSafeAreaInsets, useStatusbarHeight } from '@/store/common/hook'
 import { M3Motion, M3Radius } from '@/theme/m3'
 import { windowSizeTools } from '@/utils/windowSizeTools'
 import { ExpressiveIconButton } from './m3e/ExpressiveButton'
 
-const getSheetOffscreenY = () => Math.max(Math.round(windowSizeTools.getSize().height * 0.85), 680)
+type PopupPosition = 'top' | 'left' | 'right' | 'bottom'
+
+const getOffscreenOffset = (position: PopupPosition) => {
+  const { width, height } = windowSizeTools.getSize()
+  switch (position) {
+    case 'top':
+      return -Math.max(Math.round(height * 0.85), 680)
+    case 'left':
+      return -Math.max(Math.round(width * 0.82), 520)
+    case 'right':
+      return Math.max(Math.round(width * 0.82), 520)
+    case 'bottom':
+    default:
+      return Math.max(Math.round(height * 0.85), 680)
+  }
+}
 
 const styles = createStyle({
   centeredView: {
@@ -77,69 +92,83 @@ export default forwardRef<PopupType, PopupProps>(({
   const { keyboardShown, keyboardHeight } = useKeyboard()
   const statusBarHeight = useStatusbarHeight()
   const navBarHeight = useNavigationBarHeight()
-  const dragY = useRef(new Animated.Value(0)).current
-  const scrimOpacity = useMemo(() => dragY.interpolate({
-    inputRange: [0, 520],
-    outputRange: [1, 0],
+  const safeInsets = useSafeAreaInsets()
+  const slideOffset = useRef(new Animated.Value(0)).current
+  const scrimOpacity = useMemo(() => slideOffset.interpolate({
+    inputRange: [-520, 0, 520],
+    outputRange: [0, 1, 0],
     extrapolate: 'clamp',
-  }), [dragY])
+  }), [slideOffset])
 
   const modalRef = useRef<ModalType>(null)
   const isOpenRef = useRef(false)
   const isClosingRef = useRef(false)
+  const openRafRef = useRef<number | null>(null)
+
+  const cancelPendingOpenRaf = useCallback(() => {
+    if (openRafRef.current != null) {
+      cancelAnimationFrame(openRafRef.current)
+      openRafRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      cancelPendingOpenRaf()
+    }
+  }, [cancelPendingOpenRaf])
 
   const handleModalHide = useCallback(() => {
+    cancelPendingOpenRaf()
     isOpenRef.current = false
     isClosingRef.current = false
     onHide()
-  }, [onHide])
+  }, [cancelPendingOpenRaf, onHide])
 
   const dismissSheet = useCallback(() => {
-    if (position === 'bottom' && isOpenRef.current) {
-      if (isClosingRef.current) return
-      isClosingRef.current = true
-      const offY = getSheetOffscreenY()
-      Animated.timing(dragY, {
-        toValue: offY,
-        duration: 200,
-        easing: Easing.bezier(0.3, 0, 0.8, 0.15),
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        isClosingRef.current = false
-        if (!finished) return
-        isOpenRef.current = false
-        modalRef.current?.setVisible(false)
-        dragY.setValue(offY)
-      })
-    } else {
+    cancelPendingOpenRaf()
+    if (!isOpenRef.current) {
       isClosingRef.current = false
+      modalRef.current?.setVisible(false)
+      return
+    }
+    if (isClosingRef.current) return
+    isClosingRef.current = true
+    slideOffset.stopAnimation()
+    const offVal = getOffscreenOffset(position)
+    Animated.timing(slideOffset, {
+      toValue: offVal,
+      duration: 200,
+      easing: Easing.bezier(0.3, 0, 0.8, 0.15),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      isClosingRef.current = false
+      if (!finished) return
       isOpenRef.current = false
       modalRef.current?.setVisible(false)
-    }
-  }, [dragY, position])
+      slideOffset.setValue(offVal)
+    })
+  }, [cancelPendingOpenRaf, position, slideOffset])
 
   useImperativeHandle(ref, () => ({
     setVisible(visible: boolean) {
       if (visible) {
+        cancelPendingOpenRaf()
         isClosingRef.current = false
         isOpenRef.current = true
-        dragY.stopAnimation()
-        if (position === 'bottom') {
-          const offY = getSheetOffscreenY()
-          dragY.setValue(offY)
-          modalRef.current?.setVisible(true)
-          requestAnimationFrame(() => {
-            Animated.timing(dragY, {
-              toValue: 0,
-              duration: 280,
-              easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
-              useNativeDriver: true,
-            }).start()
-          })
-        } else {
-          dragY.setValue(0)
-          modalRef.current?.setVisible(true)
-        }
+        slideOffset.stopAnimation()
+        const offVal = getOffscreenOffset(position)
+        slideOffset.setValue(offVal)
+        modalRef.current?.setVisible(true)
+        openRafRef.current = requestAnimationFrame(() => {
+          openRafRef.current = null
+          Animated.timing(slideOffset, {
+            toValue: 0,
+            duration: 280,
+            easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
+            useNativeDriver: true,
+          }).start()
+        })
       } else {
         dismissSheet()
       }
@@ -151,13 +180,13 @@ export default forwardRef<PopupType, PopupProps>(({
     onMoveShouldSetPanResponder: (_evt, gestureState) =>
       position === 'bottom' && gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
     onPanResponderMove: (_evt, gestureState) => {
-      dragY.setValue(Math.max(0, gestureState.dy))
+      slideOffset.setValue(Math.max(0, gestureState.dy))
     },
     onPanResponderRelease: (_evt, gestureState) => {
       if (gestureState.dy > 72 || gestureState.vy > 0.7) {
         isClosingRef.current = true
-        const offY = getSheetOffscreenY()
-        Animated.timing(dragY, {
+        const offY = getOffscreenOffset('bottom')
+        Animated.timing(slideOffset, {
           toValue: offY,
           duration: 180,
           easing: Easing.bezier(0.3, 0, 0.8, 0.15),
@@ -167,22 +196,22 @@ export default forwardRef<PopupType, PopupProps>(({
           if (!finished) return
           isOpenRef.current = false
           modalRef.current?.setVisible(false)
-          dragY.setValue(offY)
+          slideOffset.setValue(offY)
         })
       } else {
-        Animated.spring(dragY, {
+        Animated.spring(slideOffset, {
           toValue: 0,
           ...M3Motion.spatialFast,
         }).start()
       }
     },
     onPanResponderTerminate: () => {
-      Animated.spring(dragY, {
+      Animated.spring(slideOffset, {
         toValue: 0,
         ...M3Motion.spatialFast,
       }).start()
     },
-  }), [dragY, position])
+  }), [position, slideOffset])
 
   const closeBtnComponent = useMemo(() => closeBtn
     ? <ExpressiveIconButton
@@ -212,6 +241,10 @@ export default forwardRef<PopupType, PopupProps>(({
             maxHeight: '78%',
             minHeight: '20%',
             paddingTop: statusBarHeight,
+            paddingLeft: safeInsets.left,
+            paddingRight: safeInsets.right,
+            borderBottomLeftRadius: M3Radius.xl,
+            borderBottomRightRadius: M3Radius.xl,
           },
         ] as const
       case 'left':
@@ -230,7 +263,10 @@ export default forwardRef<PopupType, PopupProps>(({
             maxWidth: '78%',
             height: '100%',
             paddingTop: statusBarHeight,
-            paddingBottom: navBarHeight,
+            paddingLeft: safeInsets.left,
+            paddingBottom: Math.max(navBarHeight, safeInsets.bottom),
+            borderTopRightRadius: M3Radius.xl,
+            borderBottomRightRadius: M3Radius.xl,
           },
         ] as const
       case 'right':
@@ -249,7 +285,10 @@ export default forwardRef<PopupType, PopupProps>(({
             maxWidth: '78%',
             height: '100%',
             paddingTop: statusBarHeight,
-            paddingBottom: navBarHeight,
+            paddingRight: safeInsets.right,
+            paddingBottom: Math.max(navBarHeight, safeInsets.bottom),
+            borderTopLeftRadius: M3Radius.xl,
+            borderBottomLeftRadius: M3Radius.xl,
           },
         ] as const
       case 'bottom':
@@ -267,43 +306,45 @@ export default forwardRef<PopupType, PopupProps>(({
             width: '100%',
             maxHeight: '82%',
             minHeight: '20%',
-            paddingBottom: keyboardShown ? 8 : Math.max(12, navBarHeight + 8),
+            paddingLeft: safeInsets.left,
+            paddingRight: safeInsets.right,
+            paddingBottom: keyboardShown ? 8 : Math.max(12, Math.max(navBarHeight, safeInsets.bottom) + 8),
             borderTopLeftRadius: M3Radius.xl,
             borderTopRightRadius: M3Radius.xl,
           },
         ] as const
     }
-  }, [keyboardShown, navBarHeight, position, statusBarHeight])
+  }, [keyboardShown, navBarHeight, position, safeInsets.bottom, safeInsets.left, safeInsets.right, statusBarHeight])
+
+  const sheetTransform = (position === 'left' || position === 'right')
+    ? [{ translateX: slideOffset }]
+    : [{ translateY: slideOffset }]
 
   return (
     <Modal
-      animationType={position === 'bottom' ? 'none' : 'fade'}
+      animationType="none"
       onHide={handleModalHide}
-      onRequestDismiss={position === 'bottom' ? dismissSheet : undefined}
+      onRequestDismiss={dismissSheet}
       keyHide={keyHide}
       bgHide={bgHide}
       statusBarPadding={false}
-      bgColor={position === 'bottom' ? 'rgba(0,0,0,0)' : theme['m3-scrim']}
+      bgColor="rgba(0,0,0,0)"
       ref={modalRef}
     >
       <View style={{ ...styles.centeredView, ...centeredViewStyle, paddingBottom: keyboardShown ? keyboardHeight : 0 }}>
-        {position === 'bottom'
-          ? (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  StyleSheet.absoluteFill,
-                  { backgroundColor: theme['m3-scrim'], opacity: scrimOpacity },
-                ]}
-              />
-            )
-          : null}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: theme['m3-scrim'], opacity: scrimOpacity },
+          ]}
+        />
         <Animated.View
           style={{
             ...styles.modalView,
             ...modalViewStyle,
             backgroundColor: theme['m3-surface-container-low'],
-            transform: position === 'bottom' ? [{ translateY: dragY }] : undefined,
+            transform: sheetTransform,
           }}
           onStartShouldSetResponder={() => true}
         >

@@ -79,6 +79,7 @@ export default memo(({ componentId }: { componentId: string }) => {
     <EdgeSwipeContainer
       edgeWidth={24}
       dismissDistance={64}
+      mode="slide"
       onEdgeDismiss={handleBack}
       style={{ ...styles.edgeWrap, backgroundColor: theme['m3-background'] }}
     >

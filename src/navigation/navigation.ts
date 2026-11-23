@@ -23,6 +23,14 @@ const getScreenSurfaceBackground = (theme: LX.ActiveTheme) => {
   return toOpaqueColor(theme['c-main-background'] || theme['c-content-background'])
 }
 
+const navPushLocks: Record<string, number> = {}
+const acquireNavPushLock = (key: string, lockMs = 420): boolean => {
+  const now = Date.now()
+  if (navPushLocks[key] != null && now - navPushLocks[key] < lockMs) return false
+  navPushLocks[key] = now
+  return true
+}
+
 /**
  * Sync Android system status/navigation bar appearance with the active theme and screen layout.
  */
@@ -133,7 +141,7 @@ const buildPlayDetailPopAnimation = (winWidth: number, winHeight: number) => {
   const safeW = Math.max(winWidth, 320)
   const safeH = Math.max(winHeight, 320)
   const horizontal = isHorizontalMode(safeW, safeH)
-  const measured = getPlayerBarPicRect()
+  const measured = getPlayerBarPicRect(safeW, safeH)
   const rect = measured && measured.width > 0 && measured.height > 0 && measured.y < safeH
     ? measured
     : {
@@ -198,6 +206,7 @@ export function popPlayDetailScreen(componentId: string) {
 }
 
 export function pushPlayDetailScreen(componentId: string, skipAnimation = false) {
+  if (Boolean(commonState.componentIds.playDetail) || !acquireNavPushLock('playDetail')) return
   /*
     Navigation.setDefaultOptions({
       topBar: {
@@ -258,6 +267,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
           },
           animations: {
             push: skipAnimation ? {} : {
+              waitForRender: true,
               sharedElementTransitions: [
                 {
                   fromId: NAV_SHEAR_NATIVE_IDS.playDetail_pic,
@@ -313,6 +323,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
   })
 }
 export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem) {
+  if (Boolean(commonState.componentIds.songlistDetail) || !acquireNavPushLock('songlistDetail')) return
   const theme = themeState.theme
 
   requestAnimationFrame(() => {
@@ -343,6 +354,7 @@ export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem
           },
           animations: {
             push: {
+              waitForRender: true,
               sharedElementTransitions: [
                 {
                   fromId: `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${info.id}`,
@@ -468,6 +480,7 @@ const buildPageSlidePopAnimation = (winWidth: number) => {
 }
 
 export function pushCommentScreen(componentId: string) {
+  if (Boolean(commonState.componentIds.comment) || !acquireNavPushLock('comment')) return
   /*
     Navigation.setDefaultOptions({
       topBar: {
@@ -537,6 +550,7 @@ export function pushCommentScreen(componentId: string) {
 }
 
 export function pushSettingScreen(componentId: string) {
+  if (Boolean(commonState.componentIds.setting) || !acquireNavPushLock('setting')) return
   requestAnimationFrame(() => {
     const theme = themeState.theme
     const winWidth = Math.max(windowSizeTools.getSize().width, 320)

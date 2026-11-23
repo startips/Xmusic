@@ -5,6 +5,8 @@ import Text from '@/components/common/Text'
 import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
+import commonState, { type InitState as CommonState } from '@/store/common/state'
+import { COMPONENT_IDS } from '@/config/constant'
 import { useBackHandler } from '@/utils/hooks/useBackHandler'
 import { createStyle } from '@/utils/tools'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
@@ -21,6 +23,8 @@ export interface MultiSelectBarProps {
   slideFrom?: number
   wrapperStyle?: ViewStyle
   barStyle?: ViewStyle
+  activeTabId?: CommonState['navActiveId']
+  hostScreen?: COMPONENT_IDS
 }
 
 export interface MultiSelectBarType {
@@ -43,6 +47,8 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
   slideFrom = -18,
   wrapperStyle,
   barStyle,
+  activeTabId,
+  hostScreen = COMPONENT_IDS.home,
 }, ref) => {
   const [visible, setVisible] = useState(false)
   const [animatePlayed, setAnimatePlayed] = useState(true)
@@ -57,9 +63,16 @@ export default forwardRef<MultiSelectBarType, MultiSelectBarProps>(({
 
   useBackHandler(useCallback(() => {
     if (!visible || !visibleBar) return false
+    const ids = commonState.componentIds
+    if (hostScreen === COMPONENT_IDS.home) {
+      if (ids.songlistDetail ?? ids.setting ?? ids.playDetail ?? ids.comment) return false
+      if (activeTabId && commonState.navActiveId !== activeTabId) return false
+    } else if (hostScreen === COMPONENT_IDS.songlistDetail) {
+      if (ids.playDetail ?? ids.comment) return false
+    }
     onExitSelectMode()
     return true
-  }, [onExitSelectMode, visible, visibleBar]))
+  }, [activeTabId, hostScreen, onExitSelectMode, visible, visibleBar]))
 
   useEffect(() => {
     return () => {

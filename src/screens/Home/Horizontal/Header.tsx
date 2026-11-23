@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Animated, Easing, View } from 'react-native'
 import { useNavActiveId, useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
@@ -24,7 +24,7 @@ const useHorizontalHeaderMotion = (id: CommonState['navActiveId']) => {
   const translateY = useRef(new Animated.Value(0)).current
   const opacity = useRef(new Animated.Value(1)).current
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (prevIdRef.current === id) return
     const prevIdx = HOME_NAV_INDEX_MAP[prevIdRef.current] ?? 0
     const nextIdx = HOME_NAV_INDEX_MAP[id] ?? 0

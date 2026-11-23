@@ -1,9 +1,8 @@
 import { memo, useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, View } from 'react-native'
+import { Animated, Pressable, StyleSheet, View } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
 import { hapticTick } from '@/utils/haptics'
-import { createStyle } from '@/utils/tools'
 
 export interface ExpressiveSwitchProps {
   value: boolean
@@ -76,7 +75,7 @@ export default memo(({ value, onValueChange, disabled = false }: ExpressiveSwitc
   )
 })
 
-const styles = createStyle({
+const styles = StyleSheet.create({
   track: {
     width: 48,
     height: 28,

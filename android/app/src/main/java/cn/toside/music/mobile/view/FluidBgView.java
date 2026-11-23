@@ -11,6 +11,8 @@ import android.graphics.RadialGradient;
 import android.graphics.Shader;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
 import java.util.Arrays;
 
 /**
@@ -32,6 +34,7 @@ public class FluidBgView extends View {
   private final Paint basePaint = new Paint(Paint.DITHER_FLAG);
   private final Paint[] orbPaints = new Paint[ORB_COUNT];
   private final RadialGradient[] orbShaders = new RadialGradient[ORB_COUNT];
+  private final int[] builtOrbColors = new int[ORB_COUNT];
   private final Matrix shaderMatrix = new Matrix();
   private final Paint noisePaint = new Paint(Paint.DITHER_FLAG);
   private final int[] scratchStopColors = new int[5];
@@ -155,7 +158,7 @@ public class FluidBgView extends View {
   }
 
   private boolean shouldAnimate() {
-    return isAttached && windowVisible && (playing || transitionActive);
+    return isAttached && windowVisible && isShown() && (playing || transitionActive);
   }
 
   private void scheduleNextFrameIfNeeded() {
@@ -191,9 +194,20 @@ public class FluidBgView extends View {
     }
   }
 
+  @Override
+  protected void onVisibilityChanged(@NonNull View changedView, int visibility) {
+    super.onVisibilityChanged(changedView, visibility);
+    lastFrameNs = 0L;
+    if (visibility == VISIBLE) {
+      scheduleNextFrameIfNeeded();
+    }
+  }
+
   private void rebuildOrbShaders() {
     for (int i = 0; i < ORB_COUNT; i++) {
       int c = currentOrbColors[i];
+      if (orbShaders[i] != null && builtOrbColors[i] == c) continue;
+      builtOrbColors[i] = c;
       int baseAlpha = Color.alpha(c);
       int r = Color.red(c);
       int g = Color.green(c);
@@ -206,7 +220,7 @@ public class FluidBgView extends View {
         0f,
         0f,
         1f,
-        scratchStopColors.clone(),
+        scratchStopColors,
         GRADIENT_STOPS,
         Shader.TileMode.CLAMP
       );

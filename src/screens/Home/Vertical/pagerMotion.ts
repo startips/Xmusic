@@ -18,24 +18,46 @@ export const HOME_NAV_INDEX_MAP: Record<CommonState['navActiveId'], number> = {
 const initialIndex = HOME_NAV_INDEX_MAP[commonState.navActiveId] ?? 0
 
 export const homePillProgress = new Animated.Value(initialIndex)
+export const homePillStretch = new Animated.Value(0)
 export const homeSwipeProgress = new Animated.Value(initialIndex)
 
 export const animateHomePillToIndex = (targetIndex: number) => {
   homeSwipeProgress.setValue(targetIndex)
-  Animated.spring(homePillProgress, {
-    toValue: targetIndex,
-    damping: 19,
-    stiffness: 290,
-    mass: 0.76,
-    useNativeDriver: true,
-  }).start()
+  homePillStretch.stopAnimation()
+  homePillStretch.setValue(0)
+  Animated.parallel([
+    Animated.spring(homePillProgress, {
+      toValue: targetIndex,
+      damping: 19,
+      stiffness: 290,
+      mass: 0.76,
+      useNativeDriver: true,
+    }),
+    Animated.sequence([
+      Animated.timing(homePillStretch, {
+        toValue: 1,
+        duration: 95,
+        useNativeDriver: true,
+      }),
+      Animated.spring(homePillStretch, {
+        toValue: 0,
+        damping: 16,
+        stiffness: 280,
+        mass: 0.75,
+        useNativeDriver: true,
+      }),
+    ]),
+  ]).start()
 }
 
 export const syncHomePagerGestureProgress = (progress: number) => {
   homePillProgress.setValue(progress)
   homeSwipeProgress.setValue(progress)
+  const frac = progress - Math.floor(progress)
+  homePillStretch.setValue(4 * frac * (1 - frac))
 }
 
 export const stopHomePillAnimation = () => {
   homePillProgress.stopAnimation()
+  homePillStretch.stopAnimation()
 }

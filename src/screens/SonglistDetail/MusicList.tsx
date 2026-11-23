@@ -5,22 +5,29 @@ import songlistState from '@/store/songlist/state'
 import { handlePlay } from './listAction'
 import Header, { type HeaderType } from './Header'
 import { useListInfo } from './state'
+import { COMPONENT_IDS } from '@/config/constant'
 
 export interface MusicListProps {
   componentId: string
+  onBack?: () => void
+  onMultiSelectChange?: (active: boolean) => void
 }
 
 export interface MusicListType {
   loadList: (source: LX.OnlineSource, listId: string) => void
+  exitSelectMode: () => void
 }
 
-export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) => {
+export default forwardRef<MusicListType, MusicListProps>(({ componentId, onBack, onMultiSelectChange }, ref) => {
   const listRef = useRef<OnlineListType>(null)
   const headerRef = useRef<HeaderType>(null)
   const isUnmountedRef = useRef(false)
   const info = useListInfo()
 
   useImperativeHandle(ref, () => ({
+    exitSelectMode() {
+      listRef.current?.exitSelectMode()
+    },
     async loadList(source, id) {
       clearListDetail()
       const listDetailInfo = songlistState.listDetailInfo
@@ -110,7 +117,7 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const header = useMemo(() => <Header ref={headerRef} componentId={componentId} />, [])
+  const header = useMemo(() => <Header ref={headerRef} componentId={componentId} onBack={onBack} />, [onBack])
 
   return <OnlineList
     ref={listRef}
@@ -118,6 +125,8 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
     onRefresh={handleRefresh}
     onLoadMore={handleLoadMore}
     ListHeaderComponent={header}
+    hostScreen={COMPONENT_IDS.songlistDetail}
+    onMultiSelectChange={onMultiSelectChange}
     // progressViewOffset={}
    />
 })

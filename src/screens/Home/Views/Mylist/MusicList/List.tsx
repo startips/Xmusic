@@ -64,6 +64,8 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
   rowNumRef.current = rowInfo.rowNum ?? 1
   const isShowAlbumName = useSettingValue('list.isShowAlbumName')
   const isShowInterval = useSettingValue('list.isShowInterval')
+  const onSelectAllRef = useRef(onSelectAll)
+  onSelectAllRef.current = onSelectAll
   // console.log('render music list')
 
   useImperativeHandle(ref, () => ({
@@ -115,8 +117,11 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
       void Promise.all([getListMusics(id), getListPosition(id)]).then(([list, position]) => {
         requestAnimationFrame(() => {
           if (currentListIdRef.current != id) return
-          selectedListRef.current = []
-          setSelectedList([])
+          if (selectedListRef.current.length) {
+            selectedListRef.current = []
+            setSelectedList([])
+            onSelectAllRef.current(false)
+          }
           setList([...list])
           requestAnimationFrame(() => {
             isUpdateingList = false
@@ -140,8 +145,11 @@ const List = forwardRef<ListType, ListProps>(({ onShowMenu, onMuiltSelectMode, o
       const id = listState.activeListId
       void getListMusics(id).then((list) => {
         if (currentListIdRef.current != id) return
-        selectedListRef.current = []
-        setSelectedList([])
+        if (selectedListRef.current.length) {
+          selectedListRef.current = []
+          setSelectedList([])
+          onSelectAllRef.current(false)
+        }
         setList([...list])
       })
     }

@@ -8,6 +8,8 @@ import ListMusicAdd, { type MusicAddModalType as ListMusicAddType } from '@/comp
 import MultipleModeBar, { type MultipleModeBarType, type SelectMode } from './MultipleModeBar'
 import { clearMusicUrl, handleDislikeMusic, handlePlay, handlePlayLater, handleShare, handleShowMusicSourceDetail } from './listAction'
 import { createStyle } from '@/utils/tools'
+import { type COMPONENT_IDS } from '@/config/constant'
+import { type InitState as CommonState } from '@/store/common/state'
 
 export interface OnlineListProps {
   onRefresh: ListProps['onRefresh']
@@ -17,10 +19,14 @@ export interface OnlineListProps {
   ListHeaderComponent?: ListProps['ListHeaderComponent']
   checkHomePagerIdle?: boolean
   rowType?: RowInfoType
+  activeTabId?: CommonState['navActiveId']
+  hostScreen?: COMPONENT_IDS
+  onMultiSelectChange?: (active: boolean) => void
 }
 export interface OnlineListType {
   setList: (list: LX.Music.MusicInfoOnline[], isAppend?: boolean, showSource?: boolean) => void
   setStatus: (val: Status) => void
+  exitSelectMode: () => void
 }
 
 export default forwardRef<OnlineListType, OnlineListProps>(({
@@ -31,6 +37,9 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
   ListHeaderComponent,
   checkHomePagerIdle = false,
   rowType,
+  activeTabId,
+  hostScreen,
+  onMultiSelectChange,
 }, ref) => {
   const listRef = useRef<ListType>(null)
   const multipleModeBarRef = useRef<MultipleModeBarType>(null)
@@ -38,6 +47,21 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
   const listMusicMultiAddRef = useRef<ListAddMultiType>(null)
   const listMenuRef = useRef<ListMenuType>(null)
   // const loadingMaskRef = useRef<LoadingMaskType>(null)
+
+  const hancelMultiSelect = () => {
+    multipleModeBarRef.current?.show()
+    listRef.current?.setIsMultiSelectMode(true)
+    onMultiSelectChange?.(true)
+  }
+  const hancelSwitchSelectMode = (mode: SelectMode) => {
+    multipleModeBarRef.current?.setSwitchMode(mode)
+    listRef.current?.setSelectMode(mode)
+  }
+  const hancelExitSelect = () => {
+    multipleModeBarRef.current?.exitSelectMode()
+    listRef.current?.setIsMultiSelectMode(false)
+    onMultiSelectChange?.(false)
+  }
 
   useImperativeHandle(ref, () => ({
     setList(list, isAppend = false, showSource = false) {
@@ -47,20 +71,10 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
     setStatus(val) {
       listRef.current?.setStatus(val)
     },
+    exitSelectMode() {
+      hancelExitSelect()
+    },
   }))
-
-  const hancelMultiSelect = () => {
-    multipleModeBarRef.current?.show()
-    listRef.current?.setIsMultiSelectMode(true)
-  }
-  const hancelSwitchSelectMode = (mode: SelectMode) => {
-    multipleModeBarRef.current?.setSwitchMode(mode)
-    listRef.current?.setSelectMode(mode)
-  }
-  const hancelExitSelect = () => {
-    multipleModeBarRef.current?.exitSelectMode()
-    listRef.current?.setIsMultiSelectMode(false)
-  }
 
   const showMenu = (musicInfo: LX.Music.MusicInfoOnline, index: number, position: Position) => {
     listMenuRef.current?.show({
@@ -107,6 +121,8 @@ export default forwardRef<OnlineListType, OnlineListProps>(({
         />
         <MultipleModeBar
           ref={multipleModeBarRef}
+          activeTabId={activeTabId}
+          hostScreen={hostScreen}
           onSwitchMode={hancelSwitchSelectMode}
           onSelectAll={isAll => listRef.current?.selectAll(isAll)}
           onExitSelectMode={hancelExitSelect}

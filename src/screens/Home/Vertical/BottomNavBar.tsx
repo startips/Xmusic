@@ -15,7 +15,7 @@ import { windowSizeTools } from '@/utils/windowSizeTools'
 import { Icon } from '@/components/common/Icon'
 import Text from '@/components/common/Text'
 import { M3Motion, M3Radius } from '@/theme/m3'
-import { homePillProgress } from './pagerMotion'
+import { homePillProgress, homePillStretch } from './pagerMotion'
 
 type BottomNavId = typeof BOTTOM_NAV_MENUS[number]['id']
 
@@ -116,15 +116,15 @@ export default memo(() => {
     extrapolate: 'clamp',
   }), [slotWidth])
 
-  const pillScaleX = useMemo(() => homePillProgress.interpolate({
-    inputRange: [0, 0.5, 1, 1.5, 2, 2.5, 3],
-    outputRange: [1, 1.22, 1, 1.22, 1, 1.22, 1],
+  const pillScaleX = useMemo(() => homePillStretch.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.22],
     extrapolate: 'clamp',
   }), [])
 
-  const pillScaleY = useMemo(() => homePillProgress.interpolate({
-    inputRange: [0, 0.5, 1, 1.5, 2, 2.5, 3],
-    outputRange: [1, 0.88, 1, 0.88, 1, 0.88, 1],
+  const pillScaleY = useMemo(() => homePillStretch.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.88],
     extrapolate: 'clamp',
   }), [])
 

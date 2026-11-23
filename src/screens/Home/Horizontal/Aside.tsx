@@ -14,7 +14,7 @@ import { navigations } from '@/navigation'
 import { M3Motion, M3Radius } from '@/theme/m3'
 import { hapticTick } from '@/utils/haptics'
 import { scaleSizeH, scaleSizeW } from '@/utils/pixelRatio'
-import { homePillProgress } from '../Vertical/pagerMotion'
+import { homePillProgress, homePillStretch } from '../Vertical/pagerMotion'
 
 const NAV_WIDTH = 74
 const SCALED_NAV_WIDTH = scaleSizeW(NAV_WIDTH)
@@ -145,15 +145,15 @@ export default memo(() => {
     extrapolate: 'clamp',
   }), [])
 
-  const pillScaleY = useMemo(() => homePillProgress.interpolate({
-    inputRange: [0, 0.5, 1, 1.5, 2, 2.5, 3],
-    outputRange: [1, 1.18, 1, 1.18, 1, 1.18, 1],
+  const pillScaleY = useMemo(() => homePillStretch.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.18],
     extrapolate: 'clamp',
   }), [])
 
-  const pillScaleX = useMemo(() => homePillProgress.interpolate({
-    inputRange: [0, 0.5, 1, 1.5, 2, 2.5, 3],
-    outputRange: [1, 0.9, 1, 0.9, 1, 0.9, 1],
+  const pillScaleX = useMemo(() => homePillStretch.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.9],
     extrapolate: 'clamp',
   }), [])
 

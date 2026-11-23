@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 
 import Progress, { ProgressPlain } from '@/components/player/Progress'
@@ -7,8 +7,8 @@ import { usePlayerMusicInfo, useProgress } from '@/store/player/hook'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
-import { COMPONENT_IDS, LIST_IDS } from '@/config/constant'
-import { usePageVisible } from '@/store/common/hook'
+import { LIST_IDS } from '@/config/constant'
+import commonState, { type InitState as CommonState } from '@/store/common/state'
 import { scaleSizeH, scaleSizeW, scaleSizeWR } from '@/utils/pixelRatio'
 import { useBufferProgress } from '@/plugins/player'
 import { useSettingValue } from '@/store/setting/hook'
@@ -23,17 +23,31 @@ const PADDING_TOP = Math.round(scaleSizeWR(PADDING_TOP_RAW))
 const MARGIN_TOP = Math.round(scaleSizeH(2))
 const PADDING_TOP_PROGRESS = PADDING_TOP + MARGIN_TOP
 
+const checkPlayInfoVisible = (ids: CommonState['componentIds'], isHome: boolean) => {
+  if (isHome) {
+    return !ids.songlistDetail && !ids.setting && !ids.playDetail && !ids.comment
+  }
+  return !ids.playDetail && !ids.comment
+}
+
 export default ({ isHome }: { isHome: boolean }) => {
   const theme = useTheme()
   const musicInfo = usePlayerMusicInfo()
-  const [autoUpdate, setAutoUpdate] = useState(true)
+  const [autoUpdate, setAutoUpdate] = useState(() => checkPlayInfoVisible(commonState.componentIds, isHome))
   const { maxPlayTimeStr, nowPlayTimeStr, progress, maxPlayTime } = useProgress(autoUpdate)
   const buffered = useBufferProgress()
   const allowProgressBarSeek = useSettingValue('common.allowProgressBarSeek')
 
-  usePageVisible([COMPONENT_IDS.home], useCallback((visible) => {
-    if (isHome) setAutoUpdate(visible)
-  }, [isHome]))
+  useEffect(() => {
+    const handleComponentIdsUpdated = (ids: CommonState['componentIds']) => {
+      setAutoUpdate(checkPlayInfoVisible(ids, isHome))
+    }
+    setAutoUpdate(checkPlayInfoVisible(commonState.componentIds, isHome))
+    global.state_event.on('componentIdsUpdated', handleComponentIdsUpdated)
+    return () => {
+      global.state_event.off('componentIdsUpdated', handleComponentIdsUpdated)
+    }
+  }, [isHome])
 
   const handleOpenDetail = () => {
     if (!musicInfo.id) return

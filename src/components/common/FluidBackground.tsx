@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { processColor, requireNativeComponent, StyleSheet, type ViewProps } from 'react-native'
 
 import { useIsPlay } from '@/store/player/hook'
@@ -17,6 +17,12 @@ const NativeFluidBgView = requireNativeComponent<NativeFluidBgProps>('XmusicFlui
 const DARK_ALPHAS = [0.38, 0.31, 0.26, 0.22] as const
 const LIGHT_ALPHAS = [0.24, 0.19, 0.16, 0.13] as const
 
+const mountedFluidStack: symbol[] = []
+const stackListeners = new Set<() => void>()
+const notifyStackListeners = () => {
+  for (const listener of [...stackListeners]) listener()
+}
+
 const toNativeArgb = (r: number, g: number, b: number, alpha: number): number => {
   const rgba = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`
   return (processColor(rgba) as number) ?? 0
@@ -27,6 +33,38 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
   const coverPalette = useCoverPalette()
   const isDynamicCoverColor = useSettingValue('theme.dynamicCoverColor')
   const isPlay = useIsPlay()
+  const instanceId = useRef(Symbol('FluidBackground')).current
+  const [isTopmost, setIsTopmost] = useState(true)
+  const [isActive, setIsActive] = useState(true)
+
+  useEffect(() => {
+    mountedFluidStack.push(instanceId)
+    const syncTop = () => {
+      setIsTopmost(mountedFluidStack[mountedFluidStack.length - 1] === instanceId)
+    }
+    stackListeners.add(syncTop)
+    notifyStackListeners()
+
+    return () => {
+      stackListeners.delete(syncTop)
+      const idx = mountedFluidStack.indexOf(instanceId)
+      if (idx >= 0) mountedFluidStack.splice(idx, 1)
+      notifyStackListeners()
+    }
+  }, [instanceId])
+
+  useEffect(() => {
+    if (isTopmost) {
+      setIsActive(true)
+      return
+    }
+    const timer = setTimeout(() => {
+      setIsActive(false)
+    }, 340)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [isTopmost])
 
   const baseColor = useMemo(() => {
     return (processColor(theme['m3-background']) as number) ?? 0
@@ -62,7 +100,7 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
       pointerEvents="none"
       baseColor={baseColor}
       colors={orbColors}
-      playing={isPlay}
+      playing={isPlay && isActive}
       style={[StyleSheet.absoluteFill, style]}
     />
   )

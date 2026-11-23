@@ -1,10 +1,11 @@
 import { useImperativeHandle, forwardRef, useState, useMemo, useRef } from 'react'
 import { Modal, Platform, TouchableWithoutFeedback, UIManager, View, type ViewProps, type ModalProps as _ModalProps, requireNativeComponent } from 'react-native'
 import { useStatusbarHeight } from '@/store/common/hook'
+import { useTheme } from '@/store/theme/hook'
 
 const EDGE_MODAL_VIEW = 'XmusicEdgeToEdgeModalView'
 const NativeEdgeToEdgeModalView = Platform.OS === 'android' && UIManager.getViewManagerConfig(EDGE_MODAL_VIEW) != null
-  ? requireNativeComponent<ViewProps>(EDGE_MODAL_VIEW)
+  ? requireNativeComponent<ViewProps & { darkStatusBarIcons?: boolean }>(EDGE_MODAL_VIEW)
   : null
 
 export interface ModalProps extends Omit<_ModalProps, 'visible'> {
@@ -45,6 +46,7 @@ export default forwardRef<ModalType, ModalProps>(({
   const [visible, setVisible] = useState(false)
   const visibleRef = useRef(false)
   const statusBarHeight = useStatusbarHeight()
+  const theme = useTheme()
 
   const closeModal = () => {
     if (!visibleRef.current) return
@@ -87,7 +89,9 @@ export default forwardRef<ModalType, ModalProps>(({
     >
       <TouchableWithoutFeedback onPress={handleBgClose}>
         <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: statusBarPadding ? statusBarHeight : 0 }}>
-          {NativeEdgeToEdgeModalView ? <NativeEdgeToEdgeModalView pointerEvents="none" style={{ position: 'absolute', width: 0, height: 0 }} /> : null}
+          {NativeEdgeToEdgeModalView
+            ? <NativeEdgeToEdgeModalView pointerEvents="none" darkStatusBarIcons={!theme.isDark} style={{ position: 'absolute', width: 0, height: 0 }} />
+            : null}
           {memoChildren}
         </View>
       </TouchableWithoutFeedback>

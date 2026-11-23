@@ -121,6 +121,7 @@ const Main = () => {
   }, [])
 
   useEffect(() => {
+    global.lx.homePagerIdle = true
     animateHomePillToIndex(HOME_NAV_INDEX_MAP[commonState.navActiveId] ?? 0)
     global.state_event.on('navActiveIdUpdated', handleNavUpdate)
     return () => {

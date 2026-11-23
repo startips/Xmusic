@@ -9,11 +9,15 @@ import songlistState from '@/store/songlist/state'
 import { useI18n } from '@/lang'
 import { useListInfo } from './state'
 
-export default memo(() => {
+export default memo(({ onBack }: { onBack?: () => void }) => {
   const t = useI18n()
   const info = useListInfo()
 
   const back = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
     if (!commonState.componentIds.songlistDetail) return
     void pop(commonState.componentIds.songlistDetail)
   }

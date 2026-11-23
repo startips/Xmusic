@@ -2,6 +2,8 @@ import { forwardRef, useImperativeHandle, useRef } from 'react'
 import MultiSelectBar, { type MultiSelectBarType, type SelectMode } from '@/components/common/MultiSelectBar'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeH } from '@/utils/pixelRatio'
+import { type COMPONENT_IDS } from '@/config/constant'
+import { type InitState as CommonState } from '@/store/common/state'
 
 export type { SelectMode }
 
@@ -14,6 +16,8 @@ export interface MultipleModeBarProps {
   onExitSelectMode: () => void
   onPlayLater?: () => void
   onAdd?: () => void
+  activeTabId?: CommonState['navActiveId']
+  hostScreen?: COMPONENT_IDS
 }
 
 export interface MultipleModeBarType {
@@ -59,6 +63,6 @@ const styles = createStyle({
   bar: {
     marginHorizontal: 12,
     marginBottom: 8,
-    height: MULTI_SELECT_BAR_HEIGHT,
+    height: 44,
   },
 })

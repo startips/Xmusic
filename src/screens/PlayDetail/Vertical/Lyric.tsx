@@ -195,12 +195,16 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
   const lyricLines = useLrcSet()
   const { line } = useLrcPlay()
   const isShowKaraoke = useSettingValue('playDetail.isShowKaraokeLyric')
+  const lrcFontSize = useSettingValue('playDetail.vertical.style.lrcFontSize')
   const karaokeMap = useKaraokeLyricMap(isShowKaraoke)
   const flatListRef = useRef<FlatList>(null)
   const playLineRef = useRef<PlayLineType>(null)
   const isPauseScrollRef = useRef(true)
   const scrollTimoutRef = useRef<NodeJS.Timeout | null>(null)
   const delayScrollTimeout = useRef<NodeJS.Timeout | null>(null)
+  const initScrollTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastMusicIdRef = useRef<string | null>(playerState.musicInfo.id)
+  const prevFontSizeRef = useRef(lrcFontSize)
   const lineRef = useRef({ line: 0, prevLine: 0 })
   const isFirstSetLrc = useRef(true)
   const scrollInfoRef = useRef<NativeSyntheticEvent<NativeScrollEvent>['nativeEvent'] | null>(null)
@@ -256,6 +260,10 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
   const handleScrollBeginDrag = () => {
     isPauseScrollRef.current = true
     playLineRef.current?.setVisible(true)
+    if (initScrollTimerRef.current) {
+      clearTimeout(initScrollTimerRef.current)
+      initScrollTimerRef.current = null
+    }
     if (delayScrollTimeout.current) {
       clearTimeout(delayScrollTimeout.current)
       delayScrollTimeout.current = null
@@ -284,6 +292,10 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
 
   useEffect(() => {
     return () => {
+      if (initScrollTimerRef.current) {
+        clearTimeout(initScrollTimerRef.current)
+        initScrollTimerRef.current = null
+      }
       if (delayScrollTimeout.current) {
         clearTimeout(delayScrollTimeout.current)
         delayScrollTimeout.current = null
@@ -292,33 +304,56 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
         clearTimeout(scrollTimoutRef.current)
         scrollTimoutRef.current = null
       }
+      if (scrollCancelRef.current) {
+        scrollCancelRef.current()
+        scrollCancelRef.current = null
+      }
     }
   }, [])
 
   useEffect(() => {
+    const curMusicId = playerState.musicInfo.id
+    const isSameSong = lastMusicIdRef.current != null && lastMusicIdRef.current === curMusicId
+    lastMusicIdRef.current = curMusicId
+
     listLayoutInfoRef.current.lineHeights = []
-    lineRef.current.prevLine = 0
-    lineRef.current.line = 0
-    if (!flatListRef.current) return
-    flatListRef.current.scrollToOffset({
-      offset: 0,
-      animated: false,
-    })
+    if (scrollCancelRef.current) {
+      scrollCancelRef.current()
+      scrollCancelRef.current = null
+    }
+    if (!isSameSong) {
+      const startLine = line >= 0 ? line : 0
+      lineRef.current.prevLine = startLine
+      lineRef.current.line = startLine
+      if (!flatListRef.current) return
+      flatListRef.current.scrollToOffset({
+        offset: 0,
+        animated: false,
+      })
+    } else {
+      const targetLine = lyricLines.length ? Math.max(0, Math.min(line >= 0 ? line : lineRef.current.line, lyricLines.length - 1)) : 0
+      lineRef.current.prevLine = targetLine
+      lineRef.current.line = targetLine
+      if (!flatListRef.current) return
+    }
     if (!lyricLines.length) return
     playLineRef.current?.updateLyricLines(lyricLines)
     requestAnimationFrame(() => {
       if (isFirstSetLrc.current) {
         isFirstSetLrc.current = false
-        setTimeout(() => {
+        if (initScrollTimerRef.current) clearTimeout(initScrollTimerRef.current)
+        initScrollTimerRef.current = setTimeout(() => {
+          initScrollTimerRef.current = null
           isPauseScrollRef.current = false
-          handleScrollToActive()
+          handleScrollToActive(lineRef.current.line)
         }, 100)
       } else {
         if (delayScrollTimeout.current) clearTimeout(delayScrollTimeout.current)
         delayScrollTimeout.current = setTimeout(() => {
+          delayScrollTimeout.current = null
           isPauseScrollRef.current = false
           playLineRef.current?.setVisible(false)
-          handleScrollToActive(0)
+          handleScrollToActive(lineRef.current.line)
         }, 100)
       }
     })
@@ -331,6 +366,10 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
     lineRef.current.line = line
     if (!flatListRef.current || isPauseScrollRef.current) return
 
+    if (delayScrollTimeout.current) {
+      clearTimeout(delayScrollTimeout.current)
+      delayScrollTimeout.current = null
+    }
     if (line - lineRef.current.prevLine != 1) {
       handleScrollToActive()
       return
@@ -338,10 +377,22 @@ export default ({ onLongPressLyric }: { onLongPressLyric?: (lineIndex: number) =
 
     delayScrollTimeout.current = setTimeout(() => {
       delayScrollTimeout.current = null
+      if (isPauseScrollRef.current) return
       handleScrollToActive()
     }, 600)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [line])
+
+  useEffect(() => {
+    if (prevFontSizeRef.current === lrcFontSize) return
+    prevFontSizeRef.current = lrcFontSize
+    listLayoutInfoRef.current.lineHeights = []
+    requestAnimationFrame(() => {
+      playLineRef.current?.updateLayoutInfo(listLayoutInfoRef.current)
+      if (!isPauseScrollRef.current) handleScrollToActive(lineRef.current.line)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lrcFontSize])
 
   useEffect(() => {
     requestAnimationFrame(() => {

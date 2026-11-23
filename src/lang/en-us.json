@@ -567,6 +567,7 @@
   "lyric_poster_share_btn": "Share Poster",
   "lyric_poster_saved": "Saved to Pictures/Xmusic",
   "lyric_poster_failed": "Failed to generate poster",
+  "lyric_poster_brand_subtitle": "Xmusic · Lyric Card",
   "stats_entry_btn": "Stats",
   "stats_modal_title": "Local Listening Footprint",
   "stats_total_duration": "Total Listening",

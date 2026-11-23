@@ -19,6 +19,7 @@ export default forwardRef<MultipleModeBarType, MultipleModeBarProps>((props, ref
     <MultiSelectBar
       ref={ref}
       slideFrom={-18}
+      activeTabId="nav_love"
       wrapperStyle={styles.wrapper}
       barStyle={styles.bar}
       {...props}

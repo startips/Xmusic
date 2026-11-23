@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import Popup, { type PopupType, type PopupProps } from '@/components/common/Popup'
 import { SegmentedCardGroup } from '@/components/common/m3e/SegmentedCard'
@@ -28,11 +28,13 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
   const popupRef = useRef<PopupType>(null)
   const timeoutModalRef = useRef<TimeoutExitEditModalType>(null)
   const eqModalRef = useRef<EqualizerModalType>(null)
+  const pendingModalRef = useRef<'eq' | 'timeout' | null>(null)
   const timeInfo = useTimeInfo()
   const t = useI18n()
 
   useImperativeHandle(ref, () => ({
     show() {
+      pendingModalRef.current = null
       if (visible) popupRef.current?.setVisible(true)
       else {
         setVisible(true)
@@ -44,24 +46,37 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
   }))
 
   const handleOpenTimeoutModal = () => {
+    pendingModalRef.current = 'timeout'
     popupRef.current?.setVisible(false)
-    setTimeout(() => {
-      timeoutModalRef.current?.show()
-    }, 80)
   }
 
   const handleOpenEqModal = () => {
+    pendingModalRef.current = 'eq'
     popupRef.current?.setVisible(false)
-    setTimeout(() => {
-      eqModalRef.current?.show()
-    }, 80)
   }
+
+  const { onHide: propOnHide } = props
+  const handlePopupHide = useCallback(() => {
+    const next = pendingModalRef.current
+    pendingModalRef.current = null
+    setVisible(false)
+    propOnHide?.()
+    if (next === 'eq') {
+      requestAnimationFrame(() => {
+        eqModalRef.current?.show()
+      })
+    } else if (next === 'timeout') {
+      requestAnimationFrame(() => {
+        timeoutModalRef.current?.show()
+      })
+    }
+  }, [propOnHide])
 
   return (
     <>
       {visible
         ? (
-            <Popup ref={popupRef} title={t('play_detail_setting_title')} {...props}>
+            <Popup ref={popupRef} title={t('play_detail_setting_title')} {...props} onHide={handlePopupHide}>
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.sheetBody} onStartShouldSetResponder={() => true}>
                   <SegmentedCardGroup>
