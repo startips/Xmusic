@@ -16,7 +16,7 @@ import { navigations } from '@/navigation'
 import { M3Radius } from '@/theme/m3'
 import { HOME_NAV_INDEX_MAP } from './pagerMotion'
 
-const TOP_BAR_HEIGHT = 50
+const TOP_BAR_HEIGHT = 52
 
 const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNode>> = {
   nav_search: <SearchTypeSelector />,
@@ -101,7 +101,7 @@ const Header = () => {
               )
             : null}
           <ExpressiveIconButton
-            size={36}
+            size={40}
             backgroundColor={theme['m3-surface-container']}
             onPress={handleOpenSetting}
           >

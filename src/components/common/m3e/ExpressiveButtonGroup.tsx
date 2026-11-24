@@ -98,7 +98,8 @@ const GroupItem = <T extends string>({
           <Animated.View
             style={{
               ...styles.item,
-              paddingVertical: size === 'sm' ? 6 : 8,
+              minHeight: size === 'sm' ? 34 : 38,
+              paddingVertical: size === 'sm' ? 7 : 9,
               paddingHorizontal: size === 'sm' ? 8 : 10,
               backgroundColor: bgColor,
               borderTopLeftRadius: leftRadiusAnim,

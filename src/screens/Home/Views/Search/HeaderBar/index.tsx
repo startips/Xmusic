@@ -78,7 +78,7 @@ const styles = createStyle({
     marginHorizontal: 14,
     marginTop: 4,
     marginBottom: 8,
-    height: 46,
+    height: 48,
     zIndex: 2,
     paddingLeft: 6,
     paddingRight: 10,

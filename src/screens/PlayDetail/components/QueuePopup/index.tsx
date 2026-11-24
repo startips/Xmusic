@@ -209,6 +209,9 @@ const QueueBody = () => {
   const listId = playInfo.playerListId ?? playMusicInfo.listId
   const [queueList, setQueueList] = useState<LX.Music.MusicInfo[]>(() => readQueueList(listId))
   const prevListIdRef = useRef(listId)
+  const listViewportHeightRef = useRef(0)
+  const listContentHeightRef = useRef(0)
+  const didInitialScrollRef = useRef(false)
 
   const refreshQueue = useCallback(() => {
     setQueueList(readQueueList(listId))
@@ -217,6 +220,7 @@ const QueueBody = () => {
   useEffect(() => {
     if (prevListIdRef.current !== listId) {
       prevListIdRef.current = listId
+      didInitialScrollRef.current = false
       refreshQueue()
     }
     const handleListUpdate = (ids: string[]) => {
@@ -235,22 +239,37 @@ const QueueBody = () => {
     return playInfo.playIndex >= 0 ? playInfo.playIndex : playInfo.playerPlayIndex
   }, [playInfo.playIndex, playInfo.playerPlayIndex, playMusicInfo.isTempPlay, playMusicInfo.musicInfo])
 
-  const initialScrollIndexRef = useRef<number | undefined>(
-    activeIndex > 2 && activeIndex < queueList.length
-      ? Math.max(0, activeIndex - 2)
-      : undefined,
-  )
+  const computeClampedOffset = useCallback((index: number) => {
+    if (index <= 0 || index >= queueList.length) return 0
+    const viewportH = listViewportHeightRef.current
+    const contentH = listContentHeightRef.current > 0
+      ? listContentHeightRef.current
+      : queueList.length * ITEM_HEIGHT + 8
+    if (viewportH <= 0) return 0
+    const maxOffset = Math.max(0, contentH - viewportH)
+    if (maxOffset <= 0) return 0
+    const desired = index * ITEM_HEIGHT - viewportH * 0.25
+    return Math.max(0, Math.min(desired, maxOffset))
+  }, [queueList.length])
+
+  const maybeInitialScroll = useCallback(() => {
+    if (didInitialScrollRef.current) return
+    if (listViewportHeightRef.current <= 0 || listContentHeightRef.current <= 0) return
+    didInitialScrollRef.current = true
+    if (activeIndex <= 0 || activeIndex >= queueList.length) return
+    const offset = computeClampedOffset(activeIndex)
+    if (offset > 0) {
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToOffset({ offset, animated: false })
+      })
+    }
+  }, [activeIndex, computeClampedOffset, queueList.length])
 
   const scrollToActive = useCallback((animated = true) => {
     if (activeIndex < 0 || activeIndex >= queueList.length) return
-    try {
-      flatListRef.current?.scrollToIndex({
-        index: activeIndex,
-        viewPosition: 0.25,
-        animated,
-      })
-    } catch {}
-  }, [activeIndex, queueList.length])
+    const offset = computeClampedOffset(activeIndex)
+    flatListRef.current?.scrollToOffset({ offset, animated })
+  }, [activeIndex, computeClampedOffset, queueList.length])
 
   const listTitle = useMemo(() => {
     if (!listId) return t('queue_empty_list')
@@ -413,16 +432,17 @@ const QueueBody = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 getItemLayout={getItemLayout}
-                initialScrollIndex={initialScrollIndexRef.current}
-                onScrollToIndexFailed={(info) => {
-                  flatListRef.current?.scrollToOffset({
-                    offset: ITEM_HEIGHT * info.index,
-                    animated: false,
-                  })
+                onLayout={({ nativeEvent: { layout } }) => {
+                  listViewportHeightRef.current = layout.height
+                  maybeInitialScroll()
                 }}
-                initialNumToRender={8}
-                maxToRenderPerBatch={6}
-                windowSize={5}
+                onContentSizeChange={(_w, h) => {
+                  listContentHeightRef.current = h
+                  maybeInitialScroll()
+                }}
+                initialNumToRender={12}
+                maxToRenderPerBatch={10}
+                windowSize={7}
                 showsVerticalScrollIndicator={false}
                 style={styles.list}
                 contentContainerStyle={styles.listContent}

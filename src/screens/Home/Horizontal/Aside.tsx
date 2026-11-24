@@ -18,7 +18,7 @@ import { homePillProgress, homePillStretch } from '../Vertical/pagerMotion'
 
 const NAV_WIDTH = 74
 const SCALED_NAV_WIDTH = scaleSizeW(NAV_WIDTH)
-const ITEM_HEIGHT = scaleSizeH(44)
+const ITEM_HEIGHT = Math.max(44, scaleSizeH(44))
 const ITEM_GAP = scaleSizeH(6)
 const PILL_W = scaleSizeW(50)
 const PILL_H = scaleSizeH(32)
@@ -215,7 +215,7 @@ export default memo(() => {
         </View>
       </ScrollView>
       <View style={styles.menuItem}>
-        <ExpressiveIconButton size={40} backgroundColor="transparent" onPress={handleOpenSetting}>
+        <ExpressiveIconButton size={44} backgroundColor="transparent" onPress={handleOpenSetting}>
           <Icon name="setting" size={19} color={theme['m3-on-surface-variant']} />
           {hasNewVersion
             ? (

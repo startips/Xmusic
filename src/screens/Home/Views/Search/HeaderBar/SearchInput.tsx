@@ -59,6 +59,7 @@ export default forwardRef<SearchInputType, SearchInputProps>(({ onChangeText, on
       value={text}
       onChangeText={handleChangeText}
       // style={{ ...styles.input, backgroundColor: theme['c-primary-input-background'] }}
+      style={{ height: 46 }}
       onBlur={onBlur}
       onSubmitEditing={handleSubmit}
       onClearText={handleClearText}
