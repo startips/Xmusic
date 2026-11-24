@@ -850,7 +850,7 @@ public final class XmusicDspAudioProcessor extends BaseAudioProcessor {
         (filePath === playerMusicService && fromStr.includes('public int onStartCommand') && file.includes('ACTION_TOGGLE_FAVORITE')) ||
         (filePath === playerMusicService && fromStr.includes('emit(MusicEvents.BUTTON_TOGGLE_FAVORITE, null);') && file.includes('startsWith("xmusic_widget_")')) ||
         (filePath === playerMusicBinder && fromStr.includes('private final MusicService service;') && file.includes('private boolean softPlayPause = true;')) ||
-        (filePath === playerMusicModule && fromStr.includes('private Bundle options;') && file.includes('private boolean favoriteState = false;')) ||
+        (filePath === playerMusicModule && fromStr.includes('ReactApplicationContext reactAppContext;') && file.includes('private boolean favoriteState = false;')) ||
         (filePath === playerLocalPlayback && fromStr.includes('public void play()') && file.includes('notifyPlayResume()'))
       ) {
         console.log('  already patched, skip')
