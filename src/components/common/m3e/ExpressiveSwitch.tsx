@@ -16,12 +16,17 @@ export interface ExpressiveSwitchProps {
 export default memo(({ value, onValueChange, disabled = false }: ExpressiveSwitchProps) => {
   const theme = useTheme()
   const [pressed, setPressed] = useState(false)
+  const isFirstRenderRef = useRef(true)
 
   const thumbW = useRef(new Animated.Value(value ? 20 : 14)).current
   const thumbH = useRef(new Animated.Value(value ? 20 : 14)).current
   const thumbX = useRef(new Animated.Value(value ? 22 : 5)).current
 
   useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
+      return
+    }
     const targetW = pressed ? (value ? 23 : 21) : (value ? 20 : 14)
     const targetH = pressed ? (value ? 20 : 17) : (value ? 20 : 14)
     const targetX = pressed ? (value ? 19 : 4) : (value ? 22 : 5)

@@ -267,11 +267,16 @@ export const ExpressiveIconButton = memo(({
   const [pressed, setPressed] = useState(false)
   const pressScale = useRef(new Animated.Value(1)).current
   const morphAnim = useRef(new Animated.Value(active ? 1 : 0)).current
+  const isFirstRenderRef = useRef(true)
 
   const circleRadius = Math.max(1, size / 2)
   const squircleRadius = Math.max(8, Math.round(size * 0.36))
 
   useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
+      return
+    }
     Animated.spring(morphAnim, {
       toValue: active || pressed ? 1 : 0,
       ...M3Motion.shapeMorph,

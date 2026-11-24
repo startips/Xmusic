@@ -89,7 +89,7 @@ export default memo(({ componentId }: { componentId: string }) => {
         <View style={styles.body}>
           <SettingViews />
         </View>
-        <PlayerBar />
+        <PlayerBar hostScreen={COMPONENT_IDS.setting} />
       </PageContent>
     </EdgeSwipeContainer>
   )

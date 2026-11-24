@@ -26,6 +26,12 @@ const unwrapMusicInfo = (item: LX.Music.MusicInfo | LX.Download.ListItem): LX.Mu
   return 'progress' in item ? item.metadata.musicInfo : item
 }
 
+const readQueueList = (id: string | null | undefined): LX.Music.MusicInfo[] => {
+  if (!id) return []
+  const raw = getList(id)
+  return (raw as Array<LX.Music.MusicInfo | LX.Download.ListItem>).map(unwrapMusicInfo)
+}
+
 export interface QueuePopupType {
   show: () => void
 }
@@ -200,21 +206,19 @@ const QueueBody = () => {
   const togglePlayMethod = useSettingValue('player.togglePlayMethod')
   const { playModeIcon, toggleNextPlayMode } = usePlayModeAction()
   const flatListRef = useRef<FlatList<LX.Music.MusicInfo>>(null)
-  const [queueList, setQueueList] = useState<LX.Music.MusicInfo[]>([])
-
   const listId = playInfo.playerListId ?? playMusicInfo.listId
+  const [queueList, setQueueList] = useState<LX.Music.MusicInfo[]>(() => readQueueList(listId))
+  const prevListIdRef = useRef(listId)
 
   const refreshQueue = useCallback(() => {
-    if (!listId) {
-      setQueueList([])
-      return
-    }
-    const raw = getList(listId)
-    setQueueList((raw as Array<LX.Music.MusicInfo | LX.Download.ListItem>).map(unwrapMusicInfo))
+    setQueueList(readQueueList(listId))
   }, [listId])
 
   useEffect(() => {
-    refreshQueue()
+    if (prevListIdRef.current !== listId) {
+      prevListIdRef.current = listId
+      refreshQueue()
+    }
     const handleListUpdate = (ids: string[]) => {
       if (listId && ids.includes(listId)) refreshQueue()
     }
@@ -231,6 +235,12 @@ const QueueBody = () => {
     return playInfo.playIndex >= 0 ? playInfo.playIndex : playInfo.playerPlayIndex
   }, [playInfo.playIndex, playInfo.playerPlayIndex, playMusicInfo.isTempPlay, playMusicInfo.musicInfo])
 
+  const initialScrollIndexRef = useRef<number | undefined>(
+    activeIndex > 2 && activeIndex < queueList.length
+      ? Math.max(0, activeIndex - 2)
+      : undefined,
+  )
+
   const scrollToActive = useCallback((animated = true) => {
     if (activeIndex < 0 || activeIndex >= queueList.length) return
     try {
@@ -241,15 +251,6 @@ const QueueBody = () => {
       })
     } catch {}
   }, [activeIndex, queueList.length])
-
-  useEffect(() => {
-    if (activeIndex < 0 || !queueList.length) return
-    const timer = setTimeout(() => {
-      scrollToActive(false)
-    }, 80)
-    return () => { clearTimeout(timer) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listId, queueList.length > 0])
 
   const listTitle = useMemo(() => {
     if (!listId) return t('queue_empty_list')
@@ -412,15 +413,16 @@ const QueueBody = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 getItemLayout={getItemLayout}
+                initialScrollIndex={initialScrollIndexRef.current}
                 onScrollToIndexFailed={(info) => {
                   flatListRef.current?.scrollToOffset({
                     offset: ITEM_HEIGHT * info.index,
                     animated: false,
                   })
                 }}
-                initialNumToRender={14}
-                maxToRenderPerBatch={10}
-                windowSize={9}
+                initialNumToRender={8}
+                maxToRenderPerBatch={6}
+                windowSize={5}
                 showsVerticalScrollIndicator={false}
                 style={styles.list}
                 contentContainerStyle={styles.listContent}

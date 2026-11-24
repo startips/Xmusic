@@ -19,8 +19,21 @@ const LIGHT_ALPHAS = [0.24, 0.19, 0.16, 0.13] as const
 
 const mountedFluidStack: symbol[] = []
 const stackListeners = new Set<() => void>()
+let externalPauseCount = 0
 const notifyStackListeners = () => {
   for (const listener of [...stackListeners]) listener()
+}
+
+export const acquireFluidPause = (): (() => void) => {
+  let released = false
+  externalPauseCount++
+  if (externalPauseCount === 1) notifyStackListeners()
+  return () => {
+    if (released) return
+    released = true
+    externalPauseCount = Math.max(0, externalPauseCount - 1)
+    if (externalPauseCount === 0) notifyStackListeners()
+  }
 }
 
 const toNativeArgb = (r: number, g: number, b: number, alpha: number): number => {
@@ -36,11 +49,13 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
   const instanceId = useRef(Symbol('FluidBackground')).current
   const [isTopmost, setIsTopmost] = useState(true)
   const [isActive, setIsActive] = useState(true)
+  const [isExternallyPaused, setIsExternallyPaused] = useState(() => externalPauseCount > 0)
 
   useEffect(() => {
     mountedFluidStack.push(instanceId)
     const syncTop = () => {
       setIsTopmost(mountedFluidStack[mountedFluidStack.length - 1] === instanceId)
+      setIsExternallyPaused(externalPauseCount > 0)
     }
     stackListeners.add(syncTop)
     notifyStackListeners()
@@ -100,7 +115,7 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
       pointerEvents="none"
       baseColor={baseColor}
       colors={orbColors}
-      playing={isPlay && isActive}
+      playing={isPlay && isActive && !isExternallyPaused}
       style={[StyleSheet.absoluteFill, style]}
     />
   )

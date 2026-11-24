@@ -57,8 +57,13 @@ const GroupItem = <T extends string>({
   const leftRadiusAnim = useRef(new Animated.Value(targetLeft)).current
   const rightRadiusAnim = useRef(new Animated.Value(targetRight)).current
   const pressScale = useRef(new Animated.Value(1)).current
+  const isFirstRenderRef = useRef(true)
 
   useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false
+      return
+    }
     Animated.parallel([
       Animated.spring(flexAnim, { toValue: targetFlex, ...M3Motion.shapeMorph }),
       Animated.spring(leftRadiusAnim, { toValue: targetLeft, ...M3Motion.shapeMorph }),

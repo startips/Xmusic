@@ -71,7 +71,7 @@ export default ({ componentId, info }: { componentId: string, info: ListInfoItem
         <ListInfoContext.Provider value={info}>
           <MusicList ref={musicListRef} componentId={componentId} onBack={handleBack} onMultiSelectChange={handleMultiSelectChange} />
         </ListInfoContext.Provider>
-        <PlayerBar />
+        <PlayerBar hostScreen={COMPONENT_IDS.songlistDetail} />
       </PageContent>
     </EdgeSwipeContainer>
   )

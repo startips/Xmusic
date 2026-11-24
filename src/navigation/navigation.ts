@@ -17,7 +17,7 @@ import { windowSizeTools } from '@/utils/windowSizeTools'
 import { isHorizontalMode } from '@/utils/tools'
 import { toOpaqueColor } from '@/theme/m3'
 import { type ListInfoItem } from '@/store/songlist/state'
-import { getPlayerBarPicRect, preparePlayDetailMinimize } from './playerBarTarget'
+import { getPlayerBarPicRect, preparePlayDetailMinimize, triggerActivePlayerBarBounce } from './playerBarTarget'
 
 const getScreenSurfaceBackground = (theme: LX.ActiveTheme) => {
   return toOpaqueColor(theme['c-main-background'] || theme['c-content-background'])
@@ -142,7 +142,8 @@ const buildPlayDetailPopAnimation = (winWidth: number, winHeight: number) => {
   const safeH = Math.max(winHeight, 320)
   const horizontal = isHorizontalMode(safeW, safeH)
   const measured = getPlayerBarPicRect(safeW, safeH)
-  const rect = measured && measured.width > 0 && measured.height > 0 && measured.y < safeH
+  const minValidY = Math.max(120, safeH * 0.52)
+  const rect = measured && measured.width > 0 && measured.height > 0 && measured.y >= minValidY && measured.y < safeH
     ? measured
     : {
         x: horizontal ? 84 : 18,
@@ -197,6 +198,7 @@ const buildPlayDetailPopAnimation = (winWidth: number, winHeight: number) => {
 
 export function popPlayDetailScreen(componentId: string) {
   preparePlayDetailMinimize()
+  triggerActivePlayerBarBounce()
   const { width, height } = windowSizeTools.getSize()
   void Navigation.pop(componentId, {
     animations: {

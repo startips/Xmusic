@@ -1,7 +1,8 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
-import { Animated, Easing, PanResponder, StyleSheet, View } from 'react-native'
+import { Animated, Easing, PanResponder, StyleSheet, View, type LayoutChangeEvent } from 'react-native'
 
 import Modal, { type ModalType } from './Modal'
+import { acquireFluidPause } from './FluidBackground'
 import { useKeyboard } from '@/utils/hooks'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
@@ -13,18 +14,21 @@ import { ExpressiveIconButton } from './m3e/ExpressiveButton'
 
 type PopupPosition = 'top' | 'left' | 'right' | 'bottom'
 
-const getOffscreenOffset = (position: PopupPosition) => {
+const getMeasuredOffscreenOffset = (
+  position: PopupPosition,
+  sheetSize: { width: number, height: number },
+) => {
   const { width, height } = windowSizeTools.getSize()
   switch (position) {
     case 'top':
-      return -Math.max(Math.round(height * 0.85), 680)
+      return -(sheetSize.height > 0 ? Math.round(sheetSize.height + 24) : Math.max(Math.round(height * 0.65), 420))
     case 'left':
-      return -Math.max(Math.round(width * 0.82), 520)
+      return -(sheetSize.width > 0 ? Math.round(sheetSize.width + 24) : Math.max(Math.round(width * 0.72), 360))
     case 'right':
-      return Math.max(Math.round(width * 0.82), 520)
+      return sheetSize.width > 0 ? Math.round(sheetSize.width + 24) : Math.max(Math.round(width * 0.72), 360)
     case 'bottom':
     default:
-      return Math.max(Math.round(height * 0.85), 680)
+      return sheetSize.height > 0 ? Math.round(sheetSize.height + 24) : Math.max(Math.round(height * 0.65), 420)
   }
 }
 
@@ -33,7 +37,7 @@ const styles = createStyle({
     flex: 1,
   },
   modalView: {
-    elevation: 8,
+    elevation: 0,
     flexGrow: 0,
     flexShrink: 1,
     overflow: 'hidden',
@@ -94,81 +98,143 @@ export default forwardRef<PopupType, PopupProps>(({
   const navBarHeight = useNavigationBarHeight()
   const safeInsets = useSafeAreaInsets()
   const slideOffset = useRef(new Animated.Value(0)).current
-  const scrimOpacity = useMemo(() => slideOffset.interpolate({
-    inputRange: [-520, 0, 520],
-    outputRange: [0, 1, 0],
-    extrapolate: 'clamp',
-  }), [slideOffset])
+  const scrimAnim = useRef(new Animated.Value(0)).current
 
   const modalRef = useRef<ModalType>(null)
   const isOpenRef = useRef(false)
   const isClosingRef = useRef(false)
+  const pendingEnterAnimRef = useRef(false)
   const openRafRef = useRef<number | null>(null)
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sheetSizeRef = useRef({ width: 0, height: 0 })
+  const fluidPauseReleaseRef = useRef<(() => void) | null>(null)
 
-  const cancelPendingOpenRaf = useCallback(() => {
+  const releaseFluidPause = useCallback(() => {
+    if (fluidPauseReleaseRef.current) {
+      fluidPauseReleaseRef.current()
+      fluidPauseReleaseRef.current = null
+    }
+  }, [])
+
+  const cancelPendingOpenTimers = useCallback(() => {
     if (openRafRef.current != null) {
       cancelAnimationFrame(openRafRef.current)
       openRafRef.current = null
+    }
+    if (fallbackTimerRef.current != null) {
+      clearTimeout(fallbackTimerRef.current)
+      fallbackTimerRef.current = null
     }
   }, [])
 
   useEffect(() => {
     return () => {
-      cancelPendingOpenRaf()
+      pendingEnterAnimRef.current = false
+      cancelPendingOpenTimers()
+      releaseFluidPause()
     }
-  }, [cancelPendingOpenRaf])
+  }, [cancelPendingOpenTimers, releaseFluidPause])
+
+  const startEnterAnimation = useCallback((exactOffVal: number) => {
+    if (!pendingEnterAnimRef.current || !isOpenRef.current || isClosingRef.current) return
+    pendingEnterAnimRef.current = false
+    cancelPendingOpenTimers()
+    slideOffset.stopAnimation()
+    scrimAnim.stopAnimation()
+    slideOffset.setValue(exactOffVal)
+    scrimAnim.setValue(0)
+    openRafRef.current = requestAnimationFrame(() => {
+      openRafRef.current = null
+      if (!isOpenRef.current || isClosingRef.current) return
+      Animated.parallel([
+        Animated.timing(slideOffset, {
+          toValue: 0,
+          duration: 260,
+          easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrimAnim, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start()
+    })
+  }, [cancelPendingOpenTimers, scrimAnim, slideOffset])
+
+  const handleSheetLayout = useCallback(({ nativeEvent: { layout } }: LayoutChangeEvent) => {
+    if (layout.width <= 0 || layout.height <= 0) return
+    sheetSizeRef.current = { width: layout.width, height: layout.height }
+    if (pendingEnterAnimRef.current) {
+      startEnterAnimation(getMeasuredOffscreenOffset(position, sheetSizeRef.current))
+    }
+  }, [position, startEnterAnimation])
 
   const handleModalHide = useCallback(() => {
-    cancelPendingOpenRaf()
+    pendingEnterAnimRef.current = false
+    cancelPendingOpenTimers()
+    releaseFluidPause()
     isOpenRef.current = false
     isClosingRef.current = false
     onHide()
-  }, [cancelPendingOpenRaf, onHide])
+  }, [cancelPendingOpenTimers, onHide, releaseFluidPause])
 
   const dismissSheet = useCallback(() => {
-    cancelPendingOpenRaf()
+    pendingEnterAnimRef.current = false
+    cancelPendingOpenTimers()
     if (!isOpenRef.current) {
       isClosingRef.current = false
+      releaseFluidPause()
       modalRef.current?.setVisible(false)
       return
     }
     if (isClosingRef.current) return
     isClosingRef.current = true
     slideOffset.stopAnimation()
-    const offVal = getOffscreenOffset(position)
-    Animated.timing(slideOffset, {
-      toValue: offVal,
-      duration: 200,
-      easing: Easing.bezier(0.3, 0, 0.8, 0.15),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
+    scrimAnim.stopAnimation()
+    const offVal = getMeasuredOffscreenOffset(position, sheetSizeRef.current)
+    Animated.parallel([
+      Animated.timing(slideOffset, {
+        toValue: offVal,
+        duration: 200,
+        easing: Easing.bezier(0.3, 0, 0.8, 0.15),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scrimAnim, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
       isClosingRef.current = false
       if (!finished) return
       isOpenRef.current = false
       modalRef.current?.setVisible(false)
       slideOffset.setValue(offVal)
+      scrimAnim.setValue(0)
     })
-  }, [cancelPendingOpenRaf, position, slideOffset])
+  }, [cancelPendingOpenTimers, position, releaseFluidPause, scrimAnim, slideOffset])
 
   useImperativeHandle(ref, () => ({
     setVisible(visible: boolean) {
       if (visible) {
-        cancelPendingOpenRaf()
+        cancelPendingOpenTimers()
+        fluidPauseReleaseRef.current ??= acquireFluidPause()
         isClosingRef.current = false
         isOpenRef.current = true
+        pendingEnterAnimRef.current = true
         slideOffset.stopAnimation()
-        const offVal = getOffscreenOffset(position)
+        scrimAnim.stopAnimation()
+        const offVal = getMeasuredOffscreenOffset(position, sheetSizeRef.current)
         slideOffset.setValue(offVal)
+        scrimAnim.setValue(0)
         modalRef.current?.setVisible(true)
-        openRafRef.current = requestAnimationFrame(() => {
-          openRafRef.current = null
-          Animated.timing(slideOffset, {
-            toValue: 0,
-            duration: 280,
-            easing: Easing.bezier(0.05, 0.7, 0.1, 1.0),
-            useNativeDriver: true,
-          }).start()
-        })
+        fallbackTimerRef.current = setTimeout(() => {
+          fallbackTimerRef.current = null
+          startEnterAnimation(getMeasuredOffscreenOffset(position, sheetSizeRef.current))
+        }, 48)
       } else {
         dismissSheet()
       }
@@ -180,38 +246,64 @@ export default forwardRef<PopupType, PopupProps>(({
     onMoveShouldSetPanResponder: (_evt, gestureState) =>
       position === 'bottom' && gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
     onPanResponderMove: (_evt, gestureState) => {
-      slideOffset.setValue(Math.max(0, gestureState.dy))
+      const clampedDy = Math.max(0, gestureState.dy)
+      slideOffset.setValue(clampedDy)
+      const denom = Math.max(sheetSizeRef.current.height || 320, 220)
+      scrimAnim.setValue(Math.max(0, Math.min(1, 1 - clampedDy / denom)))
     },
     onPanResponderRelease: (_evt, gestureState) => {
       if (gestureState.dy > 72 || gestureState.vy > 0.7) {
+        pendingEnterAnimRef.current = false
+        cancelPendingOpenTimers()
         isClosingRef.current = true
-        const offY = getOffscreenOffset('bottom')
-        Animated.timing(slideOffset, {
-          toValue: offY,
-          duration: 180,
-          easing: Easing.bezier(0.3, 0, 0.8, 0.15),
-          useNativeDriver: true,
-        }).start(({ finished }) => {
+        const offY = getMeasuredOffscreenOffset('bottom', sheetSizeRef.current)
+        Animated.parallel([
+          Animated.timing(slideOffset, {
+            toValue: offY,
+            duration: 180,
+            easing: Easing.bezier(0.3, 0, 0.8, 0.15),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scrimAnim, {
+            toValue: 0,
+            duration: 160,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]).start(({ finished }) => {
           isClosingRef.current = false
           if (!finished) return
           isOpenRef.current = false
           modalRef.current?.setVisible(false)
           slideOffset.setValue(offY)
+          scrimAnim.setValue(0)
         })
       } else {
-        Animated.spring(slideOffset, {
-          toValue: 0,
-          ...M3Motion.spatialFast,
-        }).start()
+        Animated.parallel([
+          Animated.spring(slideOffset, {
+            toValue: 0,
+            ...M3Motion.spatialFast,
+          }),
+          Animated.spring(scrimAnim, {
+            toValue: 1,
+            ...M3Motion.spatialFast,
+          }),
+        ]).start()
       }
     },
     onPanResponderTerminate: () => {
-      Animated.spring(slideOffset, {
-        toValue: 0,
-        ...M3Motion.spatialFast,
-      }).start()
+      Animated.parallel([
+        Animated.spring(slideOffset, {
+          toValue: 0,
+          ...M3Motion.spatialFast,
+        }),
+        Animated.spring(scrimAnim, {
+          toValue: 1,
+          ...M3Motion.spatialFast,
+        }),
+      ]).start()
     },
-  }), [position, slideOffset])
+  }), [cancelPendingOpenTimers, position, scrimAnim, slideOffset])
 
   const closeBtnComponent = useMemo(() => closeBtn
     ? <ExpressiveIconButton
@@ -336,14 +428,18 @@ export default forwardRef<PopupType, PopupProps>(({
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: theme['m3-scrim'], opacity: scrimOpacity },
+            { backgroundColor: theme['m3-scrim'], opacity: scrimAnim },
           ]}
         />
         <Animated.View
+          onLayout={handleSheetLayout}
+          renderToHardwareTextureAndroid={true}
           style={{
             ...styles.modalView,
             ...modalViewStyle,
             backgroundColor: theme['m3-surface-container-low'],
+            borderColor: theme['m3-outline-variant'],
+            borderWidth: 0.5,
             transform: sheetTransform,
           }}
           onStartShouldSetResponder={() => true}

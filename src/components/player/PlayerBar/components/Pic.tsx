@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { Animated, Easing, Keyboard, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { navigations } from '@/navigation'
-import { registerActivePlayerBarMeasurer, setPlayerBarPicRect } from '@/navigation/playerBarTarget'
+import {
+  registerActivePlayerBarBouncer,
+  registerActivePlayerBarMeasurer,
+  setPlayerBarPicRect,
+  unregisterActivePlayerBarBouncer,
+  unregisterActivePlayerBarMeasurer,
+} from '@/navigation/playerBarTarget'
 import { usePlayerMusicInfo } from '@/store/player/hook'
 import { useComponentIds, useNavActiveId, useNavigationBarHeight } from '@/store/common/hook'
 import { useWindowSize } from '@/utils/hooks'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import commonState from '@/store/common/state'
 import playerState from '@/store/player/state'
-import { LIST_IDS, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
+import { COMPONENT_IDS, LIST_IDS, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import Image from '@/components/common/Image'
 import { setLoadErrorPicUrl, setMusicInfo } from '@/core/player/playInfo'
 
@@ -29,35 +35,130 @@ export const getTopPlayerBarHostComponentId = () => {
     commonState.componentIds.home!
 }
 
-export default ({ isHome }: { isHome: boolean }) => {
+export default ({ isHome, hostScreen }: { isHome: boolean, hostScreen?: COMPONENT_IDS }) => {
   const musicInfo = usePlayerMusicInfo()
   const winSize = useWindowSize()
   const navActiveId = useNavActiveId()
   const navBarHeight = useNavigationBarHeight()
   const componentIds = useComponentIds()
   const picWrapRef = useRef<View>(null)
+  const bounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bounceScale = useRef(new Animated.Value(1)).current
+  const bounceRotate = useRef(new Animated.Value(0)).current
 
-  const isTopHost = isHome
-    ? (!componentIds.songlistDetail && !componentIds.setting)
-    : Boolean(componentIds.songlistDetail ?? componentIds.setting)
+  const resolvedHost = hostScreen ?? (isHome ? COMPONENT_IDS.home : undefined)
+  let isPlayDetailHost = false
+  if (resolvedHost === COMPONENT_IDS.home) {
+    isPlayDetailHost = !componentIds.songlistDetail && !componentIds.setting
+  } else if (resolvedHost === COMPONENT_IDS.songlistDetail) {
+    isPlayDetailHost = Boolean(componentIds.songlistDetail) && !componentIds.setting
+  } else if (resolvedHost === COMPONENT_IDS.setting) {
+    isPlayDetailHost = Boolean(componentIds.setting)
+  }
+
+  const isForegroundHost = isPlayDetailHost && !componentIds.playDetail && !componentIds.comment
+  const isForegroundHostRef = useRef(isForegroundHost)
+  isForegroundHostRef.current = isForegroundHost
+
+  const rotateInterpolate = useMemo(() => bounceRotate.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ['-6deg', '0deg', '6deg'],
+  }), [bounceRotate])
 
   const measurePic = useCallback(() => {
-    if (!isTopHost) return
+    if (!isForegroundHostRef.current) return
+    if (typeof Keyboard.isVisible === 'function' && Keyboard.isVisible()) return
     picWrapRef.current?.measureInWindow((x, y, width, height) => {
+      if (!isForegroundHostRef.current) return
+      if (typeof Keyboard.isVisible === 'function' && Keyboard.isVisible()) return
       if (width > 0 && height > 0) {
         setPlayerBarPicRect({ x, y, width, height })
       }
     })
-  }, [isTopHost])
+  }, [])
+
+  const playBounce = useCallback(() => {
+    if (bounceTimerRef.current) {
+      clearTimeout(bounceTimerRef.current)
+      bounceTimerRef.current = null
+    }
+    bounceTimerRef.current = setTimeout(() => {
+      bounceTimerRef.current = null
+      bounceScale.stopAnimation()
+      bounceRotate.stopAnimation()
+      bounceScale.setValue(1)
+      bounceRotate.setValue(0)
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(bounceScale, {
+            toValue: 0.84,
+            duration: 75,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.spring(bounceScale, {
+            toValue: 1,
+            damping: 7.5,
+            stiffness: 320,
+            mass: 0.65,
+            velocity: 4.5,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(bounceRotate, {
+            toValue: -1,
+            duration: 65,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceRotate, {
+            toValue: 0.75,
+            duration: 85,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceRotate, {
+            toValue: -0.35,
+            duration: 75,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.spring(bounceRotate, {
+            toValue: 0,
+            damping: 10,
+            stiffness: 300,
+            mass: 0.6,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start()
+    }, 300)
+  }, [bounceRotate, bounceScale])
 
   useEffect(() => {
-    if (!isTopHost) return
+    if (!isPlayDetailHost) return
+    registerActivePlayerBarBouncer(playBounce)
+    return () => {
+      if (bounceTimerRef.current) {
+        clearTimeout(bounceTimerRef.current)
+        bounceTimerRef.current = null
+      }
+      unregisterActivePlayerBarBouncer(playBounce)
+    }
+  }, [isPlayDetailHost, playBounce])
+
+  useEffect(() => {
+    if (!isForegroundHost) return
     registerActivePlayerBarMeasurer(measurePic)
-    const timer = setTimeout(measurePic, 60)
+    const timer = setTimeout(measurePic, 80)
+    const settleTimer = !isHome ? setTimeout(measurePic, 360) : null
     return () => {
       clearTimeout(timer)
+      if (settleTimer) clearTimeout(settleTimer)
+      unregisterActivePlayerBarMeasurer(measurePic)
     }
-  }, [isTopHost, measurePic, winSize.width, winSize.height, navActiveId, navBarHeight])
+  }, [isForegroundHost, isHome, measurePic, winSize.width, winSize.height, navActiveId, navBarHeight])
 
   const handlePress = () => {
     if (!musicInfo.id) return
@@ -82,12 +183,14 @@ export default ({ isHome }: { isHome: boolean }) => {
   return (
     <TouchableOpacity onLongPress={handleLongPress} onPress={handlePress} activeOpacity={0.7}>
       <View ref={picWrapRef} collapsable={false} onLayout={measurePic}>
-        <Image
-          url={musicInfo.pic}
-          nativeID={isTopHost ? NAV_SHEAR_NATIVE_IDS.playDetail_pic : undefined}
-          style={styles.image}
-          onError={handleError}
-        />
+        <Animated.View style={{ transform: [{ scale: bounceScale }, { rotate: rotateInterpolate }] }}>
+          <Image
+            url={musicInfo.pic}
+            nativeID={isPlayDetailHost ? NAV_SHEAR_NATIVE_IDS.playDetail_pic : undefined}
+            style={styles.image}
+            onError={handleError}
+          />
+        </Animated.View>
       </View>
     </TouchableOpacity>
   )

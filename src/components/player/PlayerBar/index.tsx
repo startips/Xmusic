@@ -7,17 +7,20 @@ import Title from './components/Title'
 import PlayInfo from './components/PlayInfo'
 import ControlBtn from './components/ControlBtn'
 import { createStyle } from '@/utils/tools'
+import { COMPONENT_IDS } from '@/config/constant'
 import { useTheme } from '@/store/theme/hook'
 import { useSettingValue } from '@/store/setting/hook'
-import { useNavigationBarHeight } from '@/store/common/hook'
+import { useComponentIds, useNavigationBarHeight } from '@/store/common/hook'
 
 
-export default memo(({ isHome = false }: { isHome?: boolean }) => {
+export default memo(({ isHome = false, hostScreen }: { isHome?: boolean, hostScreen?: COMPONENT_IDS }) => {
   const { keyboardShown } = useKeyboard()
   const isHorizontalMode = useHorizontalMode()
   const theme = useTheme()
   const autoHidePlayBar = useSettingValue('common.autoHidePlayBar')
   const navBarHeight = useNavigationBarHeight()
+  const componentIds = useComponentIds()
+  const resolvedHost = hostScreen ?? (isHome ? COMPONENT_IDS.home : undefined)
 
   const playerComponent = useMemo(() => {
     const showBottomNav = isHome && !isHorizontalMode
@@ -31,7 +34,7 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
           backgroundColor: theme['m3-surface-container-high'],
         }}
       >
-        <Pic isHome={isHome} />
+        <Pic isHome={isHome} hostScreen={resolvedHost} />
         <View style={styles.center}>
           <Title isHome={isHome} />
           <PlayInfo isHome={isHome} />
@@ -41,9 +44,10 @@ export default memo(({ isHome = false }: { isHome?: boolean }) => {
         </View>
       </View>
     )
-  }, [theme, isHome, isHorizontalMode, navBarHeight])
+  }, [theme, isHome, isHorizontalMode, navBarHeight, resolvedHost])
 
-  return autoHidePlayBar && keyboardShown ? null : playerComponent
+  const hideForKeyboard = autoHidePlayBar && keyboardShown && !componentIds.playDetail && !componentIds.comment
+  return hideForKeyboard ? null : playerComponent
 })
 
 
