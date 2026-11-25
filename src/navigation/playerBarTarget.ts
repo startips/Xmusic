@@ -17,6 +17,7 @@ let playerBarPicTarget: StoredTargetRect | null = null
 let minimizePreparer: (() => void) | null = null
 let activePlayerBarMeasurer: (() => void) | null = null
 let activePlayerBarBouncer: (() => void) | null = null
+let activePlayerBarBounceCanceller: (() => void) | null = null
 
 const isValidPlayerBarRect = (rect: WindowRect, winW: number, winH: number): boolean => {
   if (winW <= 0 || winH <= 0) return false
@@ -78,6 +79,18 @@ export const unregisterActivePlayerBarBouncer = (fn: () => void) => {
 
 export const triggerActivePlayerBarBounce = () => {
   activePlayerBarBouncer?.()
+}
+
+export const registerActivePlayerBarBounceCanceller = (fn: (() => void) | null) => {
+  activePlayerBarBounceCanceller = fn
+}
+
+export const unregisterActivePlayerBarBounceCanceller = (fn: () => void) => {
+  if (activePlayerBarBounceCanceller === fn) activePlayerBarBounceCanceller = null
+}
+
+export const cancelActivePlayerBarBounce = () => {
+  activePlayerBarBounceCanceller?.()
 }
 
 export const registerPlayDetailMinimizePreparer = (fn: (() => void) | null) => {

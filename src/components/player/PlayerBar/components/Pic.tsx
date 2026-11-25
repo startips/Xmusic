@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, Easing, Keyboard, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { navigations } from '@/navigation'
 import {
+  registerActivePlayerBarBounceCanceller,
   registerActivePlayerBarBouncer,
   registerActivePlayerBarMeasurer,
   setPlayerBarPicRect,
+  unregisterActivePlayerBarBounceCanceller,
   unregisterActivePlayerBarBouncer,
   unregisterActivePlayerBarMeasurer,
 } from '@/navigation/playerBarTarget'
@@ -30,8 +32,8 @@ const styles = StyleSheet.create({
 })
 
 export const getTopPlayerBarHostComponentId = () => {
-  return commonState.componentIds.songlistDetail ??
-    commonState.componentIds.setting ??
+  return commonState.componentIds.setting ??
+    commonState.componentIds.songlistDetail ??
     commonState.componentIds.home!
 }
 
@@ -76,6 +78,17 @@ export default ({ isHome, hostScreen }: { isHome: boolean, hostScreen?: COMPONEN
       }
     })
   }, [])
+
+  const cancelBounce = useCallback(() => {
+    if (bounceTimerRef.current) {
+      clearTimeout(bounceTimerRef.current)
+      bounceTimerRef.current = null
+    }
+    bounceScale.stopAnimation()
+    bounceRotate.stopAnimation()
+    bounceScale.setValue(1)
+    bounceRotate.setValue(0)
+  }, [bounceRotate, bounceScale])
 
   const playBounce = useCallback(() => {
     if (bounceTimerRef.current) {
@@ -139,14 +152,13 @@ export default ({ isHome, hostScreen }: { isHome: boolean, hostScreen?: COMPONEN
   useEffect(() => {
     if (!isPlayDetailHost) return
     registerActivePlayerBarBouncer(playBounce)
+    registerActivePlayerBarBounceCanceller(cancelBounce)
     return () => {
-      if (bounceTimerRef.current) {
-        clearTimeout(bounceTimerRef.current)
-        bounceTimerRef.current = null
-      }
+      cancelBounce()
       unregisterActivePlayerBarBouncer(playBounce)
+      unregisterActivePlayerBarBounceCanceller(cancelBounce)
     }
-  }, [isPlayDetailHost, playBounce])
+  }, [isPlayDetailHost, playBounce, cancelBounce])
 
   useEffect(() => {
     if (!isForegroundHost) return
@@ -162,6 +174,7 @@ export default ({ isHome, hostScreen }: { isHome: boolean, hostScreen?: COMPONEN
 
   const handlePress = () => {
     if (!musicInfo.id) return
+    cancelBounce()
     measurePic()
     navigations.pushPlayDetailScreen(getTopPlayerBarHostComponentId())
   }

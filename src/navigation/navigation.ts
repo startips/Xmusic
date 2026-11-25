@@ -17,7 +17,7 @@ import { windowSizeTools } from '@/utils/windowSizeTools'
 import { isHorizontalMode } from '@/utils/tools'
 import { toOpaqueColor } from '@/theme/m3'
 import { type ListInfoItem } from '@/store/songlist/state'
-import { getPlayerBarPicRect, preparePlayDetailMinimize, triggerActivePlayerBarBounce } from './playerBarTarget'
+import { cancelActivePlayerBarBounce, getPlayerBarPicRect, preparePlayDetailMinimize, triggerActivePlayerBarBounce } from './playerBarTarget'
 
 const getScreenSurfaceBackground = (theme: LX.ActiveTheme) => {
   return toOpaqueColor(theme['c-main-background'] || theme['c-content-background'])
@@ -209,6 +209,7 @@ export function popPlayDetailScreen(componentId: string) {
 
 export function pushPlayDetailScreen(componentId: string, skipAnimation = false) {
   if (Boolean(commonState.componentIds.playDetail) || !acquireNavPushLock('playDetail')) return
+  cancelActivePlayerBarBounce()
   /*
     Navigation.setDefaultOptions({
       topBar: {
