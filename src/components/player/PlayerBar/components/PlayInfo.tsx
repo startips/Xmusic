@@ -9,7 +9,7 @@ import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
 import { LIST_IDS } from '@/config/constant'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
-import { scaleSizeH, scaleSizeW, scaleSizeWR } from '@/utils/pixelRatio'
+import { scaleSizeH, scaleSizeW } from '@/utils/pixelRatio'
 import { useBufferProgress } from '@/plugins/player'
 import { useSettingValue } from '@/store/setting/hook'
 import { navigations } from '@/navigation'
@@ -18,10 +18,6 @@ import playerState from '@/store/player/state'
 import { getTopPlayerBarHostComponentId } from './Pic'
 
 const FONT_SIZE = 11
-const PADDING_TOP_RAW = 1.8
-const PADDING_TOP = Math.round(scaleSizeWR(PADDING_TOP_RAW))
-const MARGIN_TOP = Math.round(scaleSizeH(2))
-const PADDING_TOP_PROGRESS = PADDING_TOP + MARGIN_TOP
 
 const checkPlayInfoVisible = (ids: CommonState['componentIds'], isHome: boolean) => {
   if (isHome) {
@@ -62,8 +58,8 @@ export default ({ isHome }: { isHome: boolean }) => {
     global.app_event.jumpListPosition()
   }
 
-  const innerContent = (
-    <>
+  const infoRow = (
+    <View style={stylesRaw.infoRow}>
       <View style={styles.status}>
         <Status autoUpdate={autoUpdate} />
       </View>
@@ -72,23 +68,34 @@ export default ({ isHome }: { isHome: boolean }) => {
           {nowPlayTimeStr} / {maxPlayTimeStr}
         </Text>
       </View>
-      <View pointerEvents={allowProgressBarSeek ? 'auto' : 'none'} style={[StyleSheet.absoluteFill, stylesRaw.progress]}>
-        {
-          allowProgressBarSeek
-            ? <Progress progress={progress} duration={maxPlayTime} buffered={buffered} paddingTop={PADDING_TOP_PROGRESS} />
-            : <ProgressPlain progress={progress} duration={maxPlayTime} buffered={buffered} paddingTop={PADDING_TOP_PROGRESS} />
-        }
-      </View>
-    </>
+    </View>
+  )
+
+  const progressRow = (
+    <View pointerEvents={allowProgressBarSeek ? 'auto' : 'none'} style={stylesRaw.progressRow}>
+      {
+        allowProgressBarSeek
+          ? <Progress progress={progress} duration={maxPlayTime} buffered={buffered} active={autoUpdate} />
+          : <ProgressPlain progress={progress} duration={maxPlayTime} buffered={buffered} active={autoUpdate} />
+      }
+    </View>
   )
 
   if (allowProgressBarSeek) {
-    return <View style={stylesRaw.container}>{innerContent}</View>
+    return (
+      <View style={stylesRaw.container}>
+        <TouchableOpacity activeOpacity={0.75} onPress={handleOpenDetail} onLongPress={handleLongPress}>
+          {infoRow}
+        </TouchableOpacity>
+        {progressRow}
+      </View>
+    )
   }
 
   return (
     <TouchableOpacity activeOpacity={0.75} onPress={handleOpenDetail} onLongPress={handleLongPress} style={stylesRaw.container}>
-      {innerContent}
+      {infoRow}
+      {progressRow}
     </TouchableOpacity>
   )
 }
@@ -103,11 +110,14 @@ const styles = createStyle({
 
 const stylesRaw = StyleSheet.create({
   container: {
-    maxHeight: scaleSizeH(32),
     flexGrow: 1,
     flexShrink: 0,
-    paddingTop: PADDING_TOP,
-    paddingHorizontal: scaleSizeW(3),
+    paddingTop: scaleSizeH(1),
+    paddingHorizontal: scaleSizeW(2),
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -121,10 +131,10 @@ const stylesRaw = StyleSheet.create({
   timeText: {
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
-    paddingRight: scaleSizeW(3),
   },
-  progress: {
-    marginBottom: MARGIN_TOP,
-    zIndex: 100,
+  progressRow: {
+    height: scaleSizeH(9),
+    marginTop: scaleSizeH(2),
+    width: '100%',
   },
 })

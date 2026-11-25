@@ -3,22 +3,9 @@ import { View, PanResponder } from 'react-native'
 import { useDrag } from '@/utils/hooks'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { useIsPlay } from '@/store/player/hook'
 import { withAlpha } from '@/theme/m3'
-
-const DefaultBar = memo(() => {
-  return <View style={{
-    ...styles.progressBar,
-    position: 'absolute',
-    width: '100%',
-    left: 0,
-    top: 0,
-  }} />
-})
-
-const BufferedBar = memo(({ progress }: { progress: number }) => {
-  const theme = useTheme()
-  return <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.09), position: 'absolute', width: `${progress * 100}%`, left: 0, top: 0 }} />
-})
+import WavyProgressBar from './WavyProgressBar'
 
 const PreassBar = memo(({ onDragState, setDragProgress, onSetProgress }: {
   onDragState: (drag: boolean) => void
@@ -59,41 +46,47 @@ const PreassBar = memo(({ onDragState, setDragProgress, onSetProgress }: {
   return <View onLayout={onLayout} style={styles.pressBar} {...panResponder.panHandlers} />
 })
 
-export const ProgressPlain = ({ progress, duration, buffered, paddingTop }: {
+export const ProgressPlain = ({ progress, buffered, active = true }: {
   progress: number
   duration: number
   buffered: number
-  paddingTop?: number
+  active?: boolean
 }) => {
   const theme = useTheme()
-  const progressStr: `${number}%` = `${progress * 100}%`
-
-  const durationRef = useRef(duration)
-  useEffect(() => {
-    durationRef.current = duration
-  }, [duration])
+  const isPlay = useIsPlay()
 
   return (
-    <View pointerEvents="none" style={{ ...styles.progress, paddingTop }}>
-      <View style={{ flex: 1 }}>
-        <DefaultBar />
-        <BufferedBar progress={buffered} />
-        <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.22), width: progressStr, position: 'absolute', left: 0, top: 0 }} />
-      </View>
+    <View pointerEvents="none" style={styles.progress}>
+      <WavyProgressBar
+        progress={progress}
+        buffered={buffered}
+        playing={isPlay && active}
+        dragging={false}
+        activeColor={theme['m3-primary']}
+        bufferedColor={withAlpha(theme['m3-primary'], 0.30)}
+        trackColor={withAlpha(theme['m3-on-surface'], theme.isDark ? 0.16 : 0.12)}
+        amplitude={1.15}
+        wavelength={24}
+        waveSpeed={1.8}
+        strokeWidth={2.5}
+        inactiveStrokeWidth={2.5}
+        showThumb={false}
+        style={styles.wavyBar}
+      />
     </View>
   )
 }
 
-const Progress = ({ progress, duration, buffered, paddingTop }: {
+const Progress = ({ progress, duration, buffered, active = true }: {
   progress: number
   duration: number
   buffered: number
-  paddingTop?: number
+  active?: boolean
 }) => {
   const theme = useTheme()
+  const isPlay = useIsPlay()
   const [draging, setDraging] = useState(false)
   const [dragProgress, setDragProgress] = useState(0)
-  const progressStr: `${number}%` = `${progress * 100}%`
 
   const durationRef = useRef(duration)
   useEffect(() => {
@@ -104,22 +97,24 @@ const Progress = ({ progress, duration, buffered, paddingTop }: {
   }, [])
 
   return (
-    <View style={{ ...styles.progress, paddingTop }}>
-      <View style={{ flex: 1 }}>
-        <DefaultBar />
-        <BufferedBar progress={buffered} />
-        {
-          draging
-            ? (
-                <>
-                  <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.16), width: progressStr, position: 'absolute', left: 0, top: 0 }} />
-                  <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.34), width: `${dragProgress * 100}%`, position: 'absolute', left: 0, top: 0 }} />
-                </>
-              ) : (
-                <View style={{ ...styles.progressBar, backgroundColor: withAlpha(theme['m3-primary'], 0.22), width: progressStr, position: 'absolute', left: 0, top: 0 }} />
-              )
-        }
-      </View>
+    <View style={styles.progress}>
+      <WavyProgressBar
+        pointerEvents="none"
+        progress={draging ? dragProgress : progress}
+        buffered={buffered}
+        playing={isPlay && active && !draging}
+        dragging={draging}
+        activeColor={theme['m3-primary']}
+        bufferedColor={withAlpha(theme['m3-primary'], 0.30)}
+        trackColor={withAlpha(theme['m3-on-surface'], theme.isDark ? 0.16 : 0.12)}
+        amplitude={1.15}
+        wavelength={24}
+        waveSpeed={1.8}
+        strokeWidth={2.5}
+        inactiveStrokeWidth={2.5}
+        showThumb={false}
+        style={styles.wavyBar}
+      />
       <PreassBar onDragState={setDraging} setDragProgress={setDragProgress} onSetProgress={onSetProgress} />
     </View>
   )
@@ -128,17 +123,18 @@ const Progress = ({ progress, duration, buffered, paddingTop }: {
 const styles = createStyle({
   progress: {
     flex: 1,
+    justifyContent: 'center',
     zIndex: 1,
   },
-  progressBar: {
+  wavyBar: {
+    width: '100%',
     height: '100%',
-    borderRadius: 8,
   },
   pressBar: {
     position: 'absolute',
     left: 0,
-    top: 0,
-    height: '100%',
+    top: -6,
+    bottom: -6,
     width: '100%',
   },
 })

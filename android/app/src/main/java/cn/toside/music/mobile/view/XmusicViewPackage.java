@@ -22,7 +22,8 @@ public class XmusicViewPackage implements ReactPackage {
       new SolidHeartViewManager(),
       new EdgeSwipeViewManager(),
       new EdgeToEdgeModalViewManager(),
-      new FluidBgViewManager()
+      new FluidBgViewManager(),
+      new WavyProgressViewManager()
     );
   }
 
