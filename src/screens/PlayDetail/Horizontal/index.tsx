@@ -76,7 +76,7 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
         </View>
         <Player />
       </View>
-      <View style={styles.right}>
+      <View style={{ ...styles.right, paddingBottom: bottomPad }}>
         <Lyric onLongPressLyric={handleLongPressLyric} />
       </View>
       <LyricShareModal ref={lyricShareRef} position="right" />

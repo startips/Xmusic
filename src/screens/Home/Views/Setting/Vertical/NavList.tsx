@@ -1,5 +1,5 @@
 import { forwardRef, memo, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { Animated, Pressable, ScrollView, StyleSheet, View, type LayoutChangeEvent } from 'react-native'
+import { Animated, Pressable, ScrollView, View, type LayoutChangeEvent } from 'react-native'
 
 import { useTheme } from '@/store/theme/hook'
 import { useHasNewVersion } from '@/store/version/hook'
@@ -235,7 +235,7 @@ const ListItem = memo(({
             </Animated.View>
             <Animated.View
               pointerEvents="none"
-              style={[StyleSheet.absoluteFill, styles.labelOverlay, { opacity: inactiveOpacity }]}
+              style={[styles.labelOverlay, { opacity: inactiveOpacity }]}
             >
               <Text
                 size={13}
@@ -461,6 +461,11 @@ const styles = createStyle({
     justifyContent: 'center',
   },
   labelOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: -8,
+    right: -8,
     alignItems: 'center',
     justifyContent: 'center',
   },

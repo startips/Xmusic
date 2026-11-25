@@ -1,5 +1,5 @@
-import { memo, useEffect, useRef, useState } from 'react'
-import { View, Pressable, FlatList, type FlatListProps } from 'react-native'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { View, Pressable, FlatList, type FlatListProps, type LayoutChangeEvent } from 'react-native'
 
 import { useTheme } from '@/store/theme/hook'
 import { useHasNewVersion } from '@/store/version/hook'
@@ -12,13 +12,14 @@ import { M3Radius, withAlpha } from '@/theme/m3'
 
 type FlatListType = FlatListProps<SettingScreenIds>
 
-const ITEM_HEIGHT = scaleSizeH(44)
+const DEFAULT_ITEM_HEIGHT = scaleSizeH(44)
 
-const ListItem = memo(({ id, activeId, showBadge, onPress }: {
+const ListItem = memo(({ id, activeId, showBadge, height, onPress }: {
   onPress: (item: SettingScreenIds) => void
   activeId: string
   id: SettingScreenIds
   showBadge: boolean
+  height: number
 }) => {
   const theme = useTheme()
   const t = useI18n()
@@ -31,7 +32,7 @@ const ListItem = memo(({ id, activeId, showBadge, onPress }: {
   }
 
   return (
-    <View style={{ ...styles.listItem, height: ITEM_HEIGHT }}>
+    <View style={{ ...styles.listItem, height }}>
       <View
         style={{
           ...styles.listItemInner,
@@ -64,7 +65,8 @@ const ListItem = memo(({ id, activeId, showBadge, onPress }: {
   return (
     prevProps.id === nextProps.id &&
     prevActive === nextActive &&
-    prevProps.showBadge === nextProps.showBadge
+    prevProps.showBadge === nextProps.showBadge &&
+    prevProps.height === nextProps.height
   )
 })
 
@@ -75,6 +77,12 @@ export default ({ onChangeId }: {
   const flatListRef = useRef<FlatList>(null)
   const hasNewVersion = useHasNewVersion()
   const [activeId, setActiveId] = useState<SettingScreenIds>(() => normalizeSettingScreenId(global.lx.settingActiveId))
+  const [listHeight, setListHeight] = useState(0)
+
+  const listPadV = listHeight > 0 && listHeight < 280 ? 4 : 8
+  const itemHeight = listHeight > 0
+    ? Math.max(32, Math.min(DEFAULT_ITEM_HEIGHT, Math.floor((listHeight - listPadV * 2) / SETTING_SCREENS.length)))
+    : DEFAULT_ITEM_HEIGHT
 
   useEffect(() => {
     const idx = SETTING_SCREENS.indexOf(activeId)
@@ -89,10 +97,21 @@ export default ({ onChangeId }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const handleListLayout = useCallback(({ nativeEvent }: LayoutChangeEvent) => {
+    const nextHeight = nativeEvent.layout.height
+    if (nextHeight > 0) {
+      setListHeight(prev => (Math.abs(nextHeight - prev) > 1 ? nextHeight : prev))
+    }
+  }, [])
+
   const handleChangeId = (id: SettingScreenIds) => {
     onChangeId(id)
     setActiveId(id)
     global.lx.settingActiveId = id
+    const idx = SETTING_SCREENS.indexOf(id)
+    if (idx >= 0) {
+      flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 })
+    }
   }
 
   const renderItem: FlatListType['renderItem'] = ({ item }) => (
@@ -101,20 +120,22 @@ export default ({ onChangeId }: {
       id={item}
       activeId={activeId}
       showBadge={item === 'about' && hasNewVersion}
+      height={itemHeight}
       onPress={handleChangeId}
     />
   )
   const getkey: FlatListType['keyExtractor'] = item => item
   const getItemLayout: FlatListType['getItemLayout'] = (data, index) => {
-    return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }
+    return { length: itemHeight, offset: itemHeight * index, index }
   }
 
   return (
     <FlatList
       ref={flatListRef}
       style={styles.container}
-      contentContainerStyle={styles.listContent}
+      contentContainerStyle={{ paddingVertical: listPadV }}
       data={SETTING_SCREENS}
+      extraData={itemHeight}
       maxToRenderPerBatch={9}
       windowSize={9}
       removeClippedSubviews={true}
@@ -122,6 +143,8 @@ export default ({ onChangeId }: {
       renderItem={renderItem}
       keyExtractor={getkey}
       getItemLayout={getItemLayout}
+      onLayout={handleListLayout}
+      onScrollToIndexFailed={() => {}}
     />
   )
 }
@@ -129,11 +152,7 @@ export default ({ onChangeId }: {
 
 const styles = createStyle({
   container: {
-    flexShrink: 1,
-    flexGrow: 0,
-  },
-  listContent: {
-    paddingVertical: 8,
+    flex: 1,
   },
   listItem: {
     paddingHorizontal: 8,
