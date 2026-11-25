@@ -67,6 +67,8 @@ export default memo(({
         <View
           style={{
             ...styles.content,
+            width: size,
+            height: size,
             backgroundColor: theme['m3-surface-container'],
             elevation: animated ? (isPlay ? activeElevation : pausedElevation) : 0,
           }}

@@ -11,7 +11,7 @@ import {
   unregisterActivePlayerBarMeasurer,
 } from '@/navigation/playerBarTarget'
 import { usePlayerMusicInfo } from '@/store/player/hook'
-import { useComponentIds, useNavActiveId, useNavigationBarHeight } from '@/store/common/hook'
+import { useComponentIds, useNavActiveId, useNavigationBarHeight, useSafeAreaInsets } from '@/store/common/hook'
 import { useWindowSize } from '@/utils/hooks'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import commonState from '@/store/common/state'
@@ -42,6 +42,7 @@ export default ({ isHome, hostScreen }: { isHome: boolean, hostScreen?: COMPONEN
   const winSize = useWindowSize()
   const navActiveId = useNavActiveId()
   const navBarHeight = useNavigationBarHeight()
+  const safeInsets = useSafeAreaInsets()
   const componentIds = useComponentIds()
   const picWrapRef = useRef<View>(null)
   const bounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -164,13 +165,27 @@ export default ({ isHome, hostScreen }: { isHome: boolean, hostScreen?: COMPONEN
     if (!isForegroundHost) return
     registerActivePlayerBarMeasurer(measurePic)
     const timer = setTimeout(measurePic, 80)
+    const followupTimer = setTimeout(measurePic, 240)
     const settleTimer = !isHome ? setTimeout(measurePic, 360) : null
     return () => {
       clearTimeout(timer)
+      clearTimeout(followupTimer)
       if (settleTimer) clearTimeout(settleTimer)
       unregisterActivePlayerBarMeasurer(measurePic)
     }
-  }, [isForegroundHost, isHome, measurePic, winSize.width, winSize.height, navActiveId, navBarHeight])
+  }, [
+    isForegroundHost,
+    isHome,
+    measurePic,
+    winSize.width,
+    winSize.height,
+    navActiveId,
+    navBarHeight,
+    safeInsets.left,
+    safeInsets.right,
+    safeInsets.top,
+    safeInsets.bottom,
+  ])
 
   const handlePress = () => {
     if (!musicInfo.id) return

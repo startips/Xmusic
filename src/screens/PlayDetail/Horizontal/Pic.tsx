@@ -22,8 +22,10 @@ export default memo(({ componentId }: { componentId: string }) => {
 
   let imgWidth = Math.min(picAreaWidth * 0.84, availableHeight * 0.56)
   imgWidth -= imgWidth * (global.lx.fontSize - 1) * 0.3
+  imgWidth = Math.max(64, Math.round(imgWidth))
   let contentHeight = availableHeight * 0.60
   contentHeight -= contentHeight * (global.lx.fontSize - 1) * 0.2
+  contentHeight = Math.max(80, Math.round(contentHeight))
 
   return (
     <ArtworkCard

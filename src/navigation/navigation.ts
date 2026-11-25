@@ -15,6 +15,7 @@ import { COMPONENT_IDS, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import { getStatusBarStyle } from './utils'
 import { windowSizeTools } from '@/utils/windowSizeTools'
 import { isHorizontalMode } from '@/utils/tools'
+import { scaleSizeW } from '@/utils/pixelRatio'
 import { toOpaqueColor } from '@/theme/m3'
 import { type ListInfoItem } from '@/store/songlist/state'
 import { cancelActivePlayerBarBounce, getPlayerBarPicRect, preparePlayDetailMinimize, triggerActivePlayerBarBounce } from './playerBarTarget'
@@ -143,21 +144,27 @@ const buildPlayDetailPopAnimation = (winWidth: number, winHeight: number) => {
   const horizontal = isHorizontalMode(safeW, safeH)
   const measured = getPlayerBarPicRect(safeW, safeH)
   const minValidY = Math.max(120, safeH * 0.52)
+  const hasAside = horizontal && !commonState.componentIds.setting && !commonState.componentIds.songlistDetail
+  const leftInset = commonState.safeAreaInsets.left
+  const fallbackX = hasAside
+    ? Math.round(scaleSizeW(74) + leftInset + scaleSizeW(18))
+    : Math.round(leftInset + scaleSizeW(18))
   const rect = measured && measured.width > 0 && measured.height > 0 && measured.y >= minValidY && measured.y < safeH
     ? measured
     : {
-        x: horizontal ? 84 : 18,
+        x: horizontal ? fallbackX : 18,
         y: safeH - (horizontal ? 76 : 126),
         width: 44,
         height: 44,
       }
 
-  const targetCX = rect.x + rect.width / 2
-  const targetCY = rect.y + rect.height / 2
-  const tx = Math.round(targetCX - safeW / 2)
-  const ty = Math.round(targetCY - safeH / 2)
   const targetScaleX = Math.max(0.05, Math.min(0.2, Number((rect.width / safeW).toFixed(3))))
   const targetScaleY = Math.max(0.05, Math.min(0.2, Number((rect.height / safeH).toFixed(3))))
+  const targetCX = rect.x + rect.width / 2
+  const targetCY = rect.y + rect.height / 2
+  const visualOffsetX = horizontal ? Math.round(safeW * targetScaleX * 0.22) : 0
+  const tx = Math.round(targetCX + visualOffsetX - safeW / 2)
+  const ty = Math.round(targetCY - safeH / 2)
 
   return {
     content: {
@@ -176,14 +183,18 @@ const buildPlayDetailPopAnimation = (winWidth: number, winHeight: number) => {
       translationX: {
         from: 0,
         to: tx,
-        duration: 430,
-        interpolation: { type: 'decelerate' as const, factor: 1.35 },
+        duration: horizontal ? 460 : 430,
+        interpolation: horizontal
+          ? { type: 'fastOutSlowIn' as const }
+          : { type: 'decelerate' as const, factor: 1.35 },
       },
       translationY: {
         from: 0,
         to: ty,
         duration: 460,
-        interpolation: { type: 'accelerate' as const, factor: 1.15 },
+        interpolation: horizontal
+          ? { type: 'fastOutSlowIn' as const }
+          : { type: 'accelerate' as const, factor: 1.15 },
       },
       alpha: {
         from: 1,
