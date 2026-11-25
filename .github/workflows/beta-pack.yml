@@ -35,6 +35,7 @@ jobs:
           trap 'rm -f "app/$KEYSTORE_STORE_FILE"' EXIT
           printf '%s' "$KEYSTORE_STORE_FILE_BASE64" | tr -d '\r\n ' | base64 --decode > "app/$KEYSTORE_STORE_FILE"
           ./gradlew assembleRelease \
+            "-PMYAPP_VERSION_SUFFIX=beta" \
             "-PMYAPP_UPLOAD_STORE_FILE=$KEYSTORE_STORE_FILE" \
             "-PMYAPP_UPLOAD_KEY_ALIAS=$KEYSTORE_KEY_ALIAS" \
             "-PMYAPP_UPLOAD_STORE_PASSWORD=$KEYSTORE_PASSWORD" \
@@ -43,7 +44,7 @@ jobs:
       # Push tag to GitHub if package.json version's tag is not tagged
       - name: Get package version
         run: |
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")-beta"
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
 
       - name: Generate file MD5
