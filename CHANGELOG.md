@@ -6,6 +6,26 @@ Project versioning adheres to [Semantic Versioning](http://semver.org/).
 Commit convention is based on [Conventional Commits](http://conventionalcommits.org).
 Change log format is based on [Keep a Changelog](http://keepachangelog.com/).
 
+## [2.3.0](https://github.com/startips/Xmusic/compare/v2.2.1...v2.3.0) - 2026-11-25
+
+### 新增
+
+- 新增主页导航栏切换方向感知 Shared-Axis 微滑浮现动画、流体滑动胶囊指示器及横屏侧栏联动
+- 新增竖屏播放页最小化回落底栏时的底部封面落地弹性动效
+- 新增 Material 3 Expressive 动态组件体系，升级播放器设置面板与底部弹窗交互
+
+### 优化
+
+- 优化页面导航转场、边缘侧滑手势、设置页与队列弹窗展开流畅度，并借助内置浮点 DSP 消除启停爆音
+- 优化横屏四边沉浸式渲染、安全区避让与主控触控热区，并将新装用户的歌词水平对齐默认设为居中
+- 完善歌词金句海报、桌面小组件及多选浮层交互细节
+
+### 修复
+
+- 修复播放列表靠后位置的歌曲后打开「接下来播放」弹窗顶部出现大面积空白的问题
+- 修复英文模式下搜索页右上角 `Playlist` 分段按钮文字截断的问题
+- 修复播放详情页回弹飞顶及横屏左右未沉浸留白与挖孔遮挡按钮的问题
+
 ## [2.2.1](https://github.com/startips/Xmusic/compare/v2.2.0...v2.2.1) - 2026-11-22
 
 ### 修复
