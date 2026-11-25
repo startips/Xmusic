@@ -11,6 +11,8 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.SystemClock;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
 
@@ -18,6 +20,7 @@ import com.facebook.drawee.controller.AbstractDraweeControllerBuilder;
 import com.facebook.react.uimanager.PixelUtil;
 import com.facebook.react.views.image.GlobalImageLoadListener;
 import com.facebook.react.views.image.ReactImageView;
+import com.reactnativenavigation.viewcontrollers.viewcontroller.overlay.OverlayLayout;
 
 /**
  * ReactImageView subclass that applies top/bottom DST_IN alpha edge fades directly
@@ -73,6 +76,23 @@ public class FadeImageView extends ReactImageView {
     transitionComplete = false;
     initialClipWidth = 0;
     initialClipHeight = 0;
+  }
+
+  @Override
+  public void layout(int l, int t, int r, int b) {
+    ViewParent parent = getParent();
+    if (parent instanceof OverlayLayout && getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+      ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) getLayoutParams();
+      int expectedL = mlp.leftMargin;
+      int expectedT = mlp.topMargin;
+      int w = r - l;
+      int h = b - t;
+      if (w > 0 && h > 0 && (l != expectedL || t != expectedT)) {
+        super.layout(expectedL, expectedT, expectedL + w, expectedT + h);
+        return;
+      }
+    }
+    super.layout(l, t, r, b);
   }
 
   public void setTopFadeStart(float start) {
