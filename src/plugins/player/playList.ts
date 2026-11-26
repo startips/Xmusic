@@ -10,6 +10,7 @@ const httpRxp = /^(https?:\/\/.+|\/.+)/
 export const state = {
   isPlaying: false,
   prevDuration: -1,
+  prevTrackId: '',
 }
 
 const formatMusicInfo = (musicInfo: LX.Player.PlayMusic) => {
@@ -60,17 +61,19 @@ export const isTempTrack = (trackId: string) => /\/\/default$/.test(trackId)
 export const getCurrentTrackId = async() => global.lx.playerTrackId
 
 export const updateMetaData = async(musicInfo: LX.Player.MusicInfo, isPlay: boolean, force = false) => {
-  if (!force && isPlay == state.isPlaying) {
+  const trackId = global.lx.playerTrackId
+  if (!force && isPlay == state.isPlaying && trackId == state.prevTrackId) {
     const duration = await nativePlayer.getDuration()
     if (state.prevDuration != duration) {
       state.prevDuration = duration
-      if (global.lx.playerTrackId && musicInfo) {
+      if (trackId && musicInfo) {
         delayUpdateMusicInfo(musicInfo)
       }
     }
   } else {
+    state.prevTrackId = trackId
     state.prevDuration = await nativePlayer.getDuration()
-    if (global.lx.playerTrackId && musicInfo) {
+    if (trackId && musicInfo) {
       delayUpdateMusicInfo(musicInfo)
     }
   }
@@ -78,11 +81,17 @@ export const updateMetaData = async(musicInfo: LX.Player.MusicInfo, isPlay: bool
 
 export const initTrackInfo = async(_musicInfo: LX.Player.PlayMusic, mInfo: LX.Player.MusicInfo) => {
   global.lx.playerTrackId = ''
+  state.isPlaying = false
+  state.prevDuration = -1
+  state.prevTrackId = ''
   delayUpdateMusicInfo(mInfo)
 }
 
 const handlePlayMusic = async(musicInfo: LX.Player.PlayMusic, url: string, time: number) => {
   const track = buildTrack(musicInfo, url)
+  state.isPlaying = false
+  state.prevDuration = -1
+  state.prevTrackId = ''
   global.lx.playerTrackId = track.id ?? ''
   const autoPlay = !global.lx.restorePlayInfo
   if (global.lx.restorePlayInfo) {
