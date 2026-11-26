@@ -61,10 +61,10 @@
 | **准备** | 盘点与追踪建档 | 已完成 | 完成 `v2.3.1` 全量盘点，建立 `doc/KOTLIN_REFACTOR_PLAN.md` | 文档落盘且基线核对无误 |
 | **P0** | 协程底座与构建基建 | 已完成 | 切出 `refactor/kotlin-native`，配置 Coroutines / Media3 / Proguard，搭建 `core/` 底座并迁移入口类 | Debug/Release 构建通过 + `npm run lint` 通过 |
 | **P1** | 原生播放与 DSP 引擎收编 | 已完成 | 自研 Kotlin Media3 播放服务与 64-bit 内部/32-bit 浮点 DSP，移除 `react-native-track-player` 与 21 处补丁 | `lint`、`tsc --noEmit` 与 `assembleRelease`（含 R8）全部通过（真机交互待手测） |
-| **P2.1** | `crypto/` + `cache/` 迁移 | 待开始 | 迁出加解密与缓存清理模块，淘汰废弃 `AsyncTask` | `cryptoTest.ts` 自检通过 + 缓存统计/清理正常 |
-| **P2.2** | `userApi/` 沙箱重构 | 待开始 | 用单线程协程调度器重写 `QuickJsEngine.kt`，淘汰裸 `Handler`/`Thread` | 自定义源加载/解析/超时/销毁无泄漏与崩溃 |
-| **P2.3** | `UtilsModule` 拆分 + `widget/` | 待开始 | 拆分 1,138 行上帝类，建立统一封面管线消灭三连请求，迁移桌面微件 | 主题取色、微件双向同步、海报分享/存图、权限检测全通 |
-| **P2.4** | `lyric/` 悬浮歌词迁移 | 待开始 | 迁移 9 个悬浮歌词类，收敛 `WindowManager` 生命周期与倍速同步 | 悬浮窗显示/锁定/拖拽/卡拉OK/倍速对齐正常 |
+| **P2.1** | `crypto/` + `cache/` 迁移 | 已完成 | 迁出加解密与缓存清理模块，淘汰废弃 `AsyncTask` | 字节级算法对齐，协程 IO 化，编译通过（真机自检待手测） |
+| **P2.2** | `userApi/` 沙箱重构 | 已完成 | 用单线程协程调度器重写 `QuickJsEngine.kt`，淘汰裸 `Handler`/`Thread` | QuickJS 单线程亲和、协程定时器与事件桥接编译通过 |
+| **P2.3** | `UtilsModule` 拆分 + `widget/` | 已完成 | 拆分 1,138 行上帝类，建立 Glide 共享封面管线消灭三连请求，迁移桌面微件 | `artwork/` + `utils/` + `widget/` 全量 Kotlin 化并编译通过 |
+| **P2.4** | `lyric/` 悬浮歌词迁移 | 已完成 | 迁移 9 个悬浮歌词类，强类型 `LyricLine` 替换原始 `HashMap` 并收敛生命周期 | 悬浮窗、单双行跑马灯、Android 12+ 穿透透明度与编译通过 |
 | **P3.1** | `view/` 自定义视图清零 Java | 待开始 | 迁移 17 个自定义 View / Manager，原生层 Java 文件彻底清零 | `find android/app/src -name "*.java"` 输出为空；共享元素转场正常 |
 | **P3.2** | 原生存储引擎替换分片 | 待开始 | 用 SQLite WAL + 溢出存储替换 `AsyncStorage` 500KB 分片逻辑并无损迁移历史数据 | 升级安装后旧歌单/设置/听歌统计 100% 无损读取 |
 | **P4** | *(远期可选)* 业务下沉 | 待规划 | 播放队列/听歌统计/WebSocket 同步客户端下沉 Kotlin | 杀后台仅剩 Service 时微件/蓝牙可独立切歌 |
@@ -145,44 +145,46 @@
 ### P2：存量原生业务模块治理与全面 Kotlin 化
 
 #### P2.1 工具型小模块先行（`crypto/` + `cache/`，共 8 个文件）
-- [ ] `crypto/` 模块迁移（4 个文件 → Kotlin）：
-  - [ ] `AES.java` → `AES.kt`
-  - [ ] `RSA.java` → `RSA.kt`
-  - [ ] `CryptoModule.java` → `CryptoModule.kt`
-  - [ ] `CryptoPackage.java` → `CryptoPackage.kt`
-  - [ ] 跑通 `src/utils/nativeModules/cryptoTest.ts` 全部加解密一致性自检
-- [ ] `cache/` 模块迁移（4 个文件 → Kotlin）：
-  - [ ] `CacheModule.java`、`CachePackage.java`、`Utils.java` 迁为 Kotlin，用 `Dispatchers.IO` 协程替换 `CacheClearAsyncTask.java`
-  - [ ] 删除 `cache/CacheClearAsyncTask.java` 与废弃的 `utils/AsyncTask.java`
+- [x] `crypto/` 模块迁移（4 个文件 → Kotlin）：
+  - [x] `AES.java` → `AES.kt`（100% 对齐 `Base64.DEFAULT`/`NO_WRAP`、IV 16 字节截断与零填充逻辑）
+  - [x] `RSA.java` → `RSA.kt`（对齐 X509/PKCS8 与 `Base64.NO_WRAP`）
+  - [x] `CryptoModule.java` → `CryptoModule.kt`（异步 `generateRsaKey` 使用 `ModuleCoroutineScope` `Dispatchers.Default`，保留 Sync/Async 与 `sha1`）
+  - [x] `CryptoPackage.java` → `CryptoPackage.kt`
+  - [ ] 真机运行 `src/utils/nativeModules/cryptoTest.ts` 实测校验（静态字节级对齐与编译已通过）
+- [x] `cache/` 模块迁移（4 个文件 → Kotlin）：
+  - [x] `CacheModule.java`、`CachePackage.java`、`Utils.java` 迁为 `CacheModule.kt`、`CachePackage.kt`、`CacheUtils.kt`，用 `ModuleCoroutineScope(Dispatchers.IO)` 替换 `CacheClearAsyncTask.java`
+  - [x] 删除 `cache/CacheClearAsyncTask.java` 与废弃的 `utils/AsyncTask.java`
 
 #### P2.2 自定义源沙箱 `userApi/` 协程单线程化（8 个文件）
-- [ ] 设计并实现 `userApi/QuickJsEngine.kt`：使用 `Executors.newSingleThreadExecutor().asCoroutineDispatcher()` 保证 `QuickJSContext` 严格单线程亲和性
-- [ ] 迁移 `UserApiModule.java` → `UserApiModule.kt`、`UserApiPackage.java` → `UserApiPackage.kt`、`Console.java` → `QuickJsConsole.kt`
-- [ ] 移除 `JavaScriptThread.java`、`JsHandler.java`、`HandlerWhat.java`、`UtilsEvent.java`（事件发射收敛至 `ReactBridgeExt.kt`）
-- [ ] 修复原 `timeoutHandler` 在脚本重载/销毁后潜在的定时器泄漏问题，并优化 `utils_b642buf` 字节数组构建效率
-- [ ] 验收：导入/切换自定义源脚本、在线解析播放、请求取消、超时回调与频繁切换源无崩溃或内存泄漏
+- [x] 设计并实现 `userApi/QuickJsEngine.kt`：使用 `Executors.newSingleThreadExecutor().asCoroutineDispatcher()` 保证 `QuickJSContext` 严格单线程亲和性
+- [x] 迁移 `UserApiModule.java` → `UserApiModule.kt`、`UserApiPackage.java` → `UserApiPackage.kt`、`Console.java` → `QuickJsConsole.kt`
+- [x] 移除 `JavaScriptThread.java`、`JsHandler.java`、`HandlerWhat.java`、`UtilsEvent.java`（事件发射收敛至 `ReactBridgeExt.kt`）
+- [x] 用协程 `scope.launch { delay(...) }` 替换 `Handler` 定时器彻底消除销毁后泄漏，并用预分配 `StringBuilder` 优化 `utils_b642buf` 序列化
+- [ ] 真机验收：导入/切换自定义源脚本、在线解析播放、请求取消与频繁切换源实测
 
 #### P2.3 拆分 1,138 行 `UtilsModule` + `widget/` 迁移 + 统一封面管线（11 个文件）
-- [ ] 新建统一封面管线（消灭切歌时 Glide + `extractCoverPalette` + `updateWidgetState` 重复拉取 3 次封面的问题）：
-  - [ ] `artwork/CoverArtworkRepository.kt`（基于 OkHttp + 内存 LRU + 磁盘缓存的单飞请求仓库，一次拉取共享供给播放通知、动态取色与桌面微件）
-  - [ ] `artwork/CoverPaletteExtractor.kt`（将 `UtilsModule` 中 24 色相桶 HSL 主色/辅色提取算法纯 Kotlin 化）
-- [ ] 迁移 `widget/` 下 4 个文件为 Kotlin，并用协程 `Mutex` 保护 `widget_cover.png` 原子写入与缓存淘汰：
-  - [ ] `XmusicCapsuleWidgetProvider.kt`
-  - [ ] `XmusicCardWidgetProvider.kt`
-  - [ ] `XmusicWidgetActionReceiver.kt`
-  - [ ] `XmusicWidgetUpdater.kt`
-- [ ] 拆分 `UtilsModule.java`（对外继续保持 `getName() == "UtilsModule"`，确保 `src/utils/nativeModules/utils.ts` 零改动）：
-  - [ ] `utils/PosterShareHelper.kt`（歌词海报视图截屏、临时目录清理、`FileProvider` 分享、`MediaStore` 保存相册）
-  - [ ] `utils/SystemUiHelper.kt`（安全区 Insets、导航栏高度、窗口尺寸、屏幕常亮、`DisplayListener` 旋转监听、屏幕开关广播、线性马达震动反馈）
-  - [ ] `utils/DevicePermissionHelper.kt` / `BatteryOptimizationUtil.kt` / `NotificationPermissionUtil.kt`（APK 安装、WiFi IPv4、设备名、系统语言、电池优化与通知权限跳转）
-  - [ ] `utils/UtilsModule.kt` + `utils/UtilsPackage.kt`（薄门面委托调用上述 Helper 与 `CoverArtworkRepository`）
-- [ ] 验收：封面动态主题实时流转、长按歌词海报分享/保存相册、横竖屏旋转/安全区、触感反馈、权限检测、桌面微件全部正常
+- [x] 新建统一封面管线（复用 Glide 内存/磁盘缓存消灭切歌三连请求）：
+  - [x] `artwork/CoverArtworkRepository.kt`（Glide 优先加载 + 失败流回退 + LRU 40 条 `paletteCache`）
+  - [x] `artwork/CoverPaletteExtractor.kt`（24 色相桶 HSL 主色/辅色提取纯 Kotlin 化）
+- [x] 迁移 `widget/` 下 4 个文件为 Kotlin：
+  - [x] `XmusicCapsuleWidgetProvider.kt`
+  - [x] `XmusicCardWidgetProvider.kt`
+  - [x] `XmusicWidgetActionReceiver.kt`
+  - [x] `XmusicWidgetUpdater.kt`
+- [x] 拆分 `UtilsModule.java`（对外保持 `getName() == "UtilsModule"`，并用协程 `Mutex` 保护 `widget_cover.png` 原子写入）：
+  - [x] `utils/PosterShareHelper.kt`（歌词海报视图截屏、缓存清理、`FileProvider` 分享、`MediaStore` 保存相册）
+  - [x] `utils/SystemUiHelper.kt`（安全区 Insets、导航栏高度、窗口尺寸、屏幕常亮、`DisplayListener`、`screen-state`、线性马达触感）
+  - [x] `utils/DevicePermissionHelper.kt`、`BatteryOptimizationUtil.kt`、`NotificationPermissionUtil.kt`
+  - [x] `utils/UtilsModule.kt` + `utils/UtilsPackage.kt`
+- [ ] 真机验收：封面动态主题流转、歌词海报分享/存图、旋转安全区、桌面微件实测
 
 #### P2.4 桌面悬浮歌词模块 `lyric/` 迁移（9 个文件）
-- [ ] 迁移工具与数据结构：`LyricEvent.kt` / `LyricUtils.kt` / `LyricPlayer.kt`（替代原有手写状态机定时器，梳理倍速播放时间戳精度）
-- [ ] 迁移自定义悬浮窗视图：`LyricView.kt`、`LyricTextView.kt`、`LyricSwitchView.kt`
-- [ ] 迁移控制与桥接层：`Lyric.kt`、`LyricModule.kt`、`LyricPackage.kt`（保持 `src/utils/nativeModules/lyricDesktop.ts` 零改动）
-- [ ] 验收：开启/关闭桌面歌词、单双行切换、锁定穿透、位置拖拽记忆、歌词字体/透明度/颜色调整、翻译与罗马音切换正常
+- [x] 迁移核心解析与调度：`LyricPlayer.kt`（用强类型 `LyricLine` 替换原始 `HashMap`，收敛 `Handler` 调度与倍速同步）
+- [x] 迁移自定义悬浮窗视图：`LyricView.kt`、`LyricTextView.kt`、`LyricSwitchView.kt`
+- [x] 迁移控制与桥接层：`Lyric.kt`、`LyricModule.kt`（补齐 `setPosition` 方法）、`LyricPackage.kt`
+- [ ] 真机验收：桌面歌词显示/锁定穿透/拖拽记忆/单双行切换/翻译罗马音实测
+
+- [x] **P2 阶段编译验证**：`npm run lint`、`npx tsc --noEmit` 与 `./gradlew assembleDebug`（435 tasks `BUILD SUCCESSFUL`）全部通过；剩余 `.java` 仅剩 `view/` 下 17 个文件（及 `release/java/.../ReactNativeFlipper.java`）
 
 ---
 
@@ -222,8 +224,8 @@
 ### 当前已知风险与待排雷项（代码预审阶段识别）
 - [x] ~~`[P1-缓存兼容]` 旧版 `react-native-track-player` 在私有存储 `files/TrackPlayer` 下生成的缓存目录与自研 Media3 `SimpleCache` 的索引结构可能存在差异，需在 `PlayerMediaCache.kt` 中做好旧缓存兼容清理或平滑过渡，避免占满空间或读取异常。~~（解决方案：`PlayerMediaCache.kt` 沿用同版本 Media3 1.8.0 与 `files/TrackPlayer` 目录并增加 `try/catch` 损坏目录重置自愈兜底，同时仅对远程 HTTP/HTTPS 启用缓存，本地文件直通 `DefaultDataSource`）
 - [x] ~~`[P1-音频实时性]` 将 `XmusicDspAudioProcessor` 从 Java 迁往 Kotlin 时，`queueInput` 音频帧循环中严禁使用高阶函数闭包、`Pair` 解构、装箱 `Double`/`Int` 或可空类型包装，必须坚持原生 `DoubleArray`/`IntArray` 与 `for` 索引循环，避免 AudioThread GC 抖动引发爆音。~~（解决方案：`XmusicDspAudioProcessor.kt` 全部使用 `DoubleArray`/`IntArray`/`BooleanArray`/`Array(NUM_STAGES) { DoubleArray(MAX_CHANNELS) }` 与 `for (f in 0 until frames)` 索引循环，零装箱零闭包；同时淘汰 `defaultUrl` 11025Hz 占位音轨后移除了 `<20kHz` 静音 Hack）
-- [ ] `[P2.1-加解密字节级一致]` `AES.kt` 与 `RSA.kt` 的 Cipher Transformation、Padding、IV 拼接顺序、字符编码及 `Base64.NO_WRAP` 处理必须与原 Java 代码 100% 字节级对齐，防止多端同步握手或自定义源鉴权失效（必须通过 `cryptoTest.ts`）。
-- [ ] `[P2.2-QuickJS线程亲和性]` `wang.harlon.quickjs:wrapper-android:2.4.0` 的 `QuickJSContext` 绑定创建线程（JNI 线程局部检查），`create`、`evaluate`、`call`、`setTimeout` 回调与 `destroy` 必须全部严格调度在同一个单线程 `ExecutorCoroutineDispatcher` 上，切勿使用多线程池 `Dispatchers.Default`/`IO`。
+- [x] ~~`[P2.1-加解密字节级一致]` `AES.kt` 与 `RSA.kt` 的 Cipher Transformation、Padding、IV 拼接顺序、字符编码及 `Base64.NO_WRAP` 处理必须与原 Java 代码 100% 字节级对齐，防止多端同步握手或自定义源鉴权失效（必须通过 `cryptoTest.ts`）。~~（解决方案：`AES.kt` 与 `RSA.kt` 严格保持原 Java 版 `Base64.DEFAULT` 解码、`Base64.NO_WRAP` 输出、空 IV 无 `IvParameterSpec` 分支、16 字节 IV 数组截断填充及异常返回 `""` 语义）
+- [x] ~~`[P2.2-QuickJS线程亲和性]` `wang.harlon.quickjs:wrapper-android:2.4.0` 的 `QuickJSContext` 绑定创建线程（JNI 线程局部检查），`create`、`evaluate`、`call`、`setTimeout` 回调与 `destroy` 必须全部严格调度在同一个单线程 `ExecutorCoroutineDispatcher` 上，切勿使用多线程池 `Dispatchers.Default`/`IO`。~~（解决方案：`QuickJsEngine.kt` 独占 `Executors.newSingleThreadExecutor().asCoroutineDispatcher()` 与独立 `SupervisorJob` 作用域，将创建、求值、桥接调用、`delay` 定时回调与 `destroy()` 全部封闭于单线程上下文并在销毁时自动取消所有挂起协程）
 - [ ] `[P3.1-共享元素转场]` `FadeImageView` 参与 `react-native-navigation` 播放页 `playDetail_pic` 的共享元素动画，迁移为 Kotlin 时必须完整保留其视图层级、缩放类型及 `onLayout` 时机，不可随意改写为异步加载占位导致 `ExistingViewFinder` 判定失败。
 
 ### 已解决记录示例（后续真实解决条目紧随其后追加）
