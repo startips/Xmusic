@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
+import { View } from 'react-native'
 import { useSettingValue } from '@/store/setting/hook'
 import MusicList from './MusicList'
 import MyList from './MyList'
-import { useTheme } from '@/store/theme/hook'
+import { useDrawerSurfaceColor } from '@/store/theme/hook'
 import DrawerLayoutFixed, { type DrawerLayoutFixedType } from '@/components/common/DrawerLayoutFixed'
 import { COMPONENT_IDS } from '@/config/constant'
 import { scaleSizeW } from '@/utils/pixelRatio'
@@ -12,7 +13,7 @@ const MAX_WIDTH = scaleSizeW(400)
 
 export default () => {
   const drawer = useRef<DrawerLayoutFixedType>(null)
-  const theme = useTheme()
+  const drawerBg = useDrawerSurfaceColor()
   const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
   // const [width, setWidth] = useState(0)
 
@@ -50,7 +51,11 @@ export default () => {
     }
   }, [])
 
-  const navigationView = () => <MyList />
+  const navigationView = () => (
+    <View style={{ flex: 1, backgroundColor: drawerBg }}>
+      <MyList />
+    </View>
+  )
   // console.log('render drawer content')
 
   return (
@@ -62,7 +67,7 @@ export default () => {
       widthPercentageMax={MAX_WIDTH}
       drawerPosition={drawerLayoutPosition}
       renderNavigationView={navigationView}
-      drawerBackgroundColor={theme['c-content-background']}
+      drawerBackgroundColor={drawerBg}
       style={{ elevation: 1 }}
     >
       <MusicList />

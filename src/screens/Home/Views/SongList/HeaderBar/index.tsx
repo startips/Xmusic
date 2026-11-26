@@ -47,10 +47,10 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSortChange, onTagC
 
   return (
     <View style={styles.searchBar}>
-      <SortTab ref={sortTabRef} onSortChange={onSortChange} />
-      <Tag ref={tagRef} onTagChange={onTagChange} />
-      <OpenList ref={openListRef} />
       <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} />
+      <Tag ref={tagRef} onTagChange={onTagChange} />
+      <SortTab ref={sortTabRef} onSortChange={onSortChange} />
+      <OpenList ref={openListRef} />
     </View>
   )
 })
@@ -64,7 +64,7 @@ const styles = createStyle({
     paddingBottom: 8,
     height: 44,
     zIndex: 2,
-    gap: 6,
+    gap: 8,
   },
   selector: {
     width: 86,

@@ -23,7 +23,7 @@ export default forwardRef<TagType, TagProps>(({ onTagChange }, ref) => {
     const handleChange = (name: string, id: string) => {
       onTagChange(name, id)
       tagInfoRef.current.activeId = id
-      currentTagBtnRef.current?.setCurrentTagInfo(name)
+      currentTagBtnRef.current?.setCurrentTagInfo(name, id)
     }
 
     global.app_event.on('songlistTagInfoChange', handleChange)
@@ -36,7 +36,7 @@ export default forwardRef<TagType, TagProps>(({ onTagChange }, ref) => {
     setSelectedTagInfo(source, name, activeId) {
       tagInfoRef.current.activeId = activeId
       tagInfoRef.current.source = source
-      currentTagBtnRef.current?.setCurrentTagInfo(name)
+      currentTagBtnRef.current?.setCurrentTagInfo(name, activeId)
     },
   }))
 

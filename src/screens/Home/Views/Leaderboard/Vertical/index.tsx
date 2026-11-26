@@ -7,7 +7,7 @@ import { getLeaderboardSetting, saveLeaderboardSetting } from '@/utils/data'
 import DrawerLayoutFixed, { type DrawerLayoutFixedType } from '@/components/common/DrawerLayoutFixed'
 import HeaderBar, { type HeaderBarType, type HeaderBarProps } from './HeaderBar'
 import { scaleSizeW } from '@/utils/pixelRatio'
-import { useTheme } from '@/store/theme/hook'
+import { useDrawerSurfaceColor } from '@/store/theme/hook'
 // import { BorderWidths } from '@/theme'
 // import { useTheme } from '@/store/theme/hook'
 import BoardsList, { type BoardsListType, type BoardsListProps } from '../BoardsList'
@@ -23,7 +23,7 @@ const MAX_WIDTH = scaleSizeW(200)
 
 export default () => {
   const drawer = useRef<DrawerLayoutFixedType>(null)
-  const theme = useTheme()
+  const drawerBg = useDrawerSurfaceColor()
   const drawerLayoutPosition = useSettingValue('common.drawerLayoutPosition')
   const musicListRef = useRef<MusicListType>(null)
   const isUnmountedRef = useRef(false)
@@ -81,12 +81,14 @@ export default () => {
 
   const navigationView = () => {
     return (
-      <BoardsList
-        ref={boardsListRef}
-        onBoundChange={onBoundChange}
-        onCollect={onCollect}
-        onPlay={onPlay}
-      />
+      <View style={{ flex: 1, backgroundColor: drawerBg }}>
+        <BoardsList
+          ref={boardsListRef}
+          onBoundChange={onBoundChange}
+          onCollect={onCollect}
+          onPlay={onPlay}
+        />
+      </View>
     )
   }
 
@@ -128,7 +130,7 @@ export default () => {
       widthPercentageMax={MAX_WIDTH}
       drawerPosition={drawerLayoutPosition}
       renderNavigationView={navigationView}
-      drawerBackgroundColor={theme['c-content-background']}
+      drawerBackgroundColor={drawerBg}
       style={{ elevation: 1 }}
     >
       <View style={styles.container}>

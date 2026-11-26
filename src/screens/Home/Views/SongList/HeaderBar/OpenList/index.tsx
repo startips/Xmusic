@@ -1,30 +1,26 @@
-import { useRef, forwardRef, useImperativeHandle } from 'react'
-// import { Icon } from '@/components/common/Icon'
-import Button from '@/components/common/Button'
-// import { navigations } from '@/navigation'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import Modal, { type ModalType } from './Modal'
 import { type Source } from '@/store/songlist/state'
-import { createStyle } from '@/utils/tools'
-import Text from '@/components/common/Text'
-import { useI18n } from '@/lang'
 import { navigations } from '@/navigation'
 import commonState from '@/store/common/state'
-import { useTheme } from '@/store/theme/hook'
-import { M3Radius } from '@/theme/m3'
-
-// export interface OpenListProps {
-//   onTagChange: (name: string, id: string) => void
-// }
 
 export interface OpenListType {
   setInfo: (source: Source) => void
 }
 
-export default forwardRef<OpenListType, {}>((props, ref) => {
-  const t = useI18n()
-  const theme = useTheme()
+export default forwardRef<OpenListType, {}>((_props, ref) => {
   const modalRef = useRef<ModalType>(null)
   const songlistInfoRef = useRef<{ source: Source }>({ source: 'kw' })
+
+  useEffect(() => {
+    const handleShowModal = () => {
+      modalRef.current?.show(songlistInfoRef.current.source)
+    }
+    global.app_event.on('showOpenSonglistModal', handleShowModal)
+    return () => {
+      global.app_event.off('showOpenSonglistModal', handleShowModal)
+    }
+  }, [])
 
   useImperativeHandle(ref, () => ({
     setInfo(source) {
@@ -33,7 +29,6 @@ export default forwardRef<OpenListType, {}>((props, ref) => {
   }))
 
   const handleOpenSonglist = (id: string) => {
-    // console.log(id, songlistInfoRef.current.source)
     navigations.pushSonglistDetailScreen(commonState.componentIds.home!, {
       play_count: undefined,
       id,
@@ -45,31 +40,5 @@ export default forwardRef<OpenListType, {}>((props, ref) => {
     })
   }
 
-  // const handleSourceChange: ModalProps['onSourceChange'] = (source) => {
-  //   songlistInfoRef.current.source = source
-  // }
-
-
-  return (
-    <>
-      <Button style={{ ...styles.button, backgroundColor: theme['m3-surface-container'] }} onPress={() => modalRef.current?.show(songlistInfoRef.current.source)}>
-        <Text size={13} style={styles.label} color={theme['m3-on-surface']}>{t('songlist_open')}</Text>
-      </Button>
-      <Modal ref={modalRef} onOpenId={handleOpenSonglist} />
-    </>
-  )
-})
-
-const styles = createStyle({
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingLeft: 12,
-    paddingRight: 12,
-    paddingVertical: 5,
-    borderRadius: M3Radius.full,
-  },
-  label: {
-    fontWeight: '500',
-  },
+  return <Modal ref={modalRef} onOpenId={handleOpenSonglist} />
 })

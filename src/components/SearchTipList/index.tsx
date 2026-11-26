@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useMemo, forwardRef, useImperativeHandle
 import { StyleSheet, View, Animated } from 'react-native'
 // import PropTypes from 'prop-types'
 // import { AppColors } from '@/theme'
-import { useTheme } from '@/store/theme/hook'
+import { useDrawerSurfaceColor } from '@/store/theme/hook'
 import List, { type ItemT, type ListProps, type ListType } from './List'
 // import InsetShadow from 'react-native-inset-shadow'
 
@@ -17,7 +17,7 @@ export interface SearchTipListType<T> {
 const noop = () => {}
 
 const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTipListProps<T>, ref: Ref<SearchTipListType<T>>) => {
-  const theme = useTheme()
+  const drawerBg = useDrawerSurfaceColor()
   const translateY = useRef(new Animated.Value(0)).current
   const scaleY = useRef(new Animated.Value(0)).current
   const [visible, setVisible] = useState(false)
@@ -109,12 +109,12 @@ const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTip
           { scaleY },
         ],
       }}>
-      <View style={{ ...styles.container, backgroundColor: theme['c-content-background'] }}>
+      <View style={{ ...styles.container, backgroundColor: drawerBg }}>
         <List ref={listRef} {...props} />
       </View>
       <View style={styles.blank} onTouchStart={onPressBg}></View>
     </Animated.View>
-  ), [onPressBg, props, scaleY, theme, translateY, visible])
+  ), [drawerBg, onPressBg, props, scaleY, translateY, visible])
 
   return !visible && animatePlayed ? null : component
 }

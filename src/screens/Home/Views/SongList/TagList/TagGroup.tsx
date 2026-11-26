@@ -5,6 +5,7 @@ import { type TagInfoItem } from '@/store/songlist/state'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
+import { M3Radius } from '@/theme/m3'
 
 export interface TagGroupProps {
   name: string
@@ -19,24 +20,29 @@ export default ({ name, list, onTagChange, activeId }: TagGroupProps) => {
     <View>
       {
         name
-          ? <Text style={styles.tagTypeTitle} color={theme['c-font-label']}>{name}</Text>
+          ? <Text size={12.5} style={styles.tagTypeTitle} color={theme['m3-on-surface-variant']}>{name}</Text>
           : null
       }
       <View style={styles.tagTypeList}>
         {list.map(item => (
           activeId == item.id
             ? (
-                <View style={{ ...styles.tagButton, backgroundColor: theme['c-button-background'] }} key={item.id}>
-                  <Text style={styles.tagButtonText} color={theme['c-primary-font-active']}>{item.name}</Text>
+                <View style={{ ...styles.tagButton, backgroundColor: theme['m3-primary'] }} key={item.id}>
+                  <Text size={13} style={styles.tagButtonTextActive} color={theme['m3-on-primary']}>{item.name}</Text>
                 </View>
               )
             : (
                 <Button
-                  style={{ ...styles.tagButton, backgroundColor: theme['c-button-background'] }}
+                  style={{
+                    ...styles.tagButton,
+                    ...styles.tagButtonInactive,
+                    backgroundColor: theme['m3-surface-container-high'],
+                    borderColor: theme['m3-outline-variant'],
+                  }}
                   key={item.id}
                   onPress={() => { onTagChange(item.name, item.id) }}
                 >
-                  <Text style={styles.tagButtonText} color={theme['c-font']} >{item.name}</Text>
+                  <Text size={13} style={styles.tagButtonText} color={theme['m3-on-surface']}>{item.name}</Text>
                 </Button>
               )
 
@@ -48,24 +54,28 @@ export default ({ name, list, onTagChange, activeId }: TagGroupProps) => {
 
 const styles = createStyle({
   tagTypeTitle: {
-    marginTop: 15,
-    marginBottom: 10,
+    marginTop: 14,
+    marginBottom: 8,
+    fontWeight: '600',
   },
   tagTypeList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 8,
   },
   tagButton: {
-    // marginRight: 10,
-    borderRadius: 4,
-    marginRight: 10,
-    marginBottom: 10,
+    borderRadius: M3Radius.full,
+  },
+  tagButtonInactive: {
+    borderWidth: 0.6,
   },
   tagButtonText: {
-    fontSize: 13,
-    paddingLeft: 12,
-    paddingRight: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+  },
+  tagButtonTextActive: {
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    fontWeight: '600',
   },
 })
