@@ -1,23 +1,11 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-import { DeviceEventEmitter } from 'react-native'
-import TrackPlayer, { State as TPState, Event as TPEvent } from 'react-native-track-player'
-// import { store } from '@/store'
-// import { action as playerAction, STATUS } from '@/store/modules/player'
-import { isTempId, isEmpty } from './utils'
-// import { play as lrcPlay, pause as lrcPause } from '@/core/lyric'
+import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState } from './nativePlayer'
+import { isTempId } from './utils'
 import { exitApp } from '@/core/common'
-import { getCurrentTrackId } from './playList'
 import { pause, play, playNext, playPrev } from '@/core/player/player'
 import { toggleCurrentTrackFavoriteSilently } from '@/core/player/favoriteSync'
 
 let isInitialized = false
-
-// let retryTrack: LX.Player.Track | null = null
-// let retryGetUrlId: string | null = null
-// let retryGetUrlNum = 0
-// let errorTime = 0
-// let prevDuration = 0
-// let isPlaying = false
 
 // 销毁播放器并退出
 const handleExitApp = async(reason: string) => {
@@ -25,196 +13,92 @@ const handleExitApp = async(reason: string) => {
   exitApp(reason)
 }
 
-
-const registerPlaybackService = async() => {
+const registerPlaybackService = () => {
   if (isInitialized) return
 
   console.log('reg services...')
-  TrackPlayer.addEventListener(TPEvent.RemotePlay, () => {
-    // console.log('remote-play')
+  addPlayerEventListener(PlayerEvent.RemotePlay, () => {
     play()
   })
 
-  TrackPlayer.addEventListener(TPEvent.RemotePause, () => {
-    // console.log('remote-pause')
+  addPlayerEventListener(PlayerEvent.RemotePause, () => {
     void pause()
   })
 
-  TrackPlayer.addEventListener(TPEvent.RemoteNext, () => {
-    // console.log('remote-next')
+  addPlayerEventListener(PlayerEvent.RemoteNext, () => {
     void playNext()
   })
 
-  TrackPlayer.addEventListener(TPEvent.RemotePrevious, () => {
-    // console.log('remote-previous')
+  addPlayerEventListener(PlayerEvent.RemotePrevious, () => {
     void playPrev()
   })
 
-  TrackPlayer.addEventListener(TPEvent.RemoteStop, () => {
-    // console.log('remote-stop')
+  addPlayerEventListener(PlayerEvent.RemoteStop, () => {
     void handleExitApp('Remote Stop')
   })
 
-  // TrackPlayer.addEventListener(TPEvent.RemoteDuck, async({ permanent, paused, ducking }) => {
-  //   console.log('remote-duck')
-  //   if (paused) {
-  //     store.dispatch(playerAction.setStatus({ status: STATUS.pause, text: '已暂停' }))
-  //     lrcPause()
-  //   } else {
-  //     store.dispatch(playerAction.setStatus({ status: STATUS.playing, text: '播放中...' }))
-  //     TrackPlayer.getPosition().then(position => {
-  //       lrcPlay(position * 1000)
-  //     })
-  //   }
-  // })
-
-  TrackPlayer.addEventListener(TPEvent.PlaybackError, async(err: any) => {
+  addPlayerEventListener(PlayerEvent.PlaybackError, (err: any) => {
     console.log('playback-error', err)
     global.app_event.error()
     global.app_event.playerError()
   })
 
-  TrackPlayer.addEventListener(TPEvent.RemoteSeek, async({ position }) => {
-    global.app_event.setProgress(position as number)
+  addPlayerEventListener<{ position: number }>(PlayerEvent.RemoteSeek, ({ position }) => {
+    global.app_event.setProgress(position)
   })
 
-  DeviceEventEmitter.addListener('remote-toggle-favorite', () => {
+  addPlayerEventListener(PlayerEvent.RemoteToggleFavorite, () => {
     void toggleCurrentTrackFavoriteSilently()
   })
 
-  TrackPlayer.addEventListener(TPEvent.PlaybackState, async info => {
+  addPlayerEventListener<{ state: PlayerState }>(PlayerEvent.PlaybackState, info => {
     if (global.lx.gettingUrlId || isTempId()) return
-    // let currentIsPlaying = false
 
     switch (info.state) {
-      case TPState.None:
-        // console.log('state', 'State.NONE')
+      case PlayerState.None:
         break
-      case TPState.Ready:
-      case TPState.Stopped:
-      case TPState.Paused:
+      case PlayerState.Stopped:
+      case PlayerState.Paused:
         global.app_event.playerPause()
         global.app_event.pause()
         break
-      case TPState.Playing:
+      case PlayerState.Playing:
         global.app_event.playerPlaying()
         global.app_event.play()
         break
-      case TPState.Buffering:
+      case PlayerState.Buffering:
         global.app_event.pause()
         global.app_event.playerWaiting()
         break
-      case TPState.Connecting:
+      case PlayerState.Connecting:
         global.app_event.playerLoadstart()
         break
       default:
-        // console.log('playback-state', info)
         break
     }
-    if (global.lx.isPlayedStop) return handleExitApp('Timeout Exit')
-
-    // console.log('currentIsPlaying', currentIsPlaying, global.lx.playInfo.isPlaying)
-    // void updateMetaData(global.lx.store_playMusicInfo.musicInfo, currentIsPlaying)
+    if (global.lx.isPlayedStop) void handleExitApp('Timeout Exit')
   })
-  TrackPlayer.addEventListener(TPEvent.PlaybackTrackChanged, async info => {
-    // console.log('PlaybackTrackChanged====>', info)
-    global.lx.playerTrackId = await getCurrentTrackId()
-    if (info.track == null) return
-    if (global.lx.isPlayedStop) return handleExitApp('Timeout Exit')
 
-    // console.log('global.lx.playerTrackId====>', global.lx.playerTrackId)
-    if (isEmpty()) {
-      // console.log('====TEMP PAUSE====')
-      await TrackPlayer.pause()
-      global.app_event.playerPause()
-      global.app_event.pause()
-      global.app_event.playerEnded()
-      global.app_event.playerEmptied()
-      // if (retryTrack) {
-      //   if (retryTrack.musicId == retryGetUrlId) {
-      //     if (++retryGetUrlNum > 1) {
-      //       store.dispatch(playerAction.playNext(true))
-      //       retryGetUrlId = null
-      //       retryTrack = null
-      //       return
-      //     }
-      //   } else {
-      //     retryGetUrlId = retryTrack.musicId
-      //     retryGetUrlNum = 0
-      //   }
-      //   store.dispatch(playerAction.refreshMusicUrl(global.lx.playInfo.currentPlayMusicInfo, errorTime))
-      // } else {
-      //   store.dispatch(playerAction.playNext(true))
-      // }
+  addPlayerEventListener(PlayerEvent.PlaybackTrackEnded, async() => {
+    if (global.lx.gettingUrlId) return
+    global.lx.playerTrackId = ''
+    if (global.lx.isPlayedStop) {
+      await handleExitApp('Timeout Exit')
+      return
     }
-  //   // if (!info.nextTrack) return
-  //   // if (info.track) {
-  //   //   const track = info.track.substring(0, info.track.lastIndexOf('__//'))
-  //   //   const nextTrack = info.track.substring(0, info.nextTrack.lastIndexOf('__//'))
-  //   //   console.log(nextTrack, track)
-  //   //   if (nextTrack == track) return
-  //   // }
-  //   // const track = await TrackPlayer.getTrack(info.nextTrack)
-  //   // if (!track) return
-  //   // let newTrack
-  //   // if (track.url == defaultUrl) {
-  //   //   TrackPlayer.pause().then(async() => {
-  //   //     isRefreshUrl = true
-  //   //     retryGetUrlId = track.id
-  //   //     retryGetUrlNum = 0
-  //   //     try {
-  //   //       newTrack = await updateTrackUrl(track)
-  //   //       console.log('++++newTrack++++', newTrack)
-  //   //     } catch (error) {
-  //   //       console.log('error', error)
-  //   //       if (error.message != '跳过播放') TrackPlayer.skipToNext()
-  //   //       isRefreshUrl = false
-  //   //       retryGetUrlId = null
-  //   //       return
-  //   //     }
-  //   //     retryGetUrlId = null
-  //   //     isRefreshUrl = false
-  //   //     console.log(await TrackPlayer.getQueue(), null, 2)
-  //   //     await TrackPlayer.play()
-  //   //   })
-  //   // }
-  //   // store.dispatch(playerAction.playNext())
+    await nativePlayer.pause()
+    global.app_event.playerPause()
+    global.app_event.pause()
+    global.app_event.playerEnded()
+    global.app_event.playerEmptied()
   })
-  // TrackPlayer.addEventListener('playback-queue-ended', async info => {
-  //   // console.log('playback-queue-ended', info)
-  //   store.dispatch(playerAction.playNext())
-  //   // if (!info.nextTrack) return
-  //   // const track = await TrackPlayer.getTrack(info.nextTrack)
-  //   // if (!track) return
-  //   // // if (track.url == defaultUrl) {
-  //   // //   TrackPlayer.pause()
-  //   // //   getMusicUrl(track.original).then(url => {
-  //   // //     TrackPlayer.updateMetadataForTrack(info.nextTrack, {
-  //   // //       url,
-  //   // //     })
-  //   // //     TrackPlayer.play()
-  //   // //   })
-  //   // // }
-  //   // if (!track.artwork) {
-  //   //   getMusicPic(track.original).then(url => {
-  //   //     console.log(url)
-  //   //     TrackPlayer.updateMetadataForTrack(info.nextTrack, {
-  //   //       artwork: url,
-  //   //     })
-  //   //   })
-  //   // }
-  // })
-  // TrackPlayer.addEventListener('playback-destroy', async() => {
-  //   console.log('playback-destroy')
-  //   store.dispatch(playerAction.destroy())
-  // })
+
   isInitialized = true
 }
-
 
 export default () => {
   if (global.lx.playerStatus.isRegisteredService) return
   console.log('handle registerPlaybackService...')
-  TrackPlayer.registerPlaybackService(() => registerPlaybackService)
+  registerPlaybackService()
   global.lx.playerStatus.isRegisteredService = true
 }

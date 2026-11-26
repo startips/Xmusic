@@ -60,7 +60,7 @@
 | :---: | :--- | :---: | :--- | :--- |
 | **准备** | 盘点与追踪建档 | 已完成 | 完成 `v2.3.1` 全量盘点，建立 `doc/KOTLIN_REFACTOR_PLAN.md` | 文档落盘且基线核对无误 |
 | **P0** | 协程底座与构建基建 | 已完成 | 切出 `refactor/kotlin-native`，配置 Coroutines / Media3 / Proguard，搭建 `core/` 底座并迁移入口类 | Debug/Release 构建通过 + `npm run lint` 通过 |
-| **P1** | 原生播放与 DSP 引擎收编 | 待开始 | 自研 Kotlin Media3 播放服务与 64-bit 内部/32-bit 浮点 DSP，移除 `react-native-track-player` 与 21 处补丁 | 播/停/Seek/淡入淡出/EQ/超级岛/微件/缓存全通 |
+| **P1** | 原生播放与 DSP 引擎收编 | 已完成 | 自研 Kotlin Media3 播放服务与 64-bit 内部/32-bit 浮点 DSP，移除 `react-native-track-player` 与 21 处补丁 | `lint`、`tsc --noEmit` 与 `assembleRelease`（含 R8）全部通过（真机交互待手测） |
 | **P2.1** | `crypto/` + `cache/` 迁移 | 待开始 | 迁出加解密与缓存清理模块，淘汰废弃 `AsyncTask` | `cryptoTest.ts` 自检通过 + 缓存统计/清理正常 |
 | **P2.2** | `userApi/` 沙箱重构 | 待开始 | 用单线程协程调度器重写 `QuickJsEngine.kt`，淘汰裸 `Handler`/`Thread` | 自定义源加载/解析/超时/销毁无泄漏与崩溃 |
 | **P2.3** | `UtilsModule` 拆分 + `widget/` | 待开始 | 拆分 1,138 行上帝类，建立统一封面管线消灭三连请求，迁移桌面微件 | 主题取色、微件双向同步、海报分享/存图、权限检测全通 |
@@ -99,49 +99,46 @@
 ### P1：原生播放与 DSP 引擎收编（最高价值阶段）
 
 #### P1.1 DSP 音效引擎 Kotlin 化（替代 `audio/` + 注入类）
-- [ ] 新建 `player/dsp/XmusicDspConfig.kt`（线程安全参数仓库，保持 5 段频点 `[60, 230, 910, 3600, 14000] Hz`、`-1500..1500` mB 增益、低音增强 `0..1000`、响度 `0..1200`）
-- [ ] 新建 `player/dsp/XmusicDspAudioProcessor.kt`（基于 Media3 `BaseAudioProcessor`，严格使用基本类型数组 `DoubleArray`/`IntArray` 零 GC 处理 PCM 16/24/32/Float；完整迁移 5 段参量 EQ + 85Hz 低音搁架 + 响度增益 + 0.85 软拐点限幅 + 静音预卷与余弦淡入）
-- [ ] 合并并升级 `audio/AudioEffectModule.java` + `AudioEffectPackage.java` 为 Kotlin（或纳入 `XmusicPlayerPackage.kt`），保持 `NativeModules.AudioEffectModule` 接口兼容 `src/utils/nativeModules/audioEffect.ts`
+- [x] 新建 `player/dsp/XmusicDspConfig.kt`（线程安全参数仓库，保持 5 段频点 `[60, 230, 910, 3600, 14000] Hz`、`-1500..1500` mB 增益、低音增强 `0..1000`、响度 `0..1200`）
+- [x] 新建 `player/dsp/XmusicDspAudioProcessor.kt`（基于 Media3 `BaseAudioProcessor`，严格使用基本类型数组 `DoubleArray`/`IntArray` 与索引循环实现零 GC 处理 PCM 16/24/32/Float；完整迁移 5 段参量 EQ + 85Hz 低音搁架 + 响度增益 + 0.85 软拐点限幅 + 静音预卷与余弦淡入）
+- [x] 合并并升级 `audio/AudioEffectModule.java` + `AudioEffectPackage.java` 为 `player/AudioEffectModule.kt`（纳入 `XmusicPlayerPackage.kt`），保持 `NativeModules.AudioEffectModule` 接口兼容 `src/utils/nativeModules/audioEffect.ts`
 
 #### P1.2 Media3 播放服务与音量包络
-- [ ] 新建 `player/cache/PlayerMediaCache.kt`：封装 Media3 `SimpleCache`（目录、容量上限、缓存命中判断 `isCached`、缓存统计与清理，兼顾旧版 `TrackPlayer` 缓存迁移/清理）
-- [ ] 新建 `player/XmusicPlayerController.kt`：基于 `ExoPlayer` + `DefaultRenderersFactory` 挂载 `XmusicDspAudioProcessor`；支持音频焦点管理、AudioOffload 开关、倍速播放、Seek；实现 60fps 柔和启停包络（`softPlayPause`）与曲首/曲末平滑渐变（`crossfadeMs`）及音频会话广播
-- [ ] 新建 `player/XmusicPlaybackService.kt`：前台服务生命周期管理、`onTaskRemoved` 彻底清理释放、`ACTION_TOGGLE_FAVORITE` 与微件控制 Action 处理
+- [x] 新建 `player/cache/PlayerMediaCache.kt`：封装 Media3 `SimpleCache`（沿用 `files/TrackPlayer` 目录并增加损坏自愈兜底、字节单位 `getCacheSizeBytes()`、`isCached`、缓存清理，仅对远程 HTTP/HTTPS 启用缓存）
+- [x] 新建 `player/XmusicPlayerController.kt`：基于 `ExoPlayer` + `DefaultRenderersFactory` 挂载 `XmusicDspAudioProcessor`；支持音频焦点、AudioOffload、倍速播放、Seek；实现 60fps 柔和启停包络（`softPlayPause`）与曲首/曲末平滑渐变（`crossfadeMs`）及 `AUDIO_SESSION_CHANGED` 广播
+- [x] 新建 `player/XmusicPlaybackService.kt`：前台服务生命周期管理、`onTaskRemoved` 彻底清理释放、`ACTION_TOGGLE_FAVORITE` 与微件控制 Action 处理；同步更新 `XmusicWidgetActionReceiver.java` 指向新 Service 类名
 
 #### P1.3 媒体会话、澎湃 OS 超级岛与桌面微件联动
-- [ ] 新建 `player/session/XmusicMediaNotificationManager.kt`：
-  - [ ] 构建兼容 Android 5–15+ 的 `MediaSessionCompat` / Media3 Session 与媒体通知
-  - [ ] 768px 高清封面同步写入 `METADATA_KEY_ALBUM_ART` 与 `METADATA_KEY_ART`（适配 HyperOS 超级岛 / 锁屏），并保持 Target 生命周期避免 Glide 回收位图
-  - [ ] 通知栏第 5 槽加入红心收藏 Action + `PlaybackStateCompat.CustomAction`（支持免弹窗一键收藏）
-  - [ ] 支持蓝牙歌词（`updateNowPlayingTitles`）更新时保留已加载封面位图
-  - [ ] 与后续统一封面管线对齐，同步刷新桌面微件状态与 `widget_cover.png`
+- [x] 新建 `player/session/XmusicMediaNotificationManager.kt` 及自包含通知栏图标（`ic_notif_*.xml`）：
+  - [x] 构建兼容 Android 5–15+ 的 `MediaSessionCompat` 与媒体通知
+  - [x] 768px 高清封面同步写入 `METADATA_KEY_ALBUM_ART` 与 `METADATA_KEY_ART`（适配 HyperOS 超级岛 / 锁屏），并保持 Target 生命周期避免 Glide 回收位图
+  - [x] 通知栏第 5 槽加入红心收藏 Action + `PlaybackStateCompat.CustomAction`（支持免弹窗一键收藏）
+  - [x] 支持蓝牙歌词（`updateNowPlayingTitles`、`android.media.metadata.LYRICS`）更新时保留已加载封面位图
+  - [x] 同步刷新桌面微件状态与 `widget_cover.png`
 
 #### P1.4 RN Bridge 与 JS 播放器胶水层收敛
-- [ ] 新建 `player/XmusicPlayerModule.kt` 与 `player/XmusicPlayerPackage.kt`（注册至 `MainApplication.kt`）
-- [ ] 更新 `android/app/src/main/AndroidManifest.xml` 中自研 `XmusicPlaybackService` 声明与前台服务权限（兼容 Android 14+ `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 如调整 targetSdk 时备用）
-- [ ] 适配重构 JS 胶水层：
-  - [ ] `src/plugins/player/index.ts`
-  - [ ] `src/plugins/player/utils.ts`
-  - [ ] `src/plugins/player/playList.ts`
-  - [ ] `src/plugins/player/service.ts`
-  - [ ] `src/plugins/player/hook.ts`
-  - [ ] `src/utils/nativeModules/audioEffect.ts`
-- [ ] **架构简化专项**：
-  - [ ] 使用原生真实的 `playback-ended` 回调淘汰 `defaultUrl`（11025Hz 空白音轨哨兵）双轨 Hack 及 `<20kHz` 静音补丁
-  - [ ] 用原生单次 `getPlaybackSnapshot()` 或原生节流推送替代 `hook.ts` 每秒 3 次独立 Bridge Promise 轮询
+- [x] 新建 `player/XmusicPlayerModule.kt`、`player/XmusicPlayerEventBus.kt` 与 `player/XmusicPlayerPackage.kt`（注册至 `MainApplication.kt`）
+- [x] 更新 `android/app/src/main/AndroidManifest.xml` 中自研 `XmusicPlaybackService`、`MediaButtonReceiver` 及 `WAKE_LOCK`/`FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限
+- [x] 适配重构 JS 胶水层与类型声明：
+  - [x] `src/types/player.d.ts`、`src/plugins/player/nativePlayer.ts`
+  - [x] `src/plugins/player/index.ts`
+  - [x] `src/plugins/player/utils.ts`
+  - [x] `src/plugins/player/playList.ts`
+  - [x] `src/plugins/player/service.ts`
+  - [x] `src/plugins/player/hook.ts`
+  - [x] `src/utils/nativeModules/audioEffect.ts`
+- [x] **架构简化专项**：
+  - [x] 使用原生 `playback-track-ended` 事件淘汰 `defaultUrl`（11025Hz 空白音轨哨兵）双轨 Hack 及 `<20kHz` 静音补丁
+  - [x] 用原生单次 `getPlaybackSnapshot()` 替代 `hook.ts` 每次轮询 3 次独立 Bridge Promise 调用
 
 #### P1.5 依赖与补丁清理
-- [ ] 从 `package.json` 卸载移除 `react-native-track-player`（及更新 `package-lock.json`）
-- [ ] 清理 `dependencies-patch.js` 中全部 21 处播放器补丁与注入源码字符串（`dspConfigSource` / `dspProcessorSource`），仅保留 `react-native-navigation` 的 7 组补丁（规则 #17、#18、#23、#25、#26、#27、#28）
-- [ ] 删除旧 `audio/AudioEffectModule.java` 与 `AudioEffectPackage.java`
+- [x] 从 `package.json` / `package-lock.json` 卸载移除 `react-native-track-player`
+- [x] 清理 `dependencies-patch.js` 中全部 21 处播放器补丁与注入源码字符串，仅保留 `react-native-navigation` 的 23 条补丁片段（7 组规则）并实测通过
+- [x] 删除旧 `audio/AudioEffectModule.java` 与 `AudioEffectPackage.java`
 
-#### P1 验收清单
-- [ ] 在线切歌、本地音频播放、后台息屏连播、Seek 拖拽与倍速播放正常
-- [ ] 柔和启停与曲末淡出无爆音；开启 5 段均衡器 + 低音增强 + 响度增益实时生效
-- [ ] 锁屏控件、通知栏、HyperOS 超级岛封面与第 5 槽红心收藏同步正常
-- [ ] 桌面大小微件（胶囊/卡片）切歌、播放/暂停、收藏联动正常
-- [ ] 边播边存缓存体积统计与一键清缓存正常
-- [ ] 划掉后台多任务卡片可正常退出释放服务无僵尸通知
+#### P1 构建与代码验证（真机交互留待装包手测）
+- [x] 全量 `npm run lint`、`npx tsc --noEmit` 与 `./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a`（含 R8/ProGuard 混淆与 `lintVitalRelease`）全部通过，产出 `xmusic-v2.3.1-arm64-v8a.apk` 与 `xmusic-v2.3.1-universal.apk`
+- [ ] 真机交互回归：在线/本地切歌、Seek、柔和启停/均衡器、超级岛/通知栏红心、桌面微件控播、边播边存缓存清理及划掉后台释放
 
 ---
 
@@ -223,8 +220,8 @@
 > 记录重构过程中实际遭遇的难点、编译坑、行为差异或潜在风险。**已解决的条目请保留原文并加 `~~删除线~~`，不要直接删行。**
 
 ### 当前已知风险与待排雷项（代码预审阶段识别）
-- [ ] `[P1-缓存兼容]` 旧版 `react-native-track-player` 在私有存储 `files/TrackPlayer` 下生成的缓存目录与自研 Media3 `SimpleCache` 的索引结构可能存在差异，需在 `PlayerMediaCache.kt` 中做好旧缓存兼容清理或平滑过渡，避免占满空间或读取异常。
-- [ ] `[P1-音频实时性]` 将 `XmusicDspAudioProcessor` 从 Java 迁往 Kotlin 时，`queueInput` 音频帧循环中严禁使用高阶函数闭包、`Pair` 解构、装箱 `Double`/`Int` 或可空类型包装，必须坚持原生 `DoubleArray`/`IntArray` 与 `for` 索引循环，避免 AudioThread GC 抖动引发爆音。
+- [x] ~~`[P1-缓存兼容]` 旧版 `react-native-track-player` 在私有存储 `files/TrackPlayer` 下生成的缓存目录与自研 Media3 `SimpleCache` 的索引结构可能存在差异，需在 `PlayerMediaCache.kt` 中做好旧缓存兼容清理或平滑过渡，避免占满空间或读取异常。~~（解决方案：`PlayerMediaCache.kt` 沿用同版本 Media3 1.8.0 与 `files/TrackPlayer` 目录并增加 `try/catch` 损坏目录重置自愈兜底，同时仅对远程 HTTP/HTTPS 启用缓存，本地文件直通 `DefaultDataSource`）
+- [x] ~~`[P1-音频实时性]` 将 `XmusicDspAudioProcessor` 从 Java 迁往 Kotlin 时，`queueInput` 音频帧循环中严禁使用高阶函数闭包、`Pair` 解构、装箱 `Double`/`Int` 或可空类型包装，必须坚持原生 `DoubleArray`/`IntArray` 与 `for` 索引循环，避免 AudioThread GC 抖动引发爆音。~~（解决方案：`XmusicDspAudioProcessor.kt` 全部使用 `DoubleArray`/`IntArray`/`BooleanArray`/`Array(NUM_STAGES) { DoubleArray(MAX_CHANNELS) }` 与 `for (f in 0 until frames)` 索引循环，零装箱零闭包；同时淘汰 `defaultUrl` 11025Hz 占位音轨后移除了 `<20kHz` 静音 Hack）
 - [ ] `[P2.1-加解密字节级一致]` `AES.kt` 与 `RSA.kt` 的 Cipher Transformation、Padding、IV 拼接顺序、字符编码及 `Base64.NO_WRAP` 处理必须与原 Java 代码 100% 字节级对齐，防止多端同步握手或自定义源鉴权失效（必须通过 `cryptoTest.ts`）。
 - [ ] `[P2.2-QuickJS线程亲和性]` `wang.harlon.quickjs:wrapper-android:2.4.0` 的 `QuickJSContext` 绑定创建线程（JNI 线程局部检查），`create`、`evaluate`、`call`、`setTimeout` 回调与 `destroy` 必须全部严格调度在同一个单线程 `ExecutorCoroutineDispatcher` 上，切勿使用多线程池 `Dispatchers.Default`/`IO`。
 - [ ] `[P3.1-共享元素转场]` `FadeImageView` 参与 `react-native-navigation` 播放页 `playDetail_pic` 的共享元素动画，迁移为 Kotlin 时必须完整保留其视图层级、缩放类型及 `onLayout` 时机，不可随意改写为异步加载占位导致 `ExistingViewFinder` 判定失败。
@@ -233,3 +230,4 @@
 - [x] ~~`[示例]` 某个模块在 Kotlin 迁移后出现空指针或编译告警~~（解决方案：记录具体根因、修改文件与提交说明）
 - [x] ~~`[P0-构建环境]` 当前宿主机为 ARM64 (`aarch64`) Linux，而 Android SDK `aapt2`、RN `hermesc` 与 NDK `clang` 为 `x86_64` 二进制；同时环境仅装有 JRE（缺 `jlink`）且无正式 `android/keystore.properties`~~（解决方案：安装 `qemu-user`、`qemu-user-binfmt`、`libc6-amd64-cross`、`libstdc++6-amd64-cross`、`libgcc-s1-amd64-cross`、`openjdk-17-jdk`，并向 `/usr/x86_64-linux-gnu/lib/` 补入 `zlib1g` amd64 的 `libz.so.1`；后续运行 Gradle 统一携带 `QEMU_LD_PREFIX=/usr/x86_64-linux-gnu` 与 `-PMYAPP_UPLOAD_STORE_FILE=debug.keystore -PMYAPP_UPLOAD_STORE_PASSWORD=android -PMYAPP_UPLOAD_KEY_ALIAS=androiddebugkey -PMYAPP_UPLOAD_KEY_PASSWORD=android`）
 - [x] ~~`[P0-MainApplication]` `NavigationApplication`（实现 Kotlin 接口 `ReactApplication`）与 `DefaultReactNativeHost` 在 RN 0.73 下要求使用 Kotlin 属性 `override val reactNativeHost` / `isNewArchEnabled` / `isHermesEnabled` 而非 Java getter 方法~~（解决方案：将 `MainApplication.kt` 中的 `getReactNativeHost()` 及方法式覆写改为 Kotlin 属性覆写）
+- [x] ~~`[P1-Hermes与ServiceCompat]` RN Gradle 插件在 `aarch64` Linux 上报错 `OS not recognized`；此外 `ServiceCompat.startForeground` 4 参数重载在当前传递 `core` 版本中未解析~~（解决方案：在 `android/app/build.gradle` 为 `aarch64` Linux 添加 `linux64-bin/hermesc` 条件回退；在 `XmusicPlaybackService.kt` 与 `XmusicMediaNotificationManager.kt` 改用标准 `Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q` 分支直接调用 `Service.startForeground` / `stopForeground`）

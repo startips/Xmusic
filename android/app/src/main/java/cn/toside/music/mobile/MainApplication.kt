@@ -1,9 +1,9 @@
 package cn.toside.music.mobile
 
-import cn.toside.music.mobile.audio.AudioEffectPackage
 import cn.toside.music.mobile.cache.CachePackage
 import cn.toside.music.mobile.crypto.CryptoPackage
 import cn.toside.music.mobile.lyric.LyricPackage
+import cn.toside.music.mobile.player.XmusicPlayerPackage
 import cn.toside.music.mobile.userApi.UserApiPackage
 import cn.toside.music.mobile.utils.UtilsPackage
 import cn.toside.music.mobile.view.XmusicViewPackage
@@ -27,7 +27,7 @@ class MainApplication : NavigationApplication() {
       packages.add(CryptoPackage())
       packages.add(UserApiPackage())
       packages.add(XmusicViewPackage())
-      packages.add(AudioEffectPackage())
+      packages.add(XmusicPlayerPackage())
       return packages
     }
 

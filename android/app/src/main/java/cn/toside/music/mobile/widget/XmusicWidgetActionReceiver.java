@@ -9,7 +9,7 @@ import cn.toside.music.mobile.MainActivity;
 
 public class XmusicWidgetActionReceiver extends BroadcastReceiver {
   private static final String ACTION_STATE_CHANGED = "com.startips.xmusic.WIDGET_STATE_CHANGED";
-  private static final String MUSIC_SERVICE_CLASS = "com.guichaguri.trackplayer.service.MusicService";
+  private static final String MUSIC_SERVICE_CLASS = "cn.toside.music.mobile.player.XmusicPlaybackService";
 
   @Override
   public void onReceive(Context context, Intent intent) {

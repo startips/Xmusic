@@ -50,6 +50,12 @@ react {
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
     // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
+    if (Os.isFamily(Os.FAMILY_UNIX) && !Os.isFamily(Os.FAMILY_MAC) && System.getProperty("os.arch") == "aarch64") {
+        def linux64Hermesc = file("$rootDir/../node_modules/react-native/sdks/hermesc/linux64-bin/hermesc")
+        if (linux64Hermesc.exists()) {
+            hermesCommand = linux64Hermesc.absolutePath
+        }
+    }
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]

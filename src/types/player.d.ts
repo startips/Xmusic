@@ -1,5 +1,3 @@
-import type { Track as RNTrack } from 'react-native-track-player'
-
 declare global {
   namespace LX {
     namespace Player {
@@ -75,12 +73,21 @@ declare global {
         index: number
       }
 
-      interface Track extends RNTrack {
+      interface Track {
+        id?: string
+        url: string
+        title?: string
+        artist?: string
+        album?: string
+        artwork?: string
+        userAgent?: string
+        headers?: Record<string, string>
         musicId: string
-        // original: PlayMusic
-        // quality: LX.Quality
+        lyric?: string
+        duration?: number
       }
-
     }
   }
 }
+
+export {}

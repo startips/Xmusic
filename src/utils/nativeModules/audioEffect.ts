@@ -20,17 +20,17 @@ const AudioEffectNative = NativeModules.AudioEffectModule as {
   getEffectInfo?: () => Promise<AudioEffectInfo>
 } | undefined
 
-const TrackPlayerNative = NativeModules.TrackPlayerModule as {
+const XmusicPlayerNative = NativeModules.XmusicPlayerModule as {
   setAudioTransitionConfig?: (softPlayPause: boolean, crossfadeMs: number) => Promise<void>
   getAudioSessionId?: () => Promise<number>
 } | undefined
 
 export const setNativeAudioTransitionConfig = async(softPlayPause: boolean, crossfadeMs: number) => {
-  await TrackPlayerNative?.setAudioTransitionConfig?.(softPlayPause, crossfadeMs)
+  await XmusicPlayerNative?.setAudioTransitionConfig?.(softPlayPause, crossfadeMs)
 }
 
 export const syncNativeAudioSession = async() => {
-  const sessionId = await TrackPlayerNative?.getAudioSessionId?.()
+  const sessionId = await XmusicPlayerNative?.getAudioSessionId?.()
   if (sessionId && sessionId > 0) {
     await AudioEffectNative?.bindAudioSession?.(sessionId)
   }
