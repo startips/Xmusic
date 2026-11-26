@@ -2,25 +2,21 @@ import { memo } from 'react'
 import { View, TouchableOpacity } from 'react-native'
 
 import Section from '../components/Section'
-// import Button from './components/Button'
 
 import { createStyle, openUrl } from '@/utils/tools'
-// import { showPactModal } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import Text from '@/components/common/Text'
 import { showPactModal } from '@/core/common'
-
-// const qqGroupUrl = 'mqqopensdkapi://bizAgent/qm/qr?url=http%3A%2F%2Fqm.qq.com%2Fcgi-bin%2Fqm%2Fqr%3Ffrom%3Dapp%26p%3Dandroid%26jump_from%3Dwebapi%26k%3Du1zyxek8roQAwic44nOkBXtG9CfbAxFw'
-// const qqGroupUrl2 = 'mqqopensdkapi://bizAgent/qm/qr?url=http%3A%2F%2Fqm.qq.com%2Fcgi-bin%2Fqm%2Fqr%3Ffrom%3Dapp%26p%3Dandroid%26jump_from%3Dwebapi%26k%3D-l4kNZ2bPQAuvfCQFFhl1UoibvF5wcrQ'
-// const qqGroupWebUrl = 'https://qm.qq.com/cgi-bin/qm/qr?k=jRZkyFSZ4FmUuTHA3P_RAXbbUO_Rrn5e&jump_from=webapi'
-// const qqGroupWebUrl2 = 'https://qm.qq.com/cgi-bin/qm/qr?k=HPNJEfrZpBZ9T8szYWbe2d5JrAAeOt_l&jump_from=webapi'
 
 export default memo(() => {
   const theme = useTheme()
   const t = useI18n()
   const openAuthorPage = () => {
     void openUrl('https://github.com/startips')
+  }
+  const openUpstreamAuthorPage = () => {
+    void openUrl('https://github.com/lyswhut')
   }
   const openForkRepoPage = () => {
     void openUrl('https://github.com/startips/Xmusic')
@@ -37,93 +33,85 @@ export default memo(() => {
   const openFAQPage = () => {
     void openUrl('https://lyswhut.github.io/lx-music-doc/mobile/faq')
   }
-  // const openIssuesPage = () => {
-  //   openUrl('https://github.com/lyswhut/lx-music-mobile/issues')
-  // }
   const openPactModal = () => {
     showPactModal()
   }
   const openPartPage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile#%E9%A1%B9%E7%9B%AE%E5%8D%8F%E8%AE%AE')
+    void openUrl('https://github.com/startips/Xmusic#%E9%A1%B9%E7%9B%AE%E5%8D%8F%E8%AE%AE')
   }
-
-  // const goToQQGroup = () => {
-  //   openUrl(qqGroupUrl).catch(() => {
-  //     void openUrl(qqGroupWebUrl)
-  //   })
-  // }
-  // const goToQQGroup2 = () => {
-  //   openUrl(qqGroupUrl2).catch(() => {
-  //     void openUrl(qqGroupWebUrl2)
-  //   })
-  // }
 
   const textLinkStyle = {
     ...styles.text,
     textDecorationLine: 'underline',
     color: theme['c-primary-font'],
-    // fontSize: 14,
   } as const
-
 
   return (
     <Section title={t('setting_about')}>
       <View style={styles.part}>
-        <Text style={styles.text} >当前修改版仓库（Xmusic）：</Text>
+        <Text style={styles.text}>Xmusic 是基于开源项目 LX Music 移动版二次重构的 Android 音乐播放器，采用 Material 3 Expressive 视觉体系、动态主题与沉浸式播放体验，完全免费且开源。</Text>
+      </View>
+      <View style={styles.part}>
+        <Text style={styles.text}>项目仓库（Xmusic）：</Text>
         <TouchableOpacity onPress={openForkRepoPage}>
           <Text style={textLinkStyle}>https://github.com/startips/Xmusic</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>Xmusic 发布页：</Text>
+        <Text style={styles.text}>版本发布页：</Text>
         <TouchableOpacity onPress={openGHReleasePage}>
           <Text style={textLinkStyle}>GitHub Releases</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>问题反馈可前往：</Text>
+        <Text style={styles.text}>问题反馈：</Text>
         <TouchableOpacity onPress={openIssuePage}>
           <Text style={textLinkStyle}>Xmusic Issues</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text} >本软件基于开源项目 LX Music 衍生修改，完全免费，上游仓库地址：</Text>
+        <Text style={styles.text}>上游项目（LX Music）：</Text>
         <TouchableOpacity onPress={openHomePage}>
           <Text style={textLinkStyle}>https://github.com/lyswhut/lx-music-mobile</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text} >原版常见问题可转至：</Text>
+        <Text style={styles.text}>原版常见问题：</Text>
         <TouchableOpacity onPress={openFAQPage}>
           <Text style={textLinkStyle}>移动版常见问题</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>由于软件开发的初衷仅是为了对新技术的学习与研究，因此软件直至停止维护都将会一直保持纯净。</Text>
+        <Text style={styles.text}>本项目仅用于技术学习、界面与交互体验研究，无广告、无引流、无商业合作，直至停止维护都将保持纯净。</Text>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>目前本项目的原始发布地址<Text style={styles.boldText}>只有 GitHub</Text>，其他渠道均为第三方转载发布，可信度请自行鉴别。</Text>
+        <Text style={styles.text}>目前 Xmusic 的唯一原始发布渠道为 <Text style={styles.boldText}>GitHub</Text>，其他渠道均为第三方转载，可信度请自行鉴别。</Text>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}><Text style={styles.boldText}>本项目没有微信公众号之类的所谓「官方账号」，也未在小米、华为、vivo 等应用商店发布同名应用，谨防被骗！</Text></Text>
+        <Text style={styles.boldText}>本项目没有任何微信公众号或所谓「官方账号」，也未在小米、华为、vivo 等应用商店上架同名应用，谨防受骗！</Text>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>若你使用过程中遇到<Text style={styles.boldText}>广告</Text>或者<Text style={styles.boldText}>引流</Text>（如需要加群、关注公众号之类才能使用或者升级）的信息，则表明你当前运行的软件是「第三方修改版」。</Text>
+        <Text style={styles.text}>若使用中出现<Text style={styles.boldText}>广告</Text>或<Text style={styles.boldText}>引流</Text>（如要求加群、关注公众号才能使用或升级），或升级时提示「<Text style={styles.boldText}>签名不一致</Text>」，均说明当前安装包或新安装包中至少有一方来自<Text style={styles.boldText}>非官方二次打包渠道</Text>。</Text>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>若在升级新版本时提示「<Text style={styles.boldText}>签名不一致</Text>」，则表明你手机上的旧版本或者将要安装的新版本中<Text style={styles.boldText}>有一方</Text>是「<Text style={styles.boldText}>第三方修改版</Text>」。</Text>
+        <Text style={styles.text}>你已签署本软件的 </Text>
+        <TouchableOpacity onPress={openPactModal}>
+          <Text style={textLinkStyle}>许可协议</Text>
+        </TouchableOpacity>
+        <Text style={styles.text}>，协议在线版本可前往 </Text>
+        <TouchableOpacity onPress={openPartPage}>
+          <Text style={textLinkStyle}>Xmusic 项目协议</Text>
+        </TouchableOpacity>
+        <Text style={styles.text}> 查看。</Text>
       </View>
       <View style={styles.part}>
-        <Text style={styles.text}>你已签署本软件的</Text>
-        <TouchableOpacity onPress={openPactModal}><Text style={styles.text} color={theme['c-primary-font']}>许可协议</Text></TouchableOpacity>
-        <Text style={styles.text}>，协议的在线版本在</Text>
-        <TouchableOpacity onPress={openPartPage}><Text style={textLinkStyle}>这里</Text></TouchableOpacity>
-        <Text style={styles.text}>。</Text>
-      </View>
-      <View style={styles.part}>
-        <Text style={styles.text}>UI by:</Text>
+        <Text style={styles.text}>维护与重构：</Text>
         <TouchableOpacity onPress={openAuthorPage}>
           <Text style={textLinkStyle}>startips</Text>
+        </TouchableOpacity>
+        <Text style={styles.text}> · 致谢上游作者：</Text>
+        <TouchableOpacity onPress={openUpstreamAuthorPage}>
+          <Text style={textLinkStyle}>lyswhut</Text>
         </TouchableOpacity>
       </View>
     </Section>
@@ -146,13 +134,5 @@ const styles = createStyle({
     fontSize: 14,
     fontWeight: 'bold',
     textAlignVertical: 'bottom',
-  },
-  throughText: {
-    fontSize: 14,
-    textDecorationLine: 'line-through',
-    textAlignVertical: 'bottom',
-  },
-  btn: {
-    flexDirection: 'row',
   },
 })
