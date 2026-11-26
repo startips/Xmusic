@@ -157,6 +157,7 @@ class XmusicPlayerModule(
       return
     }
     val userAgent = track.getStringOrNull("userAgent")
+    val cacheKey = track.getStringOrNull("cacheKey")
     val durationSec = track.getDoubleOrDefault("duration", 0.0)
     val headersMap = extractStringMap(track?.getMap("headers"))
 
@@ -165,6 +166,7 @@ class XmusicPlayerModule(
         url = url,
         userAgent = userAgent,
         headers = headersMap,
+        cacheKey = cacheKey,
         durationSec = durationSec,
         startTimeSec = startTimeSec,
         autoPlay = autoPlay,

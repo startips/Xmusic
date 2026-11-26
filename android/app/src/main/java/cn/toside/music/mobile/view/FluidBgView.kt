@@ -9,6 +9,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import android.os.PowerManager
 import android.view.View
 import kotlin.math.abs
 import kotlin.math.cos
@@ -25,6 +26,7 @@ class FluidBgView(context: Context) : View(context) {
   companion object {
     private const val ORB_COUNT = 4
     private const val TRANSITION_DURATION_NS = 760_000_000L
+    private const val STEADY_FRAME_INTERVAL_MS = 33L
     private val GRADIENT_STOPS = floatArrayOf(0f, 0.28f, 0.56f, 0.82f, 1.0f)
     private val ALPHA_FALLOFF = floatArrayOf(1.00f, 0.74f, 0.36f, 0.09f, 0.0f)
 
@@ -90,18 +92,41 @@ class FluidBgView(context: Context) : View(context) {
   private var transitionActive = false
   private var transitionStartNs = 0L
 
+  private val powerManager: PowerManager? =
+    context.applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
   private var playing = false
+  private var powerSaveMode = false
   private var isAttached = false
   private var windowVisible = true
   private var frameScheduled = false
+  private val steadyFrameRunnable = Runnable {
+    frameScheduled = false
+    if (shouldAnimate()) {
+      invalidate()
+    }
+  }
 
   private var accumulatedPhaseSec = 0.0
   private var lastFrameNs = 0L
 
   init {
+    refreshPowerSaveState()
     ensureNoiseShader()
     sNoiseShader?.let { noisePaint.shader = it }
     rebuildOrbShaders()
+  }
+
+  private fun refreshPowerSaveState() {
+    powerSaveMode = try {
+      powerManager?.isPowerSaveMode == true
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  private fun cancelScheduledFrames() {
+    removeCallbacks(steadyFrameRunnable)
+    frameScheduled = false
   }
 
   fun setBaseColorValue(color: Int) {
@@ -138,10 +163,18 @@ class FluidBgView(context: Context) : View(context) {
   }
 
   fun setPlaying(playing: Boolean) {
-    if (this.playing == playing) return
+    refreshPowerSaveState()
+    if (this.playing == playing) {
+      if (playing && !frameScheduled) scheduleNextFrameIfNeeded()
+      return
+    }
     this.playing = playing
     lastFrameNs = 0L
-    scheduleNextFrameIfNeeded()
+    if (!playing && !transitionActive) {
+      cancelScheduledFrames()
+    } else {
+      scheduleNextFrameIfNeeded()
+    }
   }
 
   private fun startColorTransition() {
@@ -149,30 +182,35 @@ class FluidBgView(context: Context) : View(context) {
     startBaseColor = currentBaseColor
     transitionStartNs = System.nanoTime()
     transitionActive = true
+    cancelScheduledFrames()
     scheduleNextFrameIfNeeded()
     invalidate()
   }
 
   private fun shouldAnimate(): Boolean =
-    isAttached && windowVisible && isShown && (playing || transitionActive)
+    isAttached && windowVisible && isShown && (transitionActive || (playing && !powerSaveMode))
 
   private fun scheduleNextFrameIfNeeded() {
-    if (shouldAnimate() && !frameScheduled) {
-      frameScheduled = true
+    if (!shouldAnimate() || frameScheduled) return
+    frameScheduled = true
+    if (transitionActive) {
       postInvalidateOnAnimation()
+    } else {
+      postOnAnimationDelayed(steadyFrameRunnable, STEADY_FRAME_INTERVAL_MS)
     }
   }
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     isAttached = true
+    refreshPowerSaveState()
     lastFrameNs = 0L
     scheduleNextFrameIfNeeded()
   }
 
   override fun onDetachedFromWindow() {
     isAttached = false
-    frameScheduled = false
+    cancelScheduledFrames()
     lastFrameNs = 0L
     super.onDetachedFromWindow()
   }
@@ -182,7 +220,10 @@ class FluidBgView(context: Context) : View(context) {
     windowVisible = visibility == VISIBLE
     lastFrameNs = 0L
     if (windowVisible) {
+      refreshPowerSaveState()
       scheduleNextFrameIfNeeded()
+    } else {
+      cancelScheduledFrames()
     }
   }
 
@@ -190,7 +231,10 @@ class FluidBgView(context: Context) : View(context) {
     super.onVisibilityChanged(changedView, visibility)
     lastFrameNs = 0L
     if (visibility == VISIBLE) {
+      refreshPowerSaveState()
       scheduleNextFrameIfNeeded()
+    } else {
+      cancelScheduledFrames()
     }
   }
 
@@ -230,7 +274,7 @@ class FluidBgView(context: Context) : View(context) {
     if (playing) {
       if (lastFrameNs != 0L) {
         val dt = (nowNs - lastFrameNs) / 1_000_000_000.0
-        if (dt > 0.0 && dt < 0.1) {
+        if (dt > 0.0 && dt < 0.25) {
           accumulatedPhaseSec += dt
         }
       }

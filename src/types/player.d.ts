@@ -83,6 +83,7 @@ declare global {
         userAgent?: string
         headers?: Record<string, string>
         musicId: string
+        cacheKey?: string
         lyric?: string
         duration?: number
       }

@@ -9,6 +9,7 @@ import {
   setPlayMusicInfo,
   setMusicInfo,
   setPlayListId,
+  setLyricStatus,
 } from '@/core/player/playInfo'
 import {
   clearPlayedList,
@@ -162,6 +163,42 @@ const clearCoverThemeIfNoPic = (musicId: string) => {
   setCoverPalette(null, null)
 }
 
+let prefetchedMusicId: string | null = null
+
+const loadTrackLyric = (musicInfo: LX.Player.PlayMusic, isRefresh = false) => {
+  setLyricStatus('loading')
+  void getLyricInfo({ musicInfo, isRefresh }).then((lyricInfo) => {
+    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
+    setMusicInfo({
+      lrc: lyricInfo.lyric,
+      tlrc: lyricInfo.tlyric,
+      lxlrc: lyricInfo.lxlyric,
+      rlrc: lyricInfo.rlyric,
+      rawlrc: lyricInfo.rawlrcInfo.lyric,
+    })
+    global.app_event.lyricUpdated()
+    setLyricStatus(lyricInfo.lyric?.trim() ? 'loaded' : 'empty')
+  }).catch((err) => {
+    console.log(err)
+    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
+    setMusicInfo({
+      lrc: null,
+      tlrc: null,
+      lxlrc: null,
+      rlrc: null,
+      rawlrc: null,
+    })
+    setLyricStatus('error')
+    setStatusText(global.i18n.t('lyric__load_error'))
+  })
+}
+
+export const refreshCurrentLyric = () => {
+  const musicInfo = playerState.playMusicInfo.musicInfo
+  if (!musicInfo) return
+  loadTrackLyric(musicInfo, true)
+}
+
 // 恢复上次播放的状态
 const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
   const musicInfo = playerState.playMusicInfo.musicInfo
@@ -188,21 +225,7 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
     clearCoverThemeIfNoPic(musicInfo.id)
   })
 
-  void getLyricInfo({ musicInfo }).then((lyricInfo) => {
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setMusicInfo({
-      lrc: lyricInfo.lyric,
-      tlrc: lyricInfo.tlyric,
-      lxlrc: lyricInfo.lxlyric,
-      rlrc: lyricInfo.rlyric,
-      rawlrc: lyricInfo.rawlrcInfo.lyric,
-    })
-    global.app_event.lyricUpdated()
-  }).catch((err) => {
-    console.log(err)
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setStatusText(global.i18n.t('lyric__load_error'))
-  })
+  loadTrackLyric(musicInfo)
 
   if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
 }
@@ -224,21 +247,7 @@ const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) =>
     clearCoverThemeIfNoPic(musicInfo.id)
   })
 
-  void getLyricInfo({ musicInfo }).then((lyricInfo) => {
-    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
-    setMusicInfo({
-      lrc: lyricInfo.lyric,
-      tlrc: lyricInfo.tlyric,
-      lxlrc: lyricInfo.lxlyric,
-      rlrc: lyricInfo.rlyric,
-      rawlrc: lyricInfo.rawlrcInfo.lyric,
-    })
-    global.app_event.lyricUpdated()
-  }).catch((err) => {
-    console.log(err)
-    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
-    setStatusText(global.i18n.t('lyric__load_error'))
-  })
+  loadTrackLyric(musicInfo)
 }, 200)
 
 // 处理音乐播放
@@ -256,6 +265,7 @@ const handlePlay = async() => {
   }
 
   global.lx.isPlayedStop &&= false
+  prefetchedMusicId = null
   resetRandomNextMusicInfo()
 
   if (global.lx.restorePlayInfo) {
@@ -329,10 +339,37 @@ export const playTempPlayListIndex = async(index: number) => {
 }
 
 const handleToggleStop = async() => {
+  prefetchedMusicId = null
+  setLyricStatus('idle')
   await stop()
   BackgroundTimer.setTimeout(() => {
     setPlayMusicInfo(null, null)
   }, 0)
+}
+
+/**
+ * 歌曲临近结束时静默预解析下一首播放直链与歌词缓存
+ */
+export const prefetchNextMusic = () => {
+  const currentId = playerState.playMusicInfo.musicInfo?.id
+  if (!currentId || prefetchedMusicId === currentId) return
+  const toggleMethod = settingState.setting['player.togglePlayMethod']
+  if (toggleMethod === 'singleLoop' || toggleMethod === 'none') return
+  prefetchedMusicId = currentId
+
+  void getNextPlayMusicInfo().then((nextInfo) => {
+    const nextMusic = nextInfo?.musicInfo
+    if (!nextMusic || nextMusic.id === currentId) return
+    if (playerState.playMusicInfo.musicInfo?.id !== currentId) return
+    void getMusicUrl({
+      musicInfo: nextMusic,
+      isRefresh: false,
+      allowToggleSource: true,
+    }).catch(() => {})
+    void getLyricInfo({
+      musicInfo: nextMusic,
+    }).catch(() => {})
+  }).catch(() => {})
 }
 
 

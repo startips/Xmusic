@@ -215,6 +215,7 @@ class XmusicPlayerController(
     url: String,
     userAgent: String?,
     headers: Map<String, String>?,
+    cacheKey: String?,
     durationSec: Double,
     startTimeSec: Double,
     autoPlay: Boolean,
@@ -233,7 +234,7 @@ class XmusicPlayerController(
     explicitDurationMs = if (durationSec > 0.0) (durationSec * 1000.0).toLong() else 0L
     hasActiveTrack = true
 
-    val source = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers)
+    val source = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers, cacheKey)
     p.playWhenReady = false
     p.setMediaSource(source)
     p.prepare()

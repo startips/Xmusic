@@ -22,6 +22,7 @@ import androidx.media.session.MediaButtonReceiver
 import cn.toside.music.mobile.R
 import cn.toside.music.mobile.player.XmusicPlaybackService
 import cn.toside.music.mobile.player.XmusicPlayerEventBus
+import cn.toside.music.mobile.widget.XmusicWidgetUpdater
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -65,7 +66,6 @@ class XmusicMediaNotificationManager(
       PlaybackStateCompat.ACTION_PLAY or
         PlaybackStateCompat.ACTION_PAUSE or
         PlaybackStateCompat.ACTION_PLAY_PAUSE or
-        PlaybackStateCompat.ACTION_STOP or
         PlaybackStateCompat.ACTION_SEEK_TO or
         PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
@@ -88,7 +88,6 @@ class XmusicMediaNotificationManager(
   private val prevAction: NotificationCompat.Action
   private val playAction: NotificationCompat.Action
   private val pauseAction: NotificationCompat.Action
-  private val stopAction: NotificationCompat.Action
   private val nextAction: NotificationCompat.Action
 
   init {
@@ -168,11 +167,6 @@ class XmusicMediaNotificationManager(
       R.drawable.ic_notif_pause,
       "Pause",
       MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_PAUSE),
-    )
-    stopAction = NotificationCompat.Action(
-      R.drawable.ic_notif_stop,
-      "Stop",
-      MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_STOP),
     )
     nextAction = NotificationCompat.Action(
       R.drawable.ic_notif_next,
@@ -361,22 +355,14 @@ class XmusicMediaNotificationManager(
     builder.mActions.clear()
     builder.mActions.add(prevAction) // index 0
     builder.mActions.add(if (playing) pauseAction else playAction) // index 1
-    builder.mActions.add(stopAction) // index 2
-    builder.mActions.add(nextAction) // index 3
-    builder.mActions.add(createFavoriteAction()) // index 4
+    builder.mActions.add(nextAction) // index 2
+    builder.mActions.add(createFavoriteAction()) // index 3
 
     if (!Build.MANUFACTURER.lowercase().contains("huawei") || Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       val style = MediaStyle()
         .setMediaSession(session.sessionToken)
-        .setShowActionsInCompactView(0, 1, 3)
-      if (!playing) {
-        style.setShowCancelButton(true)
-        style.setCancelButtonIntent(
-          MediaButtonReceiver.buildMediaButtonPendingIntent(service, PlaybackStateCompat.ACTION_STOP)
-        )
-      } else {
-        style.setShowCancelButton(false)
-      }
+        .setShowActionsInCompactView(0, 1, 2)
+        .setShowCancelButton(false)
       builder.setStyle(style)
     }
   }
@@ -446,6 +432,7 @@ class XmusicMediaNotificationManager(
 
   private fun persistWidgetArtworkAsync(src: Bitmap) {
     if (src.isRecycled || widgetCoverExecutor.isShutdown) return
+    if (!XmusicWidgetUpdater.hasActiveWidgets(service.applicationContext)) return
     try {
       val scaled = Bitmap.createScaledBitmap(src, 192, 192, true)
       widgetCoverExecutor.execute {

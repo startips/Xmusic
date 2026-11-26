@@ -9,6 +9,7 @@ import playerState from '@/store/player/state'
 import settingState from '@/store/setting/state'
 import { onScreenStateChange } from '@/utils/nativeModules/utils'
 import { AppState } from 'react-native'
+import { prefetchNextMusic } from '@/core/player/player'
 
 const delaySavePlayInfo = throttleBackgroundTimer(() => {
   void savePlayInfo({
@@ -25,6 +26,7 @@ export default () => {
   let updateTimeout: number | null = null
 
   let isScreenOn = true
+  let isAppActive = AppState.currentState == 'active'
 
   const getCurrentTime = () => {
     let id = playerState.musicInfo.id
@@ -33,7 +35,12 @@ export default () => {
       setNowPlayTime(position)
       if (!playerState.isPlay) return
 
-      if (settingState.setting['player.isSavePlayTime'] && !playerState.playMusicInfo.isTempPlay && isScreenOn) {
+      const maxTime = playerState.progress.maxPlayTime
+      if (maxTime > 30 && position > 5 && maxTime - position <= 18) {
+        prefetchNextMusic()
+      }
+
+      if (settingState.setting['player.isSavePlayTime'] && !playerState.playMusicInfo.isTempPlay && isScreenOn && isAppActive) {
         delaySavePlayInfo()
       }
     })
@@ -62,7 +69,7 @@ export default () => {
     updateTimeout = null
   }
   const startUpdateTimeout = () => {
-    if (!isScreenOn) return
+    if (!isScreenOn || !isAppActive) return
     clearUpdateTimeout()
     updateTimeout = BackgroundTimer.setInterval(() => {
       getCurrentTime()
@@ -154,14 +161,23 @@ export default () => {
 
   const handleScreenStateChanged: Parameters<typeof onScreenStateChange>[0] = (state) => {
     isScreenOn = state == 'ON'
-    if (isScreenOn) {
+    if (isScreenOn && isAppActive) {
       if (playerState.isPlay) startUpdateTimeout()
     } else clearUpdateTimeout()
   }
 
-  // 修复在某些设备上屏幕状态改变事件未触发导致的进度条未更新的问题
+  // 收敛退后台后的前端进度轮询，切回前台时立即对齐一次进度
   AppState.addEventListener('change', (state) => {
-    if (state == 'active' && !isScreenOn) handleScreenStateChanged('ON')
+    isAppActive = state == 'active'
+    if (isAppActive) {
+      isScreenOn = true
+      if (playerState.isPlay) startUpdateTimeout()
+    } else {
+      clearUpdateTimeout()
+      if (settingState.setting['player.isSavePlayTime'] && playerState.isPlay && !playerState.playMusicInfo.isTempPlay) {
+        delaySavePlayInfo()
+      }
+    }
   })
 
   global.app_event.on('play', handlePlay)

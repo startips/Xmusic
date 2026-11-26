@@ -1,5 +1,5 @@
 import { arrPush, arrUnshift, formatPlayTime2 } from '@/utils'
-import state from './state'
+import state, { type LyricStatus } from './state'
 
 type PlayerMusicInfoKeys = keyof LX.Player.MusicInfo
 const musicInfoKeys: PlayerMusicInfoKeys[] = Object.keys(state.musicInfo) as PlayerMusicInfoKeys[]
@@ -31,6 +31,11 @@ export default {
     }
 
     global.state_event.playerMusicInfoChanged({ ...state.musicInfo })
+  },
+  setLyricStatus(lyricStatus: LyricStatus) {
+    if (state.lyricStatus === lyricStatus) return
+    state.lyricStatus = lyricStatus
+    global.state_event.lyricStatusChanged(lyricStatus)
   },
   setIsPlay(isPlay: boolean) {
     state.isPlay = isPlay

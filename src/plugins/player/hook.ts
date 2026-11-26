@@ -19,7 +19,7 @@ export function useBufferProgress() {
       const snap = await nativePlayer.getPlaybackSnapshot()
       if (!duration && snap.duration > 0) duration = snap.duration
       const buffered = snap.buffered
-      if (buffered > 0 && buffered == duration) clearItv()
+      if (duration > 0 && buffered >= duration) clearItv()
       if (buffered == preBuffered || isUnmounted) return
       preBuffered = buffered
       setProgress(duration ? (buffered / duration) : 0)
@@ -28,7 +28,16 @@ export function useBufferProgress() {
     const sub = addPlayerEventListener<{ state: PlayerState }>(PlayerEvent.PlaybackState, data => {
       switch (data.state) {
         case PlayerState.None:
+        case PlayerState.Stopped:
+          clearItv()
           setProgress(0)
+          break
+        case PlayerState.Paused:
+          clearItv()
+          break
+        case PlayerState.Playing:
+          clearItv()
+          void updateBuffer()
           break
         case PlayerState.Buffering:
           clearItv()

@@ -1,3 +1,5 @@
+export type LyricStatus = 'idle' | 'loading' | 'loaded' | 'empty' | 'error'
+
 export interface InitState {
   playMusicInfo: {
     /**
@@ -20,6 +22,7 @@ export interface InitState {
   volume: number
   playRate: number
   statusText: string
+  lyricStatus: LyricStatus
 
   playedList: LX.Player.PlayMusicInfo[]
   tempPlayList: LX.Player.PlayMusicInfo[]
@@ -67,6 +70,7 @@ const state: InitState = {
   volume: 1,
   playRate: 1,
   statusText: '',
+  lyricStatus: 'idle',
   loadErrorPicUrl: '',
 
   playedList: [],

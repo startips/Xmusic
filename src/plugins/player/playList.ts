@@ -6,6 +6,7 @@ import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync
 
 const defaultUserAgent = 'Mozilla/5.0 (Linux; Android 10; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Mobile Safari/537.36'
 const httpRxp = /^(https?:\/\/.+|\/.+)/
+const remoteHttpRxp = /^https?:\/\//i
 
 export const state = {
   isPlaying: false,
@@ -42,6 +43,9 @@ const buildTrack = (musicInfo: LX.Player.PlayMusic, url: string, duration?: numb
   const album = mInfo.album || undefined
   const artwork = isShowNotificationImage && mInfo.pic && httpRxp.test(mInfo.pic) ? mInfo.pic : undefined
   const lyric = getCurrentFullLyric(mInfo.id)
+  const cacheKey = remoteHttpRxp.test(url)
+    ? `${mInfo.id}_${settingState.setting['player.playQuality']}`
+    : undefined
   return {
     id: `${mInfo.id}__//${Math.random()}__//${url}`,
     url,
@@ -51,6 +55,7 @@ const buildTrack = (musicInfo: LX.Player.PlayMusic, url: string, duration?: numb
     artwork,
     userAgent: defaultUserAgent,
     musicId: mInfo.id,
+    cacheKey,
     lyric,
     duration,
   }

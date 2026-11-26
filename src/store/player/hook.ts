@@ -15,6 +15,20 @@ export const usePlayerMusicInfo = () => {
   return value
 }
 
+export const useLyricStatus = () => {
+  const [value, update] = useState(state.lyricStatus)
+
+  useEffect(() => {
+    update(state.lyricStatus)
+    global.state_event.on('lyricStatusChanged', update)
+    return () => {
+      global.state_event.off('lyricStatusChanged', update)
+    }
+  }, [])
+
+  return value
+}
+
 export const usePlayMusicInfo = () => {
   const [value, update] = useState(state.playMusicInfo)
 

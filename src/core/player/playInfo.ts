@@ -1,5 +1,5 @@
 import playerActions from '@/store/player/action'
-import playerState from '@/store/player/state'
+import playerState, { type LyricStatus } from '@/store/player/state'
 
 import { getListMusicSync } from '@/utils/listManage'
 import { setProgress } from '@/core/player/progress'
@@ -8,6 +8,10 @@ import { LIST_IDS } from '@/config/constant'
 
 export const setMusicInfo = (musicInfo: Partial<LX.Player.MusicInfo>) => {
   playerActions.setMusicInfo(musicInfo)
+}
+
+export const setLyricStatus = (status: LyricStatus) => {
+  playerActions.setLyricStatus(status)
 }
 
 export const setLoadErrorPicUrl = (url: string) => {

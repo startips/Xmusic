@@ -36,6 +36,19 @@ object XmusicWidgetUpdater {
   private var cachedRoundedCover: Bitmap? = null
   private var cachedVinylCover: Bitmap? = null
 
+  fun hasActiveWidgets(context: Context): Boolean {
+    return try {
+      val appCtx = context.applicationContext
+      val mgr = AppWidgetManager.getInstance(appCtx) ?: return false
+      val capsuleIds = mgr.getAppWidgetIds(ComponentName(appCtx, XmusicCapsuleWidgetProvider::class.java))
+      if (capsuleIds != null && capsuleIds.isNotEmpty()) return true
+      val cardIds = mgr.getAppWidgetIds(ComponentName(appCtx, XmusicCardWidgetProvider::class.java))
+      cardIds != null && cardIds.isNotEmpty()
+    } catch (_: Exception) {
+      false
+    }
+  }
+
   fun invalidateCoverCache() {
     synchronized(coverLock) {
       cachedCoverMtime = -1L

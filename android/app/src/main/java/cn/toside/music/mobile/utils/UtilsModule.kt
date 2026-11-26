@@ -27,6 +27,7 @@ class UtilsModule(
   private val systemUiHelper = SystemUiHelper(reactAppContext)
   private val posterShareHelper = PosterShareHelper(reactAppContext, coroutineScope.scope)
   private val deviceHelper = DevicePermissionHelper(reactAppContext, coroutineScope.scope)
+  private val downloadHelper = NativeDownloadHelper(reactAppContext, coroutineScope)
 
   private var listenerCount: Int = 0
   @Volatile
@@ -41,6 +42,7 @@ class UtilsModule(
   override fun getName(): String = "UtilsModule"
 
   override fun invalidate() {
+    downloadHelper.cancelAll()
     systemUiHelper.unregisterListeners()
     coroutineScope.cancel()
     super.invalidate()
@@ -138,7 +140,7 @@ class UtilsModule(
     val coverUri = if (hasCoverKey) map.getString("coverUri") else null
     val partialOnly = !hasCoverKey && title == null && artist == null && accentColor == null
 
-    if (!hasCoverKey) {
+    if (!hasCoverKey || !XmusicWidgetUpdater.hasActiveWidgets(reactAppContext)) {
       XmusicWidgetUpdater.saveStateAndRefresh(
         reactAppContext, title, artist, lyric, isPlaying, isFavorite, accentColor, partialOnly
       )
@@ -237,4 +239,12 @@ class UtilsModule(
   @ReactMethod
   fun saveImageToGallery(filePath: String?, displayName: String?, promise: Promise) =
     posterShareHelper.saveImageToGallery(filePath, displayName, promise)
+
+  @ReactMethod
+  fun downloadFile(options: ReadableMap?, promise: Promise) =
+    downloadHelper.downloadFile(options, promise)
+
+  @ReactMethod
+  fun stopDownload(jobId: Int) =
+    downloadHelper.stopDownload(jobId)
 }

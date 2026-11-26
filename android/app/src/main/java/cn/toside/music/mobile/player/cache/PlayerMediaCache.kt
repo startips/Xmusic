@@ -149,8 +149,10 @@ object PlayerMediaCache {
     uri: Uri,
     userAgent: String?,
     headers: Map<String, String>?,
+    cacheKey: String? = null,
   ): MediaSource {
-    val dsFactory: DataSource.Factory = if (isLocalUri(uri)) {
+    val isLocal = isLocalUri(uri)
+    val dsFactory: DataSource.Factory = if (isLocal) {
       DefaultDataSource.Factory(context)
     } else {
       val ua = if (!userAgent.isNullOrEmpty()) userAgent else Util.getUserAgent(context, "Xmusic")
@@ -173,8 +175,12 @@ object PlayerMediaCache {
       }
     }
 
+    val mediaItemBuilder = MediaItem.Builder().setUri(uri)
+    if (!isLocal && !cacheKey.isNullOrBlank()) {
+      mediaItemBuilder.setCustomCacheKey(cacheKey)
+    }
     val extractorsFactory = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
     return ProgressiveMediaSource.Factory(dsFactory, extractorsFactory)
-      .createMediaSource(MediaItem.fromUri(uri))
+      .createMediaSource(mediaItemBuilder.build())
   }
 }
