@@ -13,6 +13,7 @@ import { scaleSizeH } from '@/utils/pixelRatio'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import SearchTypeSelector from '@/screens/Home/Views/Search/SearchTypeSelector'
 import OpenListBtn from '@/screens/Home/Views/SongList/HeaderBar/OpenListBtn'
+import StatsBtn from '@/screens/Home/Views/Mylist/MusicList/StatsBtn'
 import { navigations } from '@/navigation'
 import { M3Radius } from '@/theme/m3'
 import { HOME_NAV_INDEX_MAP } from './pagerMotion'
@@ -22,6 +23,7 @@ const TOP_BAR_HEIGHT = 52
 const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNode>> = {
   nav_search: <SearchTypeSelector />,
   nav_songlist: <OpenListBtn />,
+  nav_love: <StatsBtn />,
 }
 
 const Header = () => {

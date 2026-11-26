@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 import listState from '@/store/list/state'
 import ListMenu, { type ListMenuType, type Position, type SelectInfo } from './ListMenu'
@@ -36,7 +36,16 @@ export default () => {
   const isShowMultipleModeBar = useRef(false)
   const isShowSearchBarModeBar = useRef(false)
   const selectedInfoRef = useRef<SelectInfo>()
-  // console.log('render index list')
+
+  useEffect(() => {
+    const handleShowStats = () => {
+      statsModalRef.current?.show()
+    }
+    global.app_event.on('showListeningStatsModal', handleShowStats)
+    return () => {
+      global.app_event.off('showListeningStatsModal', handleShowStats)
+    }
+  }, [])
 
   const hancelMultiSelect = useCallback(() => {
     if (isShowSearchBarModeBar.current) {
@@ -146,7 +155,6 @@ export default () => {
           ref={activeListRef}
           onShowSearchBar={handleShowSearch}
           onScrollToTop={hancelScrollToTop}
-          onOpenStats={() => statsModalRef.current?.show()}
         />
         <MultipleModeBar
           ref={multipleModeBarRef}

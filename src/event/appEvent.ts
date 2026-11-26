@@ -198,6 +198,10 @@ export class AppEvent extends Event {
     this.emit('showOpenSonglistModal')
   }
 
+  showListeningStatsModal() {
+    this.emit('showListeningStatsModal')
+  }
+
   selectSyncMode(mode: LX.Sync.ModeType) {
     this.emit('selectSyncMode', mode)
   }

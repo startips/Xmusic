@@ -12,11 +12,13 @@ import { HEADER_HEIGHT as _HEADER_HEIGHT } from '@/config/constant'
 import { type InitState as CommonState } from '@/store/common/state'
 import SearchTypeSelector from '@/screens/Home/Views/Search/SearchTypeSelector'
 import OpenListBtn from '@/screens/Home/Views/SongList/HeaderBar/OpenListBtn'
+import StatsBtn from '@/screens/Home/Views/Mylist/MusicList/StatsBtn'
 import { HOME_NAV_INDEX_MAP } from '../Vertical/pagerMotion'
 
 const headerComponents: Partial<Record<CommonState['navActiveId'], React.ReactNode>> = {
   nav_search: <SearchTypeSelector />,
   nav_songlist: <OpenListBtn compact />,
+  nav_love: <StatsBtn compact />,
 }
 
 const HEADER_HEIGHT = _HEADER_HEIGHT * 0.8
