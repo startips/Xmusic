@@ -1,17 +1,12 @@
 import BackgroundTimer from 'react-native-background-timer'
-import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState } from './nativePlayer'
+import nativePlayer from './nativePlayer'
 import { playMusic as handlePlayMusic } from './playList'
 import { existsFile, moveFile, privateStorageDirectoryPath, temporaryDirectoryPath } from '@/utils/fs'
 import { toast } from '@/utils/tools'
 
 export { useBufferProgress } from './hook'
 
-const emptyIdRxp = /\/\/default$/
-const tempIdRxp = /\/\/default$|\/\/default\/\/restorePlay$/
-export const isEmpty = (trackId = global.lx.playerTrackId) => {
-  return !trackId || emptyIdRxp.test(trackId)
-}
-export const isTempId = (trackId = global.lx.playerTrackId) => !trackId || tempIdRxp.test(trackId)
+export const isEmpty = (trackId = global.lx.playerTrackId) => !trackId
 
 const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: number) => void, delay = 800) => {
   let delayTimer: number | null = null
@@ -84,8 +79,6 @@ export const updateNowPlayingTitles = async(titles: NowPlayingTitles) => {
   return nativePlayer.updateNowPlayingTitles(titles)
 }
 
-export const resetPlay = async() => Promise.all([setPause(), setCurrentTime(0)])
-
 export const isCached = async(url: string) => nativePlayer.isCached(url)
 export const getCacheSize = async() => nativePlayer.getCacheSize()
 export const clearCache = async() => nativePlayer.clearCache()
@@ -107,40 +100,6 @@ export const destroy = async() => {
   if (global.lx.playerStatus.isIniting || !global.lx.playerStatus.isInitialized) return
   await nativePlayer.destroy()
   global.lx.playerStatus.isInitialized = false
-}
-
-type PlayStatus = 'None' | 'Ready' | 'Playing' | 'Paused' | 'Stopped' | 'Buffering' | 'Connecting'
-
-export const onStateChange = async(listener: (state: PlayStatus) => void) => {
-  const sub = addPlayerEventListener<{ state: PlayerState }>(PlayerEvent.PlaybackState, ({ state }) => {
-    let _state: PlayStatus
-    switch (state) {
-      case PlayerState.Playing:
-        _state = 'Playing'
-        break
-      case PlayerState.Paused:
-        _state = 'Paused'
-        break
-      case PlayerState.Stopped:
-        _state = 'Stopped'
-        break
-      case PlayerState.Buffering:
-        _state = 'Buffering'
-        break
-      case PlayerState.Connecting:
-        _state = 'Connecting'
-        break
-      case PlayerState.None:
-      default:
-        _state = 'None'
-        break
-    }
-    listener(_state)
-  })
-
-  return () => {
-    sub.remove()
-  }
 }
 
 export const setFavoriteNotificationState = (isFavorite: boolean) => {

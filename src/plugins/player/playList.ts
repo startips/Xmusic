@@ -56,10 +56,6 @@ const buildTrack = (musicInfo: LX.Player.PlayMusic, url: string, duration?: numb
   }
 }
 
-export const isTempTrack = (trackId: string) => /\/\/default$/.test(trackId)
-
-export const getCurrentTrackId = async() => global.lx.playerTrackId
-
 export const updateMetaData = async(musicInfo: LX.Player.MusicInfo, isPlay: boolean, force = false) => {
   const trackId = global.lx.playerTrackId
   if (!force && isPlay == state.isPlaying && trackId == state.prevTrackId) {

@@ -1,6 +1,5 @@
 package cn.toside.music.mobile.core
 
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,9 +20,6 @@ class ModuleCoroutineScope {
 
   fun launchMain(block: suspend CoroutineScope.() -> Unit): Job =
     scope.launch(Dispatchers.Main.immediate, block = block)
-
-  fun launchOn(dispatcher: CoroutineDispatcher, block: suspend CoroutineScope.() -> Unit): Job =
-    scope.launch(dispatcher, block = block)
 
   fun cancel() {
     scope.cancel()

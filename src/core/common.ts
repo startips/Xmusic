@@ -11,14 +11,14 @@ import commonState, { type InitState as CommonStateType } from '@/store/common/s
 
 import { storageDataPrefix } from '@/config/constant'
 import { saveData } from '@/plugins/storage'
-import { throttle } from '@/utils/common'
+import { throttleBackgroundTimer } from '@/utils/tools'
 import { getSelectedManagedFolder, saveFontSize, saveViewPrevState, setSelectedManagedFolder } from '@/utils/data'
 import { showPactModal as handleShowPactModal, navigations } from '@/navigation'
 import { hideDesktopLyricView } from '@/utils/nativeModules/lyricDesktop'
 import { getPersistedUriList, selectManagedFolder } from '@/utils/fs'
 
 
-const throttleSaveSetting = throttle(() => {
+const throttleSaveSetting = throttleBackgroundTimer(() => {
   void saveData(storageDataPrefix.setting, settingState.setting)
 })
 

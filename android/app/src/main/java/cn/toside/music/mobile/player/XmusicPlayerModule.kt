@@ -10,7 +10,6 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import cn.toside.music.mobile.core.getBooleanOrDefault
 import cn.toside.music.mobile.core.getDoubleOrDefault
-import cn.toside.music.mobile.core.getIntOrDefault
 import cn.toside.music.mobile.core.getStringOrNull
 import cn.toside.music.mobile.player.cache.PlayerMediaCache
 import cn.toside.music.mobile.player.session.NowPlayingTrackMetadata
@@ -66,6 +65,7 @@ class XmusicPlayerModule(
   }
 
   @ReactMethod
+  @Suppress("UNUSED_PARAMETER")
   fun addListener(eventName: String) {
     listenerCount += 1
   }
@@ -122,7 +122,6 @@ class XmusicPlayerModule(
     val maxBufferSec = options.getDoubleOrDefault("maxBuffer", 50.0)
     val handleAudioFocus = options.getBooleanOrDefault("handleAudioFocus", true)
     val audioOffload = options.getBooleanOrDefault("audioOffload", true)
-    val autoUpdateMetadata = options.getBooleanOrDefault("autoUpdateMetadata", false)
 
     waitForConnection {
       binder?.controller?.setupPlayer(
@@ -130,7 +129,6 @@ class XmusicPlayerModule(
         maxBufferSec = maxBufferSec,
         handleAudioFocus = handleAudioFocus,
         audioOffload = audioOffload,
-        autoUpdateMetadata = autoUpdateMetadata,
       )
       promise.resolve(null)
     }
@@ -353,18 +351,6 @@ class XmusicPlayerModule(
     }
     b.post {
       promise.resolve(b.controller.getDurationSec())
-    }
-  }
-
-  @ReactMethod
-  fun getBufferedPosition(promise: Promise) {
-    val b = binder
-    if (b == null) {
-      promise.resolve(0.0)
-      return
-    }
-    b.post {
-      promise.resolve(b.controller.getBufferedPositionSec())
     }
   }
 

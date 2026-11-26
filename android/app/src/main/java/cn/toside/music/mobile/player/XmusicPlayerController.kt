@@ -59,7 +59,6 @@ class XmusicPlayerController(
   private val wifiLock: WifiManager.WifiLock?
 
   private var stopWithApp: Boolean = true
-  private var autoUpdateMetadata: Boolean = false
   private var previousState: Int = PlaybackStateCompat.STATE_NONE
   private var lastMetadataPlayState: String? = null
   private var hasActiveTrack: Boolean = false
@@ -68,7 +67,6 @@ class XmusicPlayerController(
 
   // 60fps volume envelope state
   private var userVolume: Float = 1.0f
-  private var volumeMultiplier: Float = 1.0f
   private var rampFactor: Float = 1.0f
   private var eofFactor: Float = 1.0f
   private var softPlayPause: Boolean = true
@@ -129,10 +127,8 @@ class XmusicPlayerController(
     maxBufferSec: Double,
     handleAudioFocus: Boolean,
     audioOffload: Boolean,
-    autoUpdateMetadata: Boolean,
   ) {
     destroyPlayerOnly()
-    this.autoUpdateMetadata = autoUpdateMetadata
     PlayerMediaCache.init(service, maxCacheSizeKb * 1024L)
 
     val maxBufferMs = max(
@@ -609,7 +605,7 @@ class XmusicPlayerController(
   }
 
   private fun applyEffectiveVolume() {
-    val effective = (userVolume * volumeMultiplier * rampFactor * eofFactor).coerceIn(0.0f, 1.0f)
+    val effective = (userVolume * rampFactor * eofFactor).coerceIn(0.0f, 1.0f)
     player?.volume = effective
   }
 

@@ -107,7 +107,7 @@ export default () => {
 
     if (isActive()) {
       setStatusText(global.i18n.t('player__error'))
-      setTimeout(addDelayNextTimeout)
+      BackgroundTimer.setTimeout(addDelayNextTimeout, 0)
     } else {
       console.warn('error skip to next')
       void playNext(true)

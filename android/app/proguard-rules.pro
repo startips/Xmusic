@@ -10,7 +10,6 @@
 # Add any project specific keep options here:
 
 -keep class com.reactnativenavigation.views.element.animators.** { *; }
-# -keepclassmembers class com.reactnativenavigation.views.element.animators.** { *; }
 
 -keep class cn.toside.music.mobile.view.** { *; }
 
@@ -18,8 +17,6 @@
 -keep class org.jaudiotagger.tag.** { *; }
 
 
--keep public class com.dylanvann.fastimage.* {*;}
--keep public class com.dylanvann.fastimage.** {*;}
 -keep public class * implements com.bumptech.glide.module.GlideModule
 -keep public class * extends com.bumptech.glide.module.AppGlideModule
 -keep public enum com.bumptech.glide.load.ImageHeaderParser$** {

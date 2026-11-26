@@ -99,19 +99,6 @@ export const onDisplayChange = (handler: (rotation: number) => void): () => void
   }
 }
 
-export const onWindowSizeChange = (handler: (size: { width: number, height: number }) => void): () => void => {
-  UtilsModule.listenWindowSizeChanged()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  const eventEmitter = new NativeEventEmitter(UtilsModule)
-  const eventListener = eventEmitter.addListener('screen-size-changed', event => {
-    handler(event as { width: number, height: number })
-  })
-
-  return () => {
-    eventListener.remove()
-  }
-}
-
 export const performHaptic = (type: 'heart' | 'tick' | 'confirm' | 'heavy' | 'light' = 'light'): void => {
   UtilsModule.performHaptic?.(type)
 }

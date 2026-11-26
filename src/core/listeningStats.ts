@@ -7,7 +7,7 @@ import { playList } from '@/core/player/player'
 import { getData, saveData } from '@/plugins/storage'
 import listState from '@/store/list/state'
 import playerState from '@/store/player/state'
-import { throttle } from '@/utils/common'
+import { throttleBackgroundTimer } from '@/utils/tools'
 
 const STORAGE_KEY = '@xmusic_listening_stats_v1'
 export const SMART_TOP50_LIST_ID = 'userlist_xmusic_top50'
@@ -89,7 +89,7 @@ const pruneStatsInPlace = () => {
   }
 }
 
-const persistStatsThrottled = throttle(() => {
+const persistStatsThrottled = throttleBackgroundTimer(() => {
   pruneStatsInPlace()
   void saveData(STORAGE_KEY, memStats)
 }, 3000)

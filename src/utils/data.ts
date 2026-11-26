@@ -1,6 +1,6 @@
 import { getData, saveData, getAllKeys, removeDataMultiple, saveDataMultiple, removeData, getDataMultiple } from '@/plugins/storage'
 import { DEFAULT_SETTING, LIST_IDS, storageDataPrefix, type NAV_ID_Type } from '@/config/constant'
-import { throttle } from './common'
+import { throttleBackgroundTimer } from './tools'
 // import { gzip, ungzip } from '@/utils/nativeModules/gzip'
 // import { readFile, writeFile, temporaryDirectoryPath, unlink } from '@/utils/fs'
 // import { isNotificationsEnabled, openNotificationPermissionActivity, shareText } from '@/utils/nativeModules/utils'
@@ -41,22 +41,22 @@ let songListSetting: typeof DEFAULT_SETTING['songList']
 let leaderboardSetting: typeof DEFAULT_SETTING['leaderboard']
 let searchHistoryList: string[]
 
-const saveListPositionThrottle = throttle(() => {
+const saveListPositionThrottle = throttleBackgroundTimer(() => {
   void saveData(listScrollPositionKey, listPosition)
 }, 1000)
-const saveSearchSettingThrottle = throttle(() => {
+const saveSearchSettingThrottle = throttleBackgroundTimer(() => {
   void saveData(searchSettingKey, searchSetting)
 }, 1000)
-const saveSearchHistoryThrottle = throttle(() => {
+const saveSearchHistoryThrottle = throttleBackgroundTimer(() => {
   void saveData(searchHistoryListKey, searchHistoryList)
 }, 1000)
-const saveSongListSettingThrottle = throttle(() => {
+const saveSongListSettingThrottle = throttleBackgroundTimer(() => {
   void saveData(songListSettingKey, songListSetting)
 }, 1000)
-const saveLeaderboardSettingThrottle = throttle(() => {
+const saveLeaderboardSettingThrottle = throttleBackgroundTimer(() => {
   void saveData(leaderboardSettingKey, leaderboardSetting)
 }, 1000)
-const saveViewPrevStateThrottle = throttle((state) => {
+const saveViewPrevStateThrottle = throttleBackgroundTimer((state) => {
   void saveData(viewPrevStateKey, state)
 }, 1000)
 
@@ -94,7 +94,7 @@ export const overwriteListPosition = async(ids: string[]) => {
   saveListPositionThrottle()
 }
 
-const saveListPrevSelectIdThrottle = throttle(() => {
+const saveListPrevSelectIdThrottle = throttleBackgroundTimer(() => {
   void saveData(listPrevSelectIdKey, listPrevSelectId)
 }, 200)
 export const getListPrevSelectId = async() => {
@@ -107,7 +107,7 @@ export const saveListPrevSelectId = (id: string) => {
   saveListPrevSelectIdThrottle()
 }
 
-const saveListUpdateInfoThrottle = throttle(() => {
+const saveListUpdateInfoThrottle = throttleBackgroundTimer(() => {
   void saveData(listUpdateInfoKey, listUpdateInfo)
 }, 1000)
 

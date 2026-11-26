@@ -47,6 +47,7 @@ class UtilsModule(
   }
 
   @ReactMethod
+  @Suppress("UNUSED_PARAMETER")
   fun addListener(eventName: String) {
     listenerCount += 1
   }
@@ -54,11 +55,6 @@ class UtilsModule(
   @ReactMethod
   fun removeListeners(count: Int) {
     listenerCount = (listenerCount - count).coerceAtLeast(0)
-  }
-
-  @ReactMethod
-  fun listenWindowSizeChanged() {
-    // Window size updates are observed via JS Dimensions/DisplayListener; kept for bridge compatibility.
   }
 
   @ReactMethod

@@ -35,6 +35,7 @@ class LyricModule(
     lyric ?: Lyric(reactAppContext, isShowTranslation, isShowRoma, playbackRate).also { lyric = it }
 
   @ReactMethod
+  @Suppress("UNUSED_PARAMETER")
   fun addListener(eventName: String) {
     listenerCount += 1
   }

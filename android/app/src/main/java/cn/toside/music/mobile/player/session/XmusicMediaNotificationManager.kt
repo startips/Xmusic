@@ -330,11 +330,6 @@ class XmusicMediaNotificationManager(
     updateNotification()
   }
 
-  fun removeNotifications() {
-    val mgr = service.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-    mgr?.cancelAll()
-  }
-
   fun destroy() {
     artworkTarget?.let {
       try {

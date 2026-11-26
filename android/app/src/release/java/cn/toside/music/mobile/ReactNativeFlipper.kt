@@ -8,6 +8,7 @@ import com.facebook.react.ReactInstanceManager
  */
 object ReactNativeFlipper {
   @JvmStatic
+  @Suppress("UNUSED_PARAMETER")
   fun initializeFlipper(context: Context, reactInstanceManager: ReactInstanceManager) {
     // No-op in release builds
   }

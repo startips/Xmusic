@@ -15,10 +15,8 @@ const initial = async({ volume, playRate, cacheSize, isHandleAudioFocus, isEnabl
   await nativePlayer.setupPlayer({
     maxCacheSize: cacheSize * 1024,
     maxBuffer: 1000,
-    waitForBuffer: true,
     handleAudioFocus: isHandleAudioFocus,
     audioOffload: isEnableAudioOffload,
-    autoUpdateMetadata: false,
   })
   global.lx.playerStatus.isInitialized = true
   global.lx.playerStatus.isIniting = false
@@ -43,10 +41,8 @@ export {
   setCurrentTime,
   getDuration,
   setStop,
-  resetPlay,
   getPosition,
   updateMetaData,
-  onStateChange,
   isEmpty,
   useBufferProgress,
   initTrackInfo,

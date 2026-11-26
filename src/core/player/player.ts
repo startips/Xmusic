@@ -79,7 +79,7 @@ const delayRetry = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, i
   return new Promise<string | null>((resolve, reject) => {
     const time = getRandom(2, 6)
     setStatusText(global.i18n.t('player__getting_url_delay_retry', { time }))
-    const tiemout = setTimeout(() => {
+    const tiemout = BackgroundTimer.setTimeout(() => {
       getMusicPlayUrl(musicInfo, isRefresh, true).then((result) => {
         cancelDelayRetry = null
         resolve(result)
@@ -89,7 +89,7 @@ const delayRetry = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, i
       })
     }, time * 1000)
     cancelDelayRetry = () => {
-      clearTimeout(tiemout)
+      BackgroundTimer.clearTimeout(tiemout)
       cancelDelayRetry = null
       resolve(null)
     }
@@ -167,9 +167,9 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
   const musicInfo = playerState.playMusicInfo.musicInfo
   if (!musicInfo) return
 
-  setTimeout(() => {
+  BackgroundTimer.setTimeout(() => {
     global.app_event.setProgress(settingState.setting['player.isSavePlayTime'] ? restorePlayInfo.time : 0, restorePlayInfo.maxTime)
-  })
+  }, 0)
 
   const playMusicInfo = playerState.playMusicInfo
 
@@ -330,9 +330,9 @@ export const playTempPlayListIndex = async(index: number) => {
 
 const handleToggleStop = async() => {
   await stop()
-  setTimeout(() => {
+  BackgroundTimer.setTimeout(() => {
     setPlayMusicInfo(null, null)
-  })
+  }, 0)
 }
 
 
@@ -648,9 +648,9 @@ export const pause = async() => {
  */
 export const stop = async() => {
   await setStop()
-  setTimeout(() => {
+  BackgroundTimer.setTimeout(() => {
     global.app_event.stop()
-  })
+  }, 0)
 }
 
 /**

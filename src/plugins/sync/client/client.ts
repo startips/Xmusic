@@ -1,3 +1,4 @@
+import BackgroundTimer from 'react-native-background-timer'
 import { encryptMsg, decryptMsg } from './utils'
 import { callObj } from './sync'
 // import { action as commonAction } from '@/store/modules/common'
@@ -31,22 +32,22 @@ const heartbeatTools = {
   failedNum: 0,
   maxTryNum: 100000,
   stepMs: 3000,
-  connectTimeout: null as NodeJS.Timeout | null,
-  pingTimeout: null as NodeJS.Timeout | null,
-  delayRetryTimeout: null as NodeJS.Timeout | null,
+  connectTimeout: null as number | null,
+  pingTimeout: null as number | null,
+  delayRetryTimeout: null as number | null,
   handleOpen() {
     console.log('open')
     // this.failedNum = 0
     this.heartbeat()
   },
   heartbeat() {
-    if (this.pingTimeout) clearTimeout(this.pingTimeout)
+    if (this.pingTimeout) BackgroundTimer.clearTimeout(this.pingTimeout)
 
     // Use `WebSocket#terminate()`, which immediately destroys the connection,
     // instead of `WebSocket#close()`, which waits for the close timer.
     // Delay should be equal to the interval at which your server
     // sends out pings plus a conservative assumption of the latency.
-    this.pingTimeout = setTimeout(() => {
+    this.pingTimeout = BackgroundTimer.setTimeout(() => {
       client?.close()
     }, 30000 + 1000)
   },
@@ -71,7 +72,7 @@ const heartbeatTools = {
     //   message: `Waiting ${waitTime / 1000}s reconnnect...`,
     // })
 
-    this.delayRetryTimeout = setTimeout(() => {
+    this.delayRetryTimeout = BackgroundTimer.setTimeout(() => {
       this.delayRetryTimeout = null
       if (!client) return
       console.log(dateFormat(new Date()), 'reconnnect...')
@@ -84,21 +85,21 @@ const heartbeatTools = {
   },
   clearTimeout() {
     if (this.connectTimeout) {
-      clearTimeout(this.connectTimeout)
+      BackgroundTimer.clearTimeout(this.connectTimeout)
       this.connectTimeout = null
     }
     if (this.delayRetryTimeout) {
-      clearTimeout(this.delayRetryTimeout)
+      BackgroundTimer.clearTimeout(this.delayRetryTimeout)
       this.delayRetryTimeout = null
     }
     if (this.pingTimeout) {
-      clearTimeout(this.pingTimeout)
+      BackgroundTimer.clearTimeout(this.pingTimeout)
       this.pingTimeout = null
     }
   },
   connect(socket: LX.Sync.Socket) {
     console.log('heartbeatTools connect')
-    this.connectTimeout = setTimeout(() => {
+    this.connectTimeout = BackgroundTimer.setTimeout(() => {
       this.connectTimeout = null
       if (client) {
         try {
@@ -121,7 +122,7 @@ const heartbeatTools = {
     }, 2 * 60 * 1000)
     socket.addEventListener('open', () => {
       if (this.connectTimeout) {
-        clearTimeout(this.connectTimeout)
+        BackgroundTimer.clearTimeout(this.connectTimeout)
         this.connectTimeout = null
       }
       this.handleOpen()

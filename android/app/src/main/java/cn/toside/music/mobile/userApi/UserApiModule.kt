@@ -21,6 +21,7 @@ class UserApiModule(
   }
 
   @ReactMethod
+  @Suppress("UNUSED_PARAMETER")
   fun addListener(eventName: String) {
     listenerCount += 1
   }

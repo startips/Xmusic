@@ -51,11 +51,6 @@ fun ReadableMap?.getBooleanOrDefault(key: String, defaultValue: Boolean): Boolea
   return if (getType(key) == ReadableType.Boolean) getBoolean(key) else defaultValue
 }
 
-fun ReadableMap?.getIntOrDefault(key: String, defaultValue: Int): Int {
-  if (this == null || !hasKey(key) || isNull(key)) return defaultValue
-  return if (getType(key) == ReadableType.Number) getDouble(key).toInt() else defaultValue
-}
-
 fun ReadableMap?.getDoubleOrDefault(key: String, defaultValue: Double): Double {
   if (this == null || !hasKey(key) || isNull(key)) return defaultValue
   return if (getType(key) == ReadableType.Number) getDouble(key) else defaultValue

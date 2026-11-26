@@ -14,10 +14,7 @@ class AudioEffectModule(reactContext: ReactApplicationContext) :
   private val bandCount = XmusicDspConfig.CENTER_FREQS_HZ.size
 
   private var currentSessionId = 0
-  private var enabled = false
   private var desiredBandsMb = IntArray(bandCount)
-  private var desiredBassStrength = 0
-  private var desiredLoudnessGainMb = 0
 
   override fun getName(): String = "AudioEffectModule"
 
@@ -43,10 +40,7 @@ class AudioEffectModule(reactContext: ReactApplicationContext) :
     val clampedLoud = loudnessGainMb.coerceIn(0, 1200)
 
     synchronized(this) {
-      enabled = isEnabled
       desiredBandsMb = nextBands
-      desiredBassStrength = clampedBass
-      desiredLoudnessGainMb = clampedLoud
     }
 
     XmusicDspConfig.updateConfig(isEnabled, nextBands, clampedBass, clampedLoud)

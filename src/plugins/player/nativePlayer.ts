@@ -33,10 +33,8 @@ export interface PlaybackSnapshot {
 export interface SetupPlayerOptions {
   maxCacheSize?: number
   maxBuffer?: number
-  waitForBuffer?: boolean
   handleAudioFocus?: boolean
   audioOffload?: boolean
-  autoUpdateMetadata?: boolean
 }
 
 export interface UpdatePlayerOptions {
@@ -77,7 +75,6 @@ interface NativeXmusicPlayerSpec {
   getState: () => Promise<PlayerState>
   getPosition: () => Promise<number>
   getDuration: () => Promise<number>
-  getBufferedPosition: () => Promise<number>
   getPlaybackSnapshot: () => Promise<PlaybackSnapshot>
   isCached: (url: string) => Promise<boolean>
   getCacheSize: () => Promise<number>

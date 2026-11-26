@@ -139,7 +139,8 @@
 #### P1 构建与代码验证（真机交互留待装包手测）
 - [x] 全量 `npm run lint`、`npx tsc --noEmit` 与 `./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a`（含 R8/ProGuard 混淆与 `lintVitalRelease`）全部通过，产出 `xmusic-v2.3.1-arm64-v8a.apk` 与 `xmusic-v2.3.1-universal.apk`
 - [x] 云端双版本（Redroid Android 14 / 15 `arm64-v8a`）实测通过：本地音频 `VIEW` 启动与连续等长切歌、`MediaSession` 状态同步与 5 槽位通知栏（含收藏按钮）、`On · Mega Bass` 均衡器界面与 30 秒完整播放、`XmusicPlaybackService` 微件控制（播放/暂停与红心联动）、`CacheModule` 缓存读取与清理（`3.35 MiB` -> `196.00 KiB`）
-- [ ] 真机主观与网络交互回归：耳机听感/防爆音实测、在线音乐流媒体解析播放与 Seek、小米 HyperOS 超级岛系统胶囊 UI、桌面长按添加微件及划掉多任务后台释放
+- [x] 真机验证（小米 24031PN0DC / Android 16 / HyperOS 3.0）：在线流媒体解析播放与 Seek、小米 HyperOS 超级岛胶囊封面与波形、通知栏红心免弹窗收藏、媒体键控制、划掉多任务后台完全释放与 `47.44 MiB` 缓存清理通过
+- [ ] 真机主观与桌面交互回归：耳机听感/防爆音实测与桌面长按添加微件实测
 
 ---
 
@@ -151,7 +152,7 @@
   - [x] `RSA.java` → `RSA.kt`（对齐 X509/PKCS8 与 `Base64.NO_WRAP`）
   - [x] `CryptoModule.java` → `CryptoModule.kt`（异步 `generateRsaKey` 使用 `ModuleCoroutineScope` `Dispatchers.Default`，保留 Sync/Async 与 `sha1`）
   - [x] `CryptoPackage.java` → `CryptoPackage.kt`
-  - [ ] 真机运行 `src/utils/nativeModules/cryptoTest.ts` 实测校验（静态字节级对齐与编译已通过）
+  - [x] 真机实测校验（HyperOS 3.0）：对齐 `cryptoTest.ts` 算法参数与 Node `crypto` 基准，实测 AES CBC/ECB、短 IV 零填充、Sync/Async、SHA1（含 UTF-8 中文）、RSA NoPadding/OAEP 交叉解密与 `generateRsaKey` 往返共 16/16 全部通过
 - [x] `cache/` 模块迁移（4 个文件 → Kotlin）：
   - [x] `CacheModule.java`、`CachePackage.java`、`Utils.java` 迁为 `CacheModule.kt`、`CachePackage.kt`、`CacheUtils.kt`，用 `ModuleCoroutineScope(Dispatchers.IO)` 替换 `CacheClearAsyncTask.java`
   - [x] 删除 `cache/CacheClearAsyncTask.java` 与废弃的 `utils/AsyncTask.java`
@@ -186,7 +187,8 @@
 - [x] 迁移自定义悬浮窗视图：`LyricView.kt`、`LyricTextView.kt`、`LyricSwitchView.kt`
 - [x] 迁移控制与桥接层：`Lyric.kt`、`LyricModule.kt`（补齐 `setPosition` 方法）、`LyricPackage.kt`
 - [x] 云端验收（Android 14）：授予 `SYSTEM_ALERT_WINDOW` 权限后开启悬浮桌面歌词，`TYPE_APPLICATION_OVERLAY` 透明悬浮窗正常挂载无崩溃
-- [ ] 真机验收：桌面歌词锁定穿透手势、拖拽位置记忆、单双行切换与翻译/罗马音排版手测
+- [x] 真机部分验收（HyperOS 3.0）：桌面歌词显示、锁定穿透（`FLAG_NOT_TOUCHABLE` 切换）与后台拖拽位置持久化（含冷重启精准恢复）已实测通过
+- [ ] 真机排版验收：单双行切换与翻译/罗马音排版手测
 
 - [x] **P2 阶段编译验证**：`npm run lint`、`npx tsc --noEmit` 与 `./gradlew assembleDebug`（435 tasks `BUILD SUCCESSFUL`）全部通过；剩余 `.java` 仅剩 `view/` 下 17 个文件（及 `release/java/.../ReactNativeFlipper.java`）
 
@@ -207,7 +209,8 @@
 - [x] `release/java/cn/toside/music/ReactNativeFlipper.java` → `release/java/cn/toside/music/mobile/ReactNativeFlipper.kt`
 - [x] **里程碑检查**：`find android/app/src -name "*.java"` 输出 **0** 个文件（现有 67 个 `.kt` 文件）；`testDebugUnitTest`（4/4 passed）与 `assembleRelease`（766 tasks `BUILD SUCCESSFUL`，产出 11MB `arm64-v8a` & `universal` APK）通过
 - [x] 云端 UI 渲染回归（Android 14 / 15）：`WavyProgressView`、`FluidBgView`、`FadeImageView` 与 `SolidHeartView` 渲染与动态变化正常
-- [ ] 真机 UI/转场回归：120Hz 高刷屏幕流畅度与 `playDetail_pic` 共享元素转场动画手感实测
+- [x] 真机转场回归（HyperOS 3.0）：`playDetail_pic` 共享元素转场与 `WavyProgressView` 波形进度条实测通过
+- [ ] 真机主观流畅度回归：120Hz 高刷屏幕流体背景与动画手感实测
 
 #### P3.2 原生存储引擎替换 `AsyncStorage` 分片逻辑
 - [x] 设计并实现 `storage/XmusicStorageEngine.kt`、`XmusicStorageModule.kt` 与 `XmusicStoragePackage.kt`（基于 SQLite WAL + 256K 字符阈值原子文件溢出存储，免除 `CursorWindow` 2MB 限制）
@@ -244,3 +247,4 @@
 - [x] ~~`[P1-Hermes与ServiceCompat]` RN Gradle 插件在 `aarch64` Linux 上报错 `OS not recognized`；此外 `ServiceCompat.startForeground` 4 参数重载在当前传递 `core` 版本中未解析~~（解决方案：在 `android/app/build.gradle` 为 `aarch64` Linux 添加 `linux64-bin/hermesc` 条件回退；在 `XmusicPlaybackService.kt` 与 `XmusicMediaNotificationManager.kt` 改用标准 `Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q` 分支直接调用 `Service.startForeground` / `stopForeground`）
 - [x] ~~`[P3-单测与ESLint]` 纯 JVM 单测中 `LyricPlayer` 初始化 `Handler(Looper.getMainLooper())` 抛出 `Looper not mocked`；Gradle 生成的 `android/app/build/reports/tests/.../report.js` 触发项目 ESLint 扫描报错；`ReactContext.emitDeviceEvent` 扩展被 RN 0.73 内置成员方法遮蔽~~（解决方案：`LyricPlayer.kt` 的 `timeoutHandler` 改为 `by lazy` 延迟初始化，在 `.eslintrc.cjs` 的 `ignorePatterns` 添加 `'android/**/build'`，并将 `ReactBridgeExt.kt` 安全事件扩展重命名为 `sendJsEvent`）
 - [x] ~~`[云端验证-切歌元数据]` 连续切换两首时长相同的音频（同为 30s）且上一首自然播完后，`src/plugins/player/playList.ts` 中 `state.isPlaying` 未复位且未比较 `trackId`，导致 `updateMetaData` 判定 `isPlay == state.isPlaying && prevDuration == duration` 并跳过 `delayUpdateMusicInfo`，使 `MediaSession` 标题停留在上一曲~~（解决方案：在 `playList.ts` 新增 `state.prevTrackId`，并在 `initTrackInfo` 与 `handlePlayMusic` 加载新音轨时重置 `isPlaying = false`、`prevDuration = -1`、`prevTrackId = ''`，已于 Redroid Android 14 / 15 重打包覆写验证连续等长音轨切换正常刷新）
+- [x] ~~`[真机验证-后台JS定时器冻结]` 卸载 `react-native-track-player` 并移除播放期 Headless JS 任务后，RN `JavaTimerManager` 在应用退至后台（`onHostPause`）时停止推进标准 `setTimeout`/`throttle`，导致后台拖拽桌面歌词位置未保存（切回前台才写入）、后台听歌统计节流落盘挂起及后台 `delayRetry` 无法触发~~（解决方案：未采用会在后台以 120Hz 唤醒 Choreographer 且暂停态失效的常驻 Headless 任务，改为将后台可达模块的普通定时器与节流统一替换为 `react-native-background-timer` / `throttleBackgroundTimer`，涉及 `src/core/common.ts`、`src/core/listeningStats.ts`、`src/core/player/player.ts`、`src/core/init/player/playerEvent.ts`、`src/core/lyric.ts`、`src/utils/data.ts` 与 `src/plugins/sync/client/client.ts`；已在 HyperOS 3.0 真机验证暂停态后台拖拽桌面歌词立即写入 `xmusic_kv.db` 且冷重启精准恢复、后台听歌统计秒数持续落盘及切歌元数据刷新）

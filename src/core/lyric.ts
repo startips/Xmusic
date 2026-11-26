@@ -1,3 +1,4 @@
+import BackgroundTimer from 'react-native-background-timer'
 import {
   play as lrcPlay,
   setLyric as lrcSetLyric,
@@ -74,11 +75,11 @@ export const setPlaybackRate = async(playbackRate: number) => {
   lrcSetPlaybackRate(playbackRate)
   await setDesktopLyricPlaybackRate(playbackRate)
   if (playerState.isPlay) {
-    setTimeout(() => {
+    BackgroundTimer.setTimeout(() => {
       void getPosition().then((position) => {
         handlePlay(position * 1000)
       })
-    })
+    }, 0)
   }
 }
 

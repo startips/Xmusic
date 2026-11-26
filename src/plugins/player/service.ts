@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState } from './nativePlayer'
-import { isTempId } from './utils'
+import { isEmpty } from './utils'
 import { exitApp } from '@/core/common'
 import { pause, play, playNext, playPrev } from '@/core/player/player'
 import { toggleCurrentTrackFavoriteSilently } from '@/core/player/favoriteSync'
@@ -52,7 +52,7 @@ const registerPlaybackService = () => {
   })
 
   addPlayerEventListener<{ state: PlayerState }>(PlayerEvent.PlaybackState, info => {
-    if (global.lx.gettingUrlId || isTempId()) return
+    if (global.lx.gettingUrlId || isEmpty()) return
 
     switch (info.state) {
       case PlayerState.None:
