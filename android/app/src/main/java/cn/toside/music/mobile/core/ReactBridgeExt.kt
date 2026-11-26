@@ -35,7 +35,7 @@ inline fun <T> Promise.launchCatching(
 /**
  * Emit a device event to JS only when a React instance is active.
  */
-fun ReactContext.emitDeviceEvent(eventName: String, data: Any? = null) {
+fun ReactContext.sendJsEvent(eventName: String, data: Any? = null) {
   if (!hasActiveReactInstance()) return
   getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
     .emit(eventName, data)

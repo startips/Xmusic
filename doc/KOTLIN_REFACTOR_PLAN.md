@@ -65,8 +65,8 @@
 | **P2.2** | `userApi/` 沙箱重构 | 已完成 | 用单线程协程调度器重写 `QuickJsEngine.kt`，淘汰裸 `Handler`/`Thread` | QuickJS 单线程亲和、协程定时器与事件桥接编译通过 |
 | **P2.3** | `UtilsModule` 拆分 + `widget/` | 已完成 | 拆分 1,138 行上帝类，建立 Glide 共享封面管线消灭三连请求，迁移桌面微件 | `artwork/` + `utils/` + `widget/` 全量 Kotlin 化并编译通过 |
 | **P2.4** | `lyric/` 悬浮歌词迁移 | 已完成 | 迁移 9 个悬浮歌词类，强类型 `LyricLine` 替换原始 `HashMap` 并收敛生命周期 | 悬浮窗、单双行跑马灯、Android 12+ 穿透透明度与编译通过 |
-| **P3.1** | `view/` 自定义视图清零 Java | 待开始 | 迁移 17 个自定义 View / Manager，原生层 Java 文件彻底清零 | `find android/app/src -name "*.java"` 输出为空；共享元素转场正常 |
-| **P3.2** | 原生存储引擎替换分片 | 待开始 | 用 SQLite WAL + 溢出存储替换 `AsyncStorage` 500KB 分片逻辑并无损迁移历史数据 | 升级安装后旧歌单/设置/听歌统计 100% 无损读取 |
+| **P3.1** | `view/` 自定义视图清零 Java | 已完成 | 迁移 17 个自定义 View / Manager（及 `ReactNativeFlipper`），原生层 `.java` 文件清零（共 67 个 `.kt` / 0 个 `.java`） | `find android/app/src -name "*.java"` 为空；Release APK 编译通过（真机转场待手测） |
+| **P3.2** | 原生存储引擎替换分片 | 已完成 | SQLite WAL + 文件溢出替换 `AsyncStorage` 分片并实现 `RKStorage`/`AsyncStorage` 双库无损迁移，卸载旧依赖 | 分片重组单元测试与 `lint`/`tsc`/`assembleRelease` 全通过（真机覆盖升级待手测） |
 | **P4** | *(远期可选)* 业务下沉 | 待规划 | 播放队列/听歌统计/WebSocket 同步客户端下沉 Kotlin | 杀后台仅剩 Service 时微件/蓝牙可独立切歌 |
 
 ---
@@ -191,23 +191,26 @@
 ### P3：原生自定义 View 清零 & 原生高性能存储引擎
 
 #### P3.1 `view/` 包 17 个文件迁为 Kotlin（原生 `.java` 文件彻底清零）
-- [ ] `XmusicViewPackage.java` → `XmusicViewPackage.kt`
-- [ ] `WavyProgressView.java` + `WavyProgressViewManager.java` → `.kt`（重点验证波浪动画帧率与暂停/拖拽插值）
-- [ ] `FluidBgView.java` + `FluidBgViewManager.java` → `.kt`（验证 120Hz 微抖动流体网格背景性能）
-- [ ] `FadeImageView.java` + `FadeImageViewManager.java` → `.kt`（**重点验证 `playDetail_pic` 共享元素过渡**）
-- [ ] `EdgeSwipeView.java` + `EdgeSwipeViewManager.java` → `.kt`
-- [ ] `EdgeToEdgeModalView.java` + `EdgeToEdgeModalViewManager.java` → `.kt`
-- [ ] `AlphaFadeView.java` + `AlphaFadeViewManager.java` → `.kt`
-- [ ] `LinearGradientView.java` + `LinearGradientViewManager.java` → `.kt`
-- [ ] `SolidHeartView.java` + `SolidHeartViewManager.java` → `.kt`
-- [ ] **里程碑检查**：执行 `find android/app/src -name "*.java"` 输出为空；全量编译 Release APK 与真机 UI/转场回归通过
+- [x] `XmusicViewPackage.java` → `XmusicViewPackage.kt`
+- [x] `WavyProgressView.java` + `WavyProgressViewManager.java` → `.kt`
+- [x] `FluidBgView.java` + `FluidBgViewManager.java` → `.kt`
+- [x] `FadeImageView.java` + `FadeImageViewManager.java` → `.kt`（完整保留继承 `ReactImageView`、`OverlayLayout` `layout()` 坐标钉住及 650ms 飞行渐变逻辑）
+- [x] `EdgeSwipeView.java` + `EdgeSwipeViewManager.java` → `.kt`
+- [x] `EdgeToEdgeModalView.java` + `EdgeToEdgeModalViewManager.java` → `.kt`
+- [x] `AlphaFadeView.java` + `AlphaFadeViewManager.java` → `.kt`
+- [x] `LinearGradientView.java` + `LinearGradientViewManager.java` → `.kt`
+- [x] `SolidHeartView.java` + `SolidHeartViewManager.java` → `.kt`
+- [x] `release/java/cn/toside/music/ReactNativeFlipper.java` → `release/java/cn/toside/music/mobile/ReactNativeFlipper.kt`
+- [x] **里程碑检查**：`find android/app/src -name "*.java"` 输出 **0** 个文件（现有 67 个 `.kt` 文件）；`testDebugUnitTest`（4/4 passed）与 `assembleRelease`（766 tasks `BUILD SUCCESSFUL`，产出 11MB `arm64-v8a` & `universal` APK）通过
+- [ ] 真机 UI/转场回归：波浪进度条、120Hz 流体背景与 `playDetail_pic` 共享元素转场手测
 
 #### P3.2 原生存储引擎替换 `AsyncStorage` 分片逻辑
-- [ ] 设计 `storage/XmusicStorageModule.kt`（底层基于 Android 原生 SQLite WAL 模式 + 超大 Value 独立文件/BLOB 存储，免除 `CursorWindow` 2MB 限制）
-- [ ] 实现**首次启动无损自动迁移**：自动扫描旧 `RKStorage` 数据库，识别并合并 `@___PART___` 与 `@___PART_A___` 分片键，迁移成功后标记完成且保留容灾兜底
-- [ ] 对接升级 `src/plugins/storage.ts`（`saveData` / `getData` / `removeData` / `getDataMultiple` / `saveDataMultiple` / `removeDataMultiple` / `getAllKeys` / `clearAll`）
-- [ ] 评估是否可安全移除 `@react-native-async-storage/async-storage` 依赖（确认第三方库无隐式依赖后清理）
-- [ ] 验收：老版本覆盖安装后本地歌单、设置项、听歌足迹与历史播放记录 100% 完整保留，大歌单（>5,000 首）加载无明显 JS 主线程卡顿
+- [x] 设计并实现 `storage/XmusicStorageEngine.kt`、`XmusicStorageModule.kt` 与 `XmusicStoragePackage.kt`（基于 SQLite WAL + 256K 字符阈值原子文件溢出存储，免除 `CursorWindow` 2MB 限制）
+- [x] 实现**首次启动无损自动迁移**：自动扫描旧 `RKStorage`（`catalystLocalStorage`）与 Room `AsyncStorage`（`Storage`）数据库，使用分段 `SUBSTR` 安全读取超大条目并自动重组 `@___PART___` 与 `@___PART_A___` 分片键
+- [x] 对接升级 `src/plugins/storage.ts`（保持 `saveData` / `getData` / `removeData` / `getDataMultiple` / `saveDataMultiple` / `removeDataMultiple` / `getAllKeys` / `clearAll` 契约兼容）
+- [x] 卸载 `@react-native-async-storage/async-storage` 依赖并清理 `android/gradle.properties` 中的旧 `AsyncStorage_*` 配置
+- [x] 添加 Kotlin JUnit4 单元测试 `XmusicCoreUnitTest.kt`（4/4 passed，覆盖 `XmusicDspConfig`、`LyricPlayer` 厘秒/毫秒解析及 `XmusicStorageEngine.reassembleLegacyEntries` 分片重组）
+- [ ] 真机覆盖安装验收：老版本覆盖安装后歌单/设置/听歌足迹数据读取与大歌单性能手测
 
 ---
 
@@ -226,10 +229,11 @@
 - [x] ~~`[P1-音频实时性]` 将 `XmusicDspAudioProcessor` 从 Java 迁往 Kotlin 时，`queueInput` 音频帧循环中严禁使用高阶函数闭包、`Pair` 解构、装箱 `Double`/`Int` 或可空类型包装，必须坚持原生 `DoubleArray`/`IntArray` 与 `for` 索引循环，避免 AudioThread GC 抖动引发爆音。~~（解决方案：`XmusicDspAudioProcessor.kt` 全部使用 `DoubleArray`/`IntArray`/`BooleanArray`/`Array(NUM_STAGES) { DoubleArray(MAX_CHANNELS) }` 与 `for (f in 0 until frames)` 索引循环，零装箱零闭包；同时淘汰 `defaultUrl` 11025Hz 占位音轨后移除了 `<20kHz` 静音 Hack）
 - [x] ~~`[P2.1-加解密字节级一致]` `AES.kt` 与 `RSA.kt` 的 Cipher Transformation、Padding、IV 拼接顺序、字符编码及 `Base64.NO_WRAP` 处理必须与原 Java 代码 100% 字节级对齐，防止多端同步握手或自定义源鉴权失效（必须通过 `cryptoTest.ts`）。~~（解决方案：`AES.kt` 与 `RSA.kt` 严格保持原 Java 版 `Base64.DEFAULT` 解码、`Base64.NO_WRAP` 输出、空 IV 无 `IvParameterSpec` 分支、16 字节 IV 数组截断填充及异常返回 `""` 语义）
 - [x] ~~`[P2.2-QuickJS线程亲和性]` `wang.harlon.quickjs:wrapper-android:2.4.0` 的 `QuickJSContext` 绑定创建线程（JNI 线程局部检查），`create`、`evaluate`、`call`、`setTimeout` 回调与 `destroy` 必须全部严格调度在同一个单线程 `ExecutorCoroutineDispatcher` 上，切勿使用多线程池 `Dispatchers.Default`/`IO`。~~（解决方案：`QuickJsEngine.kt` 独占 `Executors.newSingleThreadExecutor().asCoroutineDispatcher()` 与独立 `SupervisorJob` 作用域，将创建、求值、桥接调用、`delay` 定时回调与 `destroy()` 全部封闭于单线程上下文并在销毁时自动取消所有挂起协程）
-- [ ] `[P3.1-共享元素转场]` `FadeImageView` 参与 `react-native-navigation` 播放页 `playDetail_pic` 的共享元素动画，迁移为 Kotlin 时必须完整保留其视图层级、缩放类型及 `onLayout` 时机，不可随意改写为异步加载占位导致 `ExistingViewFinder` 判定失败。
+- [x] ~~`[P3.1-共享元素转场]` `FadeImageView` 参与 `react-native-navigation` 播放页 `playDetail_pic` 的共享元素动画，迁移为 Kotlin 时必须完整保留其视图层级、缩放类型及 `onLayout` 时机，不可随意改写为异步加载占位导致 `ExistingViewFinder` 判定失败。~~（解决方案：`FadeImageView.kt` 原样继承 `ReactImageView`，完整保留 `OverlayLayout` 下的 `layout()` 坐标锁与 650ms 飞行渐变裁剪逻辑；`FadeImageViewManager.kt` 保留 `@ReactModule` 与全部 `@ReactProp`）
 
 ### 已解决记录示例（后续真实解决条目紧随其后追加）
 - [x] ~~`[示例]` 某个模块在 Kotlin 迁移后出现空指针或编译告警~~（解决方案：记录具体根因、修改文件与提交说明）
 - [x] ~~`[P0-构建环境]` 当前宿主机为 ARM64 (`aarch64`) Linux，而 Android SDK `aapt2`、RN `hermesc` 与 NDK `clang` 为 `x86_64` 二进制；同时环境仅装有 JRE（缺 `jlink`）且无正式 `android/keystore.properties`~~（解决方案：安装 `qemu-user`、`qemu-user-binfmt`、`libc6-amd64-cross`、`libstdc++6-amd64-cross`、`libgcc-s1-amd64-cross`、`openjdk-17-jdk`，并向 `/usr/x86_64-linux-gnu/lib/` 补入 `zlib1g` amd64 的 `libz.so.1`；后续运行 Gradle 统一携带 `QEMU_LD_PREFIX=/usr/x86_64-linux-gnu` 与 `-PMYAPP_UPLOAD_STORE_FILE=debug.keystore -PMYAPP_UPLOAD_STORE_PASSWORD=android -PMYAPP_UPLOAD_KEY_ALIAS=androiddebugkey -PMYAPP_UPLOAD_KEY_PASSWORD=android`）
 - [x] ~~`[P0-MainApplication]` `NavigationApplication`（实现 Kotlin 接口 `ReactApplication`）与 `DefaultReactNativeHost` 在 RN 0.73 下要求使用 Kotlin 属性 `override val reactNativeHost` / `isNewArchEnabled` / `isHermesEnabled` 而非 Java getter 方法~~（解决方案：将 `MainApplication.kt` 中的 `getReactNativeHost()` 及方法式覆写改为 Kotlin 属性覆写）
 - [x] ~~`[P1-Hermes与ServiceCompat]` RN Gradle 插件在 `aarch64` Linux 上报错 `OS not recognized`；此外 `ServiceCompat.startForeground` 4 参数重载在当前传递 `core` 版本中未解析~~（解决方案：在 `android/app/build.gradle` 为 `aarch64` Linux 添加 `linux64-bin/hermesc` 条件回退；在 `XmusicPlaybackService.kt` 与 `XmusicMediaNotificationManager.kt` 改用标准 `Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q` 分支直接调用 `Service.startForeground` / `stopForeground`）
+- [x] ~~`[P3-单测与ESLint]` 纯 JVM 单测中 `LyricPlayer` 初始化 `Handler(Looper.getMainLooper())` 抛出 `Looper not mocked`；Gradle 生成的 `android/app/build/reports/tests/.../report.js` 触发项目 ESLint 扫描报错；`ReactContext.emitDeviceEvent` 扩展被 RN 0.73 内置成员方法遮蔽~~（解决方案：`LyricPlayer.kt` 的 `timeoutHandler` 改为 `by lazy` 延迟初始化，在 `.eslintrc.cjs` 的 `ignorePatterns` 添加 `'android/**/build'`，并将 `ReactBridgeExt.kt` 安全事件扩展重命名为 `sendJsEvent`）

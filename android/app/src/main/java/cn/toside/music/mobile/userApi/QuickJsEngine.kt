@@ -3,7 +3,7 @@ package cn.toside.music.mobile.userApi
 import android.os.Build
 import android.util.Base64
 import android.util.Log
-import cn.toside.music.mobile.core.emitDeviceEvent
+import cn.toside.music.mobile.core.sendJsEvent
 import cn.toside.music.mobile.crypto.AES
 import cn.toside.music.mobile.crypto.RSA
 import com.facebook.react.bridge.Arguments
@@ -295,7 +295,7 @@ class QuickJsEngine(
       putString("action", action)
       if (data != null) putString("data", data) else putNull("data")
     }
-    reactContext.emitDeviceEvent(EVENT_API_ACTION, map)
+    reactContext.sendJsEvent(EVENT_API_ACTION, map)
   }
 
   private fun emitLog(type: String, log: String) {
@@ -304,7 +304,7 @@ class QuickJsEngine(
       putString("type", type)
       putString("log", log)
     }
-    reactContext.emitDeviceEvent(EVENT_API_ACTION, map)
+    reactContext.sendJsEvent(EVENT_API_ACTION, map)
   }
 
   private fun emitInitFailed(errorMessage: String) {
@@ -316,7 +316,7 @@ class QuickJsEngine(
         "{ \"info\": null, \"status\": false, \"errorMessage\": \"Create JavaScript Env Failed\" }",
       )
     }
-    reactContext.emitDeviceEvent(EVENT_API_ACTION, map)
+    reactContext.sendJsEvent(EVENT_API_ACTION, map)
     emitLog("error", errorMessage)
   }
 }

@@ -16,7 +16,7 @@ import android.view.HapticFeedbackConstants
 import android.view.WindowManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import cn.toside.music.mobile.core.emitDeviceEvent
+import cn.toside.music.mobile.core.sendJsEvent
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -69,7 +69,7 @@ class SystemUiHelper(
           if (rotation == lastDisplayRotation) return
           lastDisplayRotation = rotation
           val params = Arguments.createMap().apply { putInt("rotation", rotation) }
-          reactContext.emitDeviceEvent(EVENT_DISPLAY_CHANGED, params)
+          reactContext.sendJsEvent(EVENT_DISPLAY_CHANGED, params)
         }
       }
       displayListener = listener
@@ -89,11 +89,11 @@ class SystemUiHelper(
         when (action) {
           Intent.ACTION_SCREEN_OFF -> {
             params.putString("state", "OFF")
-            reactContext.emitDeviceEvent(EVENT_SCREEN_STATE, params)
+            reactContext.sendJsEvent(EVENT_SCREEN_STATE, params)
           }
           Intent.ACTION_SCREEN_ON -> {
             params.putString("state", "ON")
-            reactContext.emitDeviceEvent(EVENT_SCREEN_STATE, params)
+            reactContext.sendJsEvent(EVENT_SCREEN_STATE, params)
           }
         }
       }

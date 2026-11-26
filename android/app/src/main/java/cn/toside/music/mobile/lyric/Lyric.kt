@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
-import cn.toside.music.mobile.core.emitDeviceEvent
+import cn.toside.music.mobile.core.sendJsEvent
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -107,7 +107,7 @@ class Lyric(
         putString("text", lyric)
         putArray("extendedLyrics", extArr)
       }
-      reactAppContext.emitDeviceEvent(EVENT_LYRIC_LINE_PLAY, params)
+      reactAppContext.sendJsEvent(EVENT_LYRIC_LINE_PLAY, params)
     }
   }
 

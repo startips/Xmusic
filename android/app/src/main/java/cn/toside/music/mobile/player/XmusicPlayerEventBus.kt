@@ -4,7 +4,7 @@ import android.os.Bundle
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.WritableMap
-import cn.toside.music.mobile.core.emitDeviceEvent
+import cn.toside.music.mobile.core.sendJsEvent
 
 /**
  * Process-wide event bridge between [XmusicPlaybackService] / [XmusicPlayerController]
@@ -27,13 +27,13 @@ object XmusicPlayerEventBus {
   fun emit(eventName: String, params: Bundle? = null) {
     val ctx = reactContext ?: return
     val map: WritableMap? = params?.let { Arguments.fromBundle(it) }
-    ctx.emitDeviceEvent(eventName, map)
+    ctx.sendJsEvent(eventName, map)
   }
 
   fun emitState(state: Int) {
     val ctx = reactContext ?: return
     val map = Arguments.createMap().apply { putInt("state", state) }
-    ctx.emitDeviceEvent("playback-state", map)
+    ctx.sendJsEvent("playback-state", map)
   }
 
   fun emitError(code: String, message: String?) {
@@ -42,12 +42,12 @@ object XmusicPlayerEventBus {
       putString("code", code)
       putString("message", message ?: "Unknown playback error")
     }
-    ctx.emitDeviceEvent("playback-error", map)
+    ctx.sendJsEvent("playback-error", map)
   }
 
   fun emitSeek(positionSec: Double) {
     val ctx = reactContext ?: return
     val map = Arguments.createMap().apply { putDouble("position", positionSec) }
-    ctx.emitDeviceEvent("remote-seek", map)
+    ctx.sendJsEvent("remote-seek", map)
   }
 }

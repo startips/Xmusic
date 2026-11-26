@@ -20,7 +20,9 @@ open class LyricPlayer {
   private val msTimePattern = Pattern.compile(msTimeRxp)
   private val tagPattern = Pattern.compile("\\[(ti|ar|al|offset|by):([^\\]]*)]")
 
-  private val timeoutHandler = Handler(Looper.getMainLooper())
+  private val timeoutHandler: Handler by lazy(LazyThreadSafetyMode.NONE) {
+    Handler(Looper.getMainLooper())
+  }
   private var pendingTimeoutTask: Runnable? = null
 
   private var lyric: String = ""

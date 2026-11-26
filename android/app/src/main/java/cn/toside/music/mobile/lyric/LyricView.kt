@@ -18,7 +18,7 @@ import android.view.OrientationEventListener
 import android.view.View
 import android.view.WindowManager
 import cn.toside.music.mobile.R
-import cn.toside.music.mobile.core.emitDeviceEvent
+import cn.toside.music.mobile.core.sendJsEvent
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
 import java.util.regex.Pattern
@@ -171,7 +171,7 @@ class LyricView(
       putDouble("x", x.toDouble())
       putDouble("y", y.toDouble())
     }
-    reactContext.emitDeviceEvent(EVENT_SET_POSITION, params)
+    reactContext.sendJsEvent(EVENT_SET_POSITION, params)
   }
 
   fun showLyricView(options: Bundle) {
