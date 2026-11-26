@@ -26,3 +26,10 @@
   **[] $VALUES;
   public *;
 }
+
+# Kotlin Coroutines & Native Bridge Modules
+-dontwarn kotlinx.coroutines.**
+-keepclassmembers class kotlinx.coroutines.** { *; }
+-keep class cn.toside.music.mobile.**Module { *; }
+-keep class cn.toside.music.mobile.**Package { *; }
+-keep class cn.toside.music.mobile.player.** { *; }

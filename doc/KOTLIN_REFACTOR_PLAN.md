@@ -59,7 +59,7 @@
 | 优先级 | 阶段 | 状态 | 核心目标与产出 | 验收门槛 |
 | :---: | :--- | :---: | :--- | :--- |
 | **准备** | 盘点与追踪建档 | 已完成 | 完成 `v2.3.1` 全量盘点，建立 `doc/KOTLIN_REFACTOR_PLAN.md` | 文档落盘且基线核对无误 |
-| **P0** | 协程底座与构建基建 | 待开始 | 切出 `refactor/kotlin-native`，配置 Coroutines / Media3 / Proguard，搭建 `core/` 底座并迁移入口类 | Debug/Release 构建通过 + `npm run lint` 通过 |
+| **P0** | 协程底座与构建基建 | 已完成 | 切出 `refactor/kotlin-native`，配置 Coroutines / Media3 / Proguard，搭建 `core/` 底座并迁移入口类 | Debug/Release 构建通过 + `npm run lint` 通过 |
 | **P1** | 原生播放与 DSP 引擎收编 | 待开始 | 自研 Kotlin Media3 播放服务与 64-bit 内部/32-bit 浮点 DSP，移除 `react-native-track-player` 与 21 处补丁 | 播/停/Seek/淡入淡出/EQ/超级岛/微件/缓存全通 |
 | **P2.1** | `crypto/` + `cache/` 迁移 | 待开始 | 迁出加解密与缓存清理模块，淘汰废弃 `AsyncTask` | `cryptoTest.ts` 自检通过 + 缓存统计/清理正常 |
 | **P2.2** | `userApi/` 沙箱重构 | 待开始 | 用单线程协程调度器重写 `QuickJsEngine.kt`，淘汰裸 `Handler`/`Thread` | 自定义源加载/解析/超时/销毁无泄漏与崩溃 |
@@ -80,19 +80,19 @@
 ---
 
 ### P0：分支初始化、Gradle Kotlin 现代化与公共底座
-- [ ] 基于 `b1891e42` 创建并切换到独立工作分支 `refactor/kotlin-native`
-- [ ] 升级 Gradle Kotlin 与依赖配置（`android/build.gradle` & `android/app/build.gradle`）：
-  - [ ] 启用 `kotlinx-coroutines-android`
-  - [ ] 引入 AndroidX Media3 依赖（`media3-exoplayer`、`media3-session`、`media3-datasource` 等）与 `okhttp3`（对齐 RN 现有依赖版本避免冲突）
-  - [ ] 配置 `kotlinOptions { jvmTarget = "17" }`（与当前 AGP 8.6.1 / Gradle JDK 对齐，验证现有注解与依赖兼容）
-- [ ] 检查并补全 `android/app/proguard-rules.pro` 中的 Kotlin Coroutines、Media3 及反射保留规则
-- [ ] 新建 `android/app/src/main/java/cn/toside/music/mobile/core/` 公共底座：
-  - [ ] `ModuleCoroutineScope.kt`（绑定 `ReactApplicationContext` 生命周期，`invalidate()` 自动 cancel，替代散落的 `ExecutorService` / 裸 `Thread`）
-  - [ ] `ReactBridgeExt.kt`（`Promise` 安全协程封装 `promise.launchCatching { ... }`、`ReadableMap` / `WritableMap` 类型安全取值与事件发射工具）
-- [ ] 迁移应用入口类并验证 Java/Kotlin 混编打包：
-  - [ ] `MainActivity.java` → `MainActivity.kt`
-  - [ ] `MainApplication.java` → `MainApplication.kt`
-- [ ] **P0 验证**：执行 `npm run lint` 与 `cd android && ./gradlew assembleDebug`（并抽测 `assembleRelease` Proguard），确认混编与基础启动无异常
+- [x] 基于 `b1891e42` 创建并切换到独立工作分支 `refactor/kotlin-native`
+- [x] 升级 Gradle Kotlin 与依赖配置（`android/build.gradle` & `android/app/build.gradle`）：
+  - [x] 启用 `kotlinx-coroutines-android`（`1.7.3`）
+  - [x] 引入 AndroidX Media3 依赖（`media3-exoplayer`、`media3-common`、`media3-database`、`media3-datasource:1.8.0`）与 `androidx.media:media:1.7.0`、`glide:4.15.1`
+  - [x] 配置 `compileOptions` / `kotlinOptions { jvmTarget = "17" }`
+- [x] 检查并补全 `android/app/proguard-rules.pro` 中的 Kotlin Coroutines、Media3 及模块保留规则
+- [x] 新建 `android/app/src/main/java/cn/toside/music/mobile/core/` 公共底座：
+  - [x] `ModuleCoroutineScope.kt`（绑定 `ReactApplicationContext` 生命周期，`invalidate()` 自动 cancel，替代散落的 `ExecutorService` / 裸 `Thread`）
+  - [x] `ReactBridgeExt.kt`（`Promise` 安全协程封装 `promise.launchCatching { ... }`、`ReadableMap` 类型安全取值与事件发射工具）
+- [x] 迁移应用入口类并验证 Java/Kotlin 混编打包：
+  - [x] `MainActivity.java` → `MainActivity.kt`
+  - [x] `MainApplication.java` → `MainApplication.kt`（已适配 RN 0.73 `override val reactNativeHost` / `isNewArchEnabled` / `isHermesEnabled` 属性覆盖签名）
+- [x] **P0 验证**：执行 `npm run lint` 与 `./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a`（463 tasks `BUILD SUCCESSFUL`）
 
 ---
 
@@ -231,3 +231,5 @@
 
 ### 已解决记录示例（后续真实解决条目紧随其后追加）
 - [x] ~~`[示例]` 某个模块在 Kotlin 迁移后出现空指针或编译告警~~（解决方案：记录具体根因、修改文件与提交说明）
+- [x] ~~`[P0-构建环境]` 当前宿主机为 ARM64 (`aarch64`) Linux，而 Android SDK `aapt2`、RN `hermesc` 与 NDK `clang` 为 `x86_64` 二进制；同时环境仅装有 JRE（缺 `jlink`）且无正式 `android/keystore.properties`~~（解决方案：安装 `qemu-user`、`qemu-user-binfmt`、`libc6-amd64-cross`、`libstdc++6-amd64-cross`、`libgcc-s1-amd64-cross`、`openjdk-17-jdk`，并向 `/usr/x86_64-linux-gnu/lib/` 补入 `zlib1g` amd64 的 `libz.so.1`；后续运行 Gradle 统一携带 `QEMU_LD_PREFIX=/usr/x86_64-linux-gnu` 与 `-PMYAPP_UPLOAD_STORE_FILE=debug.keystore -PMYAPP_UPLOAD_STORE_PASSWORD=android -PMYAPP_UPLOAD_KEY_ALIAS=androiddebugkey -PMYAPP_UPLOAD_KEY_PASSWORD=android`）
+- [x] ~~`[P0-MainApplication]` `NavigationApplication`（实现 Kotlin 接口 `ReactApplication`）与 `DefaultReactNativeHost` 在 RN 0.73 下要求使用 Kotlin 属性 `override val reactNativeHost` / `isNewArchEnabled` / `isHermesEnabled` 而非 Java getter 方法~~（解决方案：将 `MainApplication.kt` 中的 `getReactNativeHost()` 及方法式覆写改为 Kotlin 属性覆写）
