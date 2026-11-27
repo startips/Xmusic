@@ -28,7 +28,7 @@ export default memo(({ item, index, width, showSource, onPress }: {
           <View style={{ ...styles.listItem, width: itemWidth }}>
             <View style={{ ...styles.listItemImg, backgroundColor: theme['m3-surface-container'] }}>
               <TouchableOpacity activeOpacity={0.75} onPress={handlePress}>
-                <Image url={item.img} nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${item.id}`} style={{ width: itemWidth, height: itemWidth, borderRadius: M3Radius.md }} />
+                <Image url={item.img} nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${item.source}_${item.id}`} style={{ width: itemWidth, height: itemWidth, borderRadius: M3Radius.md }} />
                 { showSource ? <Text style={styles.sourceLabel} size={9} color="#fff" >{item.source}</Text> : null }
               </TouchableOpacity>
             </View>

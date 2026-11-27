@@ -40,7 +40,7 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId, onBack,
             // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
             desc: listDetailInfo.info.desc || info.desc || '',
             playCount: (info.play_count ?? listDetailInfo.info.play_count) ?? '',
-            imgUrl: info.img ?? listDetailInfo.info.img,
+            imgUrl: info.img ? info.img : listDetailInfo.info.img,
           })
         })
       } else {
@@ -52,7 +52,7 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId, onBack,
           // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
           desc: listDetailInfo.info.desc || info.desc || '',
           playCount: (info.play_count ?? listDetailInfo.info.play_count) ?? '',
-          imgUrl: info.img ?? listDetailInfo.info.img,
+          imgUrl: info.img ? info.img : listDetailInfo.info.img,
         })
         return getListDetail(id, source, page).then((listDetail) => {
           const result = setListDetail(listDetail, id, page)
@@ -63,7 +63,7 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId, onBack,
               // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
               desc: listDetailInfo.info.desc || info.desc || '',
               playCount: (info.play_count ?? listDetailInfo.info.play_count) ?? '',
-              imgUrl: info.img ?? listDetailInfo.info.img,
+              imgUrl: info.img ? info.img : listDetailInfo.info.img,
             })
             listRef.current?.setList(result.list)
             listRef.current?.setStatus(songlistState.listDetailInfo.maxPage <= page ? 'end' : 'idle')

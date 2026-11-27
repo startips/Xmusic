@@ -1,9 +1,9 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { Image as RNImage, Platform, UIManager, View, type ViewProps, requireNativeComponent } from 'react-native'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { Image as RNImage, Platform, StyleSheet, UIManager, View, type ViewProps, requireNativeComponent } from 'react-native'
 import { useTheme } from '@/store/theme/hook'
 import { useLayout } from '@/utils/hooks'
 import AlphaFadeView from './AlphaFadeView'
-import { defaultHeaders } from './Image'
+import { defaultHeaders, isFailedImageUrl, markFailedImageUrl, normalizeImageUri } from './Image'
 import { XmusicMark } from './XmusicMark'
 
 interface NativeFadeImageProps extends ViewProps {
@@ -39,14 +39,12 @@ const NativeFadeImageView = Platform.OS === 'android' && UIManager.getViewManage
 
 const EmptyFadePic = memo(({
   style,
-  nativeID,
   topFadeStart,
   topFadeEnd,
   fadeStart,
   fadeEnd,
 }: {
   style?: ViewProps['style']
-  nativeID?: string
   topFadeStart: number
   topFadeEnd: number
   fadeStart: number
@@ -66,7 +64,6 @@ const EmptyFadePic = memo(({
       <View
         style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: theme['m3-primary-container'] }}
         onLayout={onLayout}
-        nativeID={nativeID}
       >
         {width > 0 ? <XmusicMark size={Math.min(width * 0.36, 136)} /> : null}
       </View>
@@ -89,30 +86,107 @@ export default memo(({
   startCornerRadius = 12,
   onError,
 }: FadeImageProps) => {
-  const [isError, setError] = useState(false)
+  const uri = normalizeImageUri(url)
+  const [isError, setError] = useState(() => Boolean(uri && isFailedImageUrl(uri)))
+  const lastValidUriRef = useRef<string | null>(uri && !isFailedImageUrl(uri) ? uri : null)
+  if (uri && !isFailedImageUrl(uri)) {
+    lastValidUriRef.current = uri
+  }
 
   useEffect(() => {
-    setError(false)
-  }, [url])
+    setError(Boolean(uri && isFailedImageUrl(uri)))
+  }, [uri])
 
   const handleError = useCallback(() => {
+    markFailedImageUrl(url)
     setError(true)
     if (url != null) onError?.(url)
   }, [onError, url])
 
-  const uri = typeof url === 'number'
-    ? RNImage.resolveAssetSource(url).uri
-    : url?.startsWith('/')
-      ? `file://${url}`
-      : url
+  const showDefault = !uri || isError
 
-  const showDefault = useMemo(() => !uri || isError, [isError, uri])
+  const renderImageNode = (targetUri: string, hidden: boolean) => {
+    const imgOpacityStyle = hidden ? styles.hiddenFill : styles.fullFill
+    if (!NativeFadeImageView) {
+      return (
+        <AlphaFadeView
+          topFadeStart={topFadeStart}
+          topFadeEnd={topFadeEnd}
+          fadeStart={fadeStart}
+          fadeEnd={fadeEnd}
+          style={styles.fullFill}
+        >
+          <RNImage
+            style={imgOpacityStyle}
+            source={{ uri: targetUri, headers: defaultHeaders, cache: 'force-cache' }}
+            resizeMode="cover"
+            fadeDuration={0}
+            onError={handleError}
+            nativeID={nativeID}
+          />
+        </AlphaFadeView>
+      )
+    }
+
+    return (
+      <NativeFadeImageView
+        style={imgOpacityStyle}
+        src={[{ uri: targetUri, headers: defaultHeaders }]}
+        headers={defaultHeaders}
+        resizeMode="cover"
+        fadeDuration={0}
+        shouldNotifyLoadEvents={true}
+        onError={handleError}
+        topFadeStart={topFadeStart}
+        topFadeEnd={topFadeEnd}
+        fadeStart={fadeStart}
+        fadeEnd={fadeEnd}
+        startCornerRadius={startCornerRadius}
+        nativeID={nativeID}
+      />
+    )
+  }
+
+  if (nativeID) {
+    const liveUri = lastValidUriRef.current
+    if (!liveUri) {
+      return (
+        <EmptyFadePic
+          style={style}
+          topFadeStart={topFadeStart}
+          topFadeEnd={topFadeEnd}
+          fadeStart={fadeStart}
+          fadeEnd={fadeEnd}
+        />
+      )
+    }
+
+    return (
+      <View style={style} collapsable={false}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {showDefault
+            ? (
+                <EmptyFadePic
+                  style={styles.fullFill}
+                  topFadeStart={topFadeStart}
+                  topFadeEnd={topFadeEnd}
+                  fadeStart={fadeStart}
+                  fadeEnd={fadeEnd}
+                />
+              )
+            : null}
+        </View>
+        <View style={StyleSheet.absoluteFill} collapsable={false}>
+          {renderImageNode(liveUri, showDefault)}
+        </View>
+      </View>
+    )
+  }
 
   if (showDefault) {
     return (
       <EmptyFadePic
         style={style}
-        nativeID={nativeID}
         topFadeStart={topFadeStart}
         topFadeEnd={topFadeEnd}
         fadeStart={fadeStart}
@@ -131,12 +205,11 @@ export default memo(({
         style={style}
       >
         <RNImage
-          style={{ flex: 1, width: '100%', height: '100%' }}
-          source={{ uri: uri!, headers: defaultHeaders, cache: 'force-cache' }}
+          style={styles.fullFill}
+          source={{ uri, headers: defaultHeaders, cache: 'force-cache' }}
           resizeMode="cover"
           fadeDuration={0}
           onError={handleError}
-          nativeID={nativeID}
         />
       </AlphaFadeView>
     )
@@ -145,7 +218,7 @@ export default memo(({
   return (
     <NativeFadeImageView
       style={style}
-      src={[{ uri: uri!, headers: defaultHeaders }]}
+      src={[{ uri, headers: defaultHeaders }]}
       headers={defaultHeaders}
       resizeMode="cover"
       fadeDuration={0}
@@ -156,7 +229,20 @@ export default memo(({
       fadeStart={fadeStart}
       fadeEnd={fadeEnd}
       startCornerRadius={startCornerRadius}
-      nativeID={nativeID}
     />
   )
+})
+
+const styles = StyleSheet.create({
+  fullFill: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  hiddenFill: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+  },
 })

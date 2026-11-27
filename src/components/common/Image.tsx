@@ -1,12 +1,10 @@
 import { useTheme } from '@/store/theme/hook'
 import { BorderRadius } from '@/theme'
 import { createStyle } from '@/utils/tools'
-import { type ComponentProps, memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { type ComponentProps, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { View, type ViewProps, StyleSheet, Image as FastImage } from 'react-native'
-// import FastImage, { type FastImageProps } from 'react-native-fast-image'
 import { XmusicMark } from './XmusicMark'
 import { useLayout } from '@/utils/hooks'
-// export type { OnLoadEvent } from 'react-native-fast-image'
 
 export interface ImageProps extends ViewProps {
   style: ComponentProps<typeof FastImage>['style']
@@ -21,7 +19,33 @@ export const defaultHeaders = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
 }
 
-const EmptyPic = memo(({ style, nativeID }: { style: ImageProps['style'], nativeID: ImageProps['nativeID'] }) => {
+const MAX_FAILED_URL_CACHE = 500
+const failedImageUrls = new Set<string>()
+
+export const normalizeImageUri = (url?: string | number | null): string | null => {
+  if (url == null || url === '') return null
+  if (typeof url === 'number') return FastImage.resolveAssetSource(url).uri
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  return trimmed.startsWith('/') ? `file://${trimmed}` : trimmed
+}
+
+export const isFailedImageUrl = (url?: string | number | null): boolean => {
+  const uri = normalizeImageUri(url)
+  return uri ? failedImageUrls.has(uri) : false
+}
+
+export const markFailedImageUrl = (url?: string | number | null) => {
+  const uri = normalizeImageUri(url)
+  if (!uri) return
+  if (failedImageUrls.size >= MAX_FAILED_URL_CACHE) {
+    const first = failedImageUrls.values().next().value
+    if (first) failedImageUrls.delete(first)
+  }
+  failedImageUrls.add(uri)
+}
+
+const EmptyPic = memo(({ style, nativeID }: { style: ImageProps['style'], nativeID?: ImageProps['nativeID'] }) => {
   const theme = useTheme()
   const { onLayout, width } = useLayout()
 
@@ -37,35 +61,65 @@ const EmptyPic = memo(({ style, nativeID }: { style: ImageProps['style'], native
 })
 
 const Image = memo(({ url, cache, resizeMode = 'cover', style, onError, nativeID }: ImageProps) => {
-  const [isError, setError] = useState(false)
+  const uri = normalizeImageUri(url)
+  const [isError, setError] = useState(() => Boolean(uri && failedImageUrls.has(uri)))
+  const lastValidUriRef = useRef<string | null>(uri && !failedImageUrls.has(uri) ? uri : null)
+  if (uri && !failedImageUrls.has(uri)) {
+    lastValidUriRef.current = uri
+  }
+
   const handleError = useCallback(() => {
+    markFailedImageUrl(url)
     setError(true)
     onError?.(url!)
   }, [onError, url])
+
   useEffect(() => {
-    setError(false)
-  }, [url])
-  let uri = typeof url == 'number'
-    ? FastImage.resolveAssetSource(url).uri
-    : url?.startsWith('/')
-      ? 'file://' + url
-      : url
-  const showDefault = useMemo(() => !uri || isError, [isError, uri])
-  return (
-    showDefault ? <EmptyPic style={style} nativeID={nativeID} />
-      : (
+    setError(Boolean(uri && failedImageUrls.has(uri)))
+  }, [uri])
+
+  const showDefault = !uri || isError
+
+  if (nativeID) {
+    const liveUri = lastValidUriRef.current
+    if (!liveUri) {
+      return <EmptyPic style={style} />
+    }
+    return (
+      <View style={StyleSheet.compose(styles.nativeWrap, style)} collapsable={false}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {showDefault ? <EmptyPic style={styles.fillPic} /> : null}
+        </View>
+        <View style={StyleSheet.absoluteFill} collapsable={false}>
           <FastImage
-            style={style}
+            style={showDefault ? styles.hiddenFillImage : styles.fillImage}
             source={{
-              uri: uri!,
+              uri: liveUri,
               headers: defaultHeaders,
               cache: cache === false ? 'reload' : 'force-cache',
-              // priority: FastImage.priority.normal,
-              // cache: cache === false ? 'web' : 'immutable',
             }}
             onError={handleError}
             resizeMode={resizeMode}
             nativeID={nativeID}
+          />
+        </View>
+      </View>
+    )
+  }
+
+  return (
+    showDefault
+      ? <EmptyPic style={style} />
+      : (
+          <FastImage
+            style={style}
+            source={{
+              uri,
+              headers: defaultHeaders,
+              cache: cache === false ? 'reload' : 'force-cache',
+            }}
+            onError={handleError}
+            resizeMode={resizeMode}
           />
         )
   )
@@ -89,5 +143,19 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  nativeWrap: {
+    overflow: 'hidden',
+  },
+  fillPic: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  fillImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  hiddenFillImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0,
   },
 })

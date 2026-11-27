@@ -18,6 +18,7 @@ import { isHorizontalMode } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
 import { toOpaqueColor } from '@/theme/m3'
 import { type ListInfoItem } from '@/store/songlist/state'
+import { isFailedImageUrl, normalizeImageUri } from '@/components/common/Image'
 import { cancelActivePlayerBarBounce, getPlayerBarPicRect, preparePlayDetailMinimize, triggerActivePlayerBarBounce } from './playerBarTarget'
 
 const getScreenSurfaceBackground = (theme: LX.ActiveTheme) => {
@@ -339,6 +340,9 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
 export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem) {
   if (Boolean(commonState.componentIds.songlistDetail) || !acquireNavPushLock('songlistDetail')) return
   const theme = themeState.theme
+  const hasValidCover = Boolean(normalizeImageUri(info.img) && !isFailedImageUrl(info.img))
+  const fromPicId = `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${info.source}_${info.id}`
+  const toPicId = `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.source}_${info.id}`
 
   requestAnimationFrame(() => {
     void Navigation.push(componentId, {
@@ -369,13 +373,17 @@ export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem
           animations: {
             push: {
               waitForRender: true,
-              sharedElementTransitions: [
-                {
-                  fromId: `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${info.id}`,
-                  toId: `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.id}`,
-                  interpolation: { type: 'spring' },
-                },
-              ],
+              ...(hasValidCover
+                ? {
+                    sharedElementTransitions: [
+                      {
+                        fromId: fromPicId,
+                        toId: toPicId,
+                        interpolation: { type: 'spring' },
+                      },
+                    ],
+                  }
+                : {}),
               elementTransitions: [
                 {
                   id: NAV_SHEAR_NATIVE_IDS.songlistDetail_title,
@@ -389,32 +397,19 @@ export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem
                   },
                 },
               ],
-              // content: {
-              //   scaleX: {
-              //     from: 1.2,
-              //     to: 1,
-              //     duration: 200,
-              //   },
-              //   scaleY: {
-              //     from: 1.2,
-              //     to: 1,
-              //     duration: 200,
-              //   },
-              //   alpha: {
-              //     from: 0,
-              //     to: 1,
-              //     duration: 200,
-              //   },
-              // },
             },
             pop: {
-              sharedElementTransitions: [
-                {
-                  fromId: `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.id}`,
-                  toId: `${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_from_${info.id}`,
-                  interpolation: { type: 'spring' },
-                },
-              ],
+              ...(hasValidCover
+                ? {
+                    sharedElementTransitions: [
+                      {
+                        fromId: toPicId,
+                        toId: fromPicId,
+                        interpolation: { type: 'spring' },
+                      },
+                    ],
+                  }
+                : {}),
               elementTransitions: [
                 {
                   id: NAV_SHEAR_NATIVE_IDS.songlistDetail_title,

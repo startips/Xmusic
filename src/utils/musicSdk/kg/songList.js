@@ -999,7 +999,7 @@ export default {
               author: item.nickname,
               name: item.specialname,
               time: dateFormat(item.publishtime, 'Y-M-D'),
-              img: item.imgurl,
+              img: item.imgurl ? item.imgurl.replace('{size}', 240) : '',
               grade: item.grade,
               desc: item.intro,
               total: item.songcount,

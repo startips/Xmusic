@@ -49,7 +49,7 @@ const Pic = ({ componentId, playCount, imgUrl }: {
 
   return (
     <View style={{ ...styles.listItemImg, width: IMAGE_WIDTH, height: IMAGE_WIDTH }}>
-      <Image nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.id}`} url={pic} style={{ flex: 1, borderRadius: M3Radius.md }} />
+      <Image nativeID={`${NAV_SHEAR_NATIVE_IDS.songlistDetail_pic}_to_${info.source}_${info.id}`} url={pic} style={{ flex: 1, borderRadius: M3Radius.md }} />
       {
         playCount && animated ? <CountText count={playCount} /> : null
       }
