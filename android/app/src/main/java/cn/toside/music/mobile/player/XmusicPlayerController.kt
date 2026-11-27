@@ -215,6 +215,10 @@ class XmusicPlayerController(
     this.softPlayPause = softPlayPause
     this.crossfadeMs = crossfadeMs.coerceIn(0, 6000)
     val p = player ?: return
+    if (!this.softPlayPause && !pauseRamping && pendingPlayRampMs <= 0 && activeRampTask == null && rampFactor < 1.0f) {
+      rampFactor = 1.0f
+      applyEffectiveVolume()
+    }
     if (this.crossfadeMs <= 0 && eofFactor != 1.0f) {
       eofFactor = 1.0f
       applyEffectiveVolume()
@@ -285,7 +289,7 @@ class XmusicPlayerController(
 
     val useTrackFadeIn = freshTrack && crossfadeMs > 0
     freshTrack = false
-    val durationMs = if (useTrackFadeIn) min(crossfadeMs, 1400) else if (softPlayPause) 240 else 0
+    val durationMs = if (useTrackFadeIn) min(crossfadeMs, 1400) else if (softPlayPause) 110 else 0
 
     if (durationMs <= 0) {
       rampFactor = 1.0f
@@ -306,7 +310,6 @@ class XmusicPlayerController(
     rampFactor = 0.0f
     pendingPlayRampMs = durationMs
     applyEffectiveVolume()
-    XmusicDspAudioProcessor.instance.notifyPlayResume()
     p.playWhenReady = true
     maybeStartPendingPlayRamp()
   }
@@ -349,7 +352,7 @@ class XmusicPlayerController(
     notificationManager.updatePlayback(buildSessionSnapshot())
 
     val startFactor = max(0.05f, rampFactor * eofFactor)
-    val durationMs = 200
+    val durationMs = 140
     val startTime = SystemClock.uptimeMillis()
     val task = object : Runnable {
       override fun run() {
@@ -360,19 +363,19 @@ class XmusicPlayerController(
         rampFactor = startFactor * eased
         applyEffectiveVolume()
         if (t < 1.0f) {
-          mainHandler.postDelayed(this, 16L)
+          mainHandler.postDelayed(this, 10L)
         } else {
           activeRampTask = null
           pauseRamping = false
-          player?.playWhenReady = false
-          rampFactor = 1.0f
+          rampFactor = 0.0f
           eofFactor = 1.0f
           applyEffectiveVolume()
+          player?.playWhenReady = false
         }
       }
     }
     activeRampTask = task
-    mainHandler.postDelayed(task, 16L)
+    mainHandler.postDelayed(task, 10L)
   }
 
   fun stop(keepSession: Boolean = false) {
@@ -432,14 +435,9 @@ class XmusicPlayerController(
     if (p.playbackState == Player.STATE_IDLE) {
       p.prepare()
     }
-    if (softPlayPause && p.playWhenReady && !pauseRamping) {
-      cancelActiveRamp()
-      rampFactor = 0.0f
-      pendingPlayRampMs = max(pendingPlayRampMs, 200)
+    if (!pauseRamping && pendingPlayRampMs <= 0 && activeRampTask == null && rampFactor < 1.0f && p.playWhenReady) {
+      rampFactor = 1.0f
       applyEffectiveVolume()
-      p.seekTo(posMs)
-      mainHandler.postDelayed({ maybeStartPendingPlayRamp() }, 48L)
-      return
     }
     p.seekTo(posMs)
   }
@@ -553,7 +551,12 @@ class XmusicPlayerController(
 
   override fun onIsPlayingChanged(isPlaying: Boolean) {
     if (isPlaying) {
-      maybeStartPendingPlayRamp()
+      if (pendingPlayRampMs > 0) {
+        maybeStartPendingPlayRamp()
+      } else if (!pauseRamping && activeRampTask == null && rampFactor < 1.0f) {
+        rampFactor = 1.0f
+        applyEffectiveVolume()
+      }
     }
     handlePlaybackStateChange()
   }
@@ -818,14 +821,14 @@ class XmusicPlayerController(
         rampFactor = startFactor + (1.0f - startFactor) * eased
         applyEffectiveVolume()
         if (t < 1.0f) {
-          mainHandler.postDelayed(this, 16L)
+          mainHandler.postDelayed(this, 10L)
         } else {
           activeRampTask = null
         }
       }
     }
     activeRampTask = task
-    mainHandler.postDelayed(task, 16L)
+    mainHandler.postDelayed(task, 10L)
   }
 
   private fun maybeStartPendingPlayRamp() {

@@ -21,8 +21,7 @@ import kotlin.math.tanh
 /**
  * In-engine 64-bit internal / 32-bit float DSP processor for ExoPlayer DefaultAudioSink.
  * Runs parametric 5-band EQ, low-shelf bass boost, loudness gain, soft-knee limiter,
- * and sample-accurate silence pre-roll + raised-cosine fade-in directly in PCM stream,
- * eliminating Android HAL AudioEffect cold-start and seek pops without audio-thread allocations.
+ * and a brief sample-accurate de-click micro-fade on flush (track start / seek) without audio-thread allocations.
  */
 @UnstableApi
 class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
@@ -34,12 +33,10 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
     private const val PEAKING_Q = 0.85
     private const val BASS_SHELF_HZ = 85.0
     private const val BASS_SHELF_Q = 0.7071067811865476
+    private const val FLUSH_DECLICK_MS = 10
 
     val instance: XmusicDspAudioProcessor = XmusicDspAudioProcessor()
   }
-
-  @Volatile
-  private var pendingResumeRamp = false
 
   // Audio-thread-only primitive arrays to guarantee zero GC allocations per buffer
   private var appliedConfigVersion = -1
@@ -59,13 +56,8 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
   private val z2 = Array(NUM_STAGES) { DoubleArray(MAX_CHANNELS) }
 
   private var wetMix = 0.0f
-  private var prerollFramesRemaining = 0
   private var rampTotalFrames = 0
   private var rampFramesDone = 0
-
-  fun notifyPlayResume() {
-    pendingResumeRamp = true
-  }
 
   private fun zeroDelayLines() {
     for (s in 0 until NUM_STAGES) {
@@ -97,7 +89,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
     val bass = localExtraSnapshot[1]
     val loud = localExtraSnapshot[2]
 
-    if (!localEnabled && en && wetMix <= 0.001f && prerollFramesRemaining <= 0) {
+    if (!localEnabled && en && wetMix <= 0.001f) {
       zeroDelayLines()
     }
 
@@ -183,10 +175,8 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
     wetMix = if (initEnabled) 1.0f else 0.0f
 
     val sr = if (inputAudioFormat.sampleRate > 0) inputAudioFormat.sampleRate else 44100
-    prerollFramesRemaining = (sr * 28) / 1000
-    rampTotalFrames = max(1, (sr * 180) / 1000)
+    rampTotalFrames = max(1, (sr * FLUSH_DECLICK_MS) / 1000)
     rampFramesDone = 0
-    pendingResumeRamp = false
   }
 
   override fun onReset() {
@@ -194,10 +184,8 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
     appliedConfigVersion = -1
     appliedSampleRate = 0
     wetMix = 0.0f
-    prerollFramesRemaining = 0
     rampTotalFrames = 0
     rampFramesDone = 0
-    pendingResumeRamp = false
   }
 
   override fun queueInput(inputBuffer: ByteBuffer) {
@@ -222,22 +210,8 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
 
     rebuildCoeffsIfNeeded(sr)
 
-    if (pendingResumeRamp) {
-      pendingResumeRamp = false
-      val minPreroll = (sr * 16) / 1000
-      val minRamp = max(1, (sr * 140) / 1000)
-      if (prerollFramesRemaining < minPreroll) {
-        prerollFramesRemaining = minPreroll
-      }
-      if (rampFramesDone >= rampTotalFrames || rampTotalFrames < minRamp) {
-        rampTotalFrames = minRamp
-        rampFramesDone = 0
-      }
-    }
-
     if (!localEnabled &&
       wetMix <= 0.0001f &&
-      prerollFramesRemaining <= 0 &&
       rampFramesDone >= rampTotalFrames
     ) {
       wetMix = 0.0f
@@ -260,10 +234,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
       }
 
       val env: Double
-      if (prerollFramesRemaining > 0) {
-        prerollFramesRemaining--
-        env = 0.0
-      } else if (rampFramesDone < rampTotalFrames) {
+      if (rampFramesDone < rampTotalFrames) {
         rampFramesDone++
         val p = rampFramesDone.toDouble() / rampTotalFrames.toDouble()
         env = 0.5 * (1.0 - cos(PI * p))
@@ -271,7 +242,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
         env = 1.0
       }
 
-      val runDsp = wetMix > 0.0001f || (localEnabled && env == 0.0)
+      val runDsp = wetMix > 0.0001f
 
       for (c in 0 until chCount) {
         val x: Double = when (encoding) {
