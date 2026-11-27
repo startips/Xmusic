@@ -79,7 +79,5 @@ module.exports = {
     'node_modules',
     'android/**/build',
     '*.min.js',
-    'test.js',
-    '*Test.ts',
   ],
 }

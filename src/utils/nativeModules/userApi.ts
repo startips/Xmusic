@@ -34,8 +34,6 @@ export const sendAction = <T extends keyof SendActions>(action: T, data: SendAct
   UserApiModule.sendAction(action, JSON.stringify(data))
 }
 
-// export const clearAppCache = CacheModule.clearAppCache as () => Promise<void>
-
 export interface InitParams {
   status: boolean
   errorMessage: string

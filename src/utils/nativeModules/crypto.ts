@@ -2,11 +2,6 @@ import { NativeModules } from 'react-native'
 
 const { CryptoModule } = NativeModules
 
-// export const testRsa = (text: string, key: string) => {
-//   // console.log(sourceFilePath, targetFilePath)
-//   return CryptoModule.testRsa()
-// }
-
 enum KEY_PREFIX {
   publicKeyStart = '-----BEGIN PUBLIC KEY-----',
   publicKeyEnd = '-----END PUBLIC KEY-----',

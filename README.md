@@ -5,61 +5,122 @@
 <p align="center">
   <a href="https://github.com/startips/Xmusic/releases"><img src="https://img.shields.io/github/release/startips/Xmusic" alt="Release version"></a>
   <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/startips/Xmusic/react-native/master" alt="React Native version"></a>
+  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Android-100%25%20Kotlin-7F52FF?logo=kotlin&logoColor=white" alt="Android 100% Kotlin"></a>
   <a href="https://github.com/startips/Xmusic/blob/master/LICENSE"><img src="https://img.shields.io/github/license/startips/Xmusic" alt="License"></a>
 </p>
 
-<p align="center">一个基于 LX Music 移动版二次重构的 Android 音乐播放器，采用 Material 3 Expressive 视觉体系与全新 Xmusic 品牌设计</p>
+<p align="center">一个基于 LX Music 移动版深度重构的 Android 音乐播放器，采用 Material 3 Expressive 视觉体系与全量 Kotlin 原生音频 / 存储引擎</p>
 
-## 界面与改动亮点
+---
 
-- **全新 Xmusic 品牌与图标体系**：启用 Material 3 浅薄荷叠色几何音符「X♪」视觉标识，提供全密度启动图标、Android 8.0+ 自适应图标、Android 13+ 单色桌面主题图标、状态栏单色通知小图标及横竖屏启动页。
-- **Material 3 Expressive 视觉与流体动态主题**：基于统一的 M3E 语义色系与圆角规范（`src/theme/m3.ts`）全面重构界面；内置 6 套种子色预设（翡翠绿、晴空蓝、鸢尾紫、珊瑚粉、琥珀金、岩青灰）、专辑封面主色实时流转、120Hz 原生微抖动防色带流体网格背景（`FluidBgView`），并统一协调侧滑抽屉、弹窗与导航表面配色，支持跟随系统 / 浅色 / 深色模式。
-- **波浪进度条与沉浸式播放页**：播放详情页与底部播放栏均配备 M3 Expressive 波浪形进度条（播放态柔和波动、暂停态平滑舒展为直线）；全宽双向 Alpha 羽化封面支持共享元素同步展开与仿 macOS Dock 弧线回落到底栏封面（带落地弹性微震动效）；支持逐字卡拉 OK 扫词、四阶景深呼吸缩放、点击歌词直达进度，以及长按生成多行「歌词金句分享海报」。
-- **丝滑导航动效与精简布局**：主页切换支持方向感知 Shared-Axis 微滑浮现动画，底部/侧边导航与设置页 6 大分组顶栏均配备流体滑动胶囊指示器；歌单页精简顶部选项，将「打开歌单」收纳至顶栏图标按钮并保留左侧滑出分类抽屉。
-- **硬件级音效与队列控制**：集成原生硬件 DSP 均衡器面板（5 段频段、多曲风预设、低音增强与环绕声效）、内置浮点 DSP 与 60fps 柔和启停包络消除爆音、0–5s 曲末/切歌平滑淡入淡出、全新播放器设置面板、「稍后播放」可视化队列抽屉及全局线性马达细腻触感反馈。
-- **桌面微件与小米澎湃 OS 超级岛适配**：提供 4×1 紧凑胶囊与 4×2 封面卡片两款 M3 桌面小组件；媒体会话补齐高清封面位图（`METADATA_KEY_ART`）并支持超级岛、下拉面板与锁屏一键免弹窗切换「我的收藏」。
-- **本地隐私听歌足迹与无打扰体验**：在「我的列表」顶栏设置按钮旁提供纯本机存储的听歌足迹入口，支持查看听歌时长、偏爱歌手与常听排行，并可一键同步「常听 Top 50」智能歌单；应用更新采用首页设置按钮红点直达引导与防缓存精准校验，告别开屏弹窗打断。
-- **多尺寸自适应与独立共存**：全面适配手机竖屏、横屏四边沉浸式分栏播放页（含挖孔/安全区避让）及平板/折叠屏多列排布；精简构建为 `arm64-v8a` / `armeabi-v7a` 双架构，使用独立包名 `com.startips.xmusic`，可与原版应用同机共存。
+## 核心特性
 
-## 说明
+### 1. 全量 Kotlin 原生底座与自研 Media3 播放引擎
 
-所用主要技术栈：
+- **Android 原生层 100% Kotlin 化**：原生业务与自定义视图已全面重构为 Kotlin（`main` 源码共 65 个 `.kt` 文件、0 个 `.java` 文件），全面采用 Kotlin 协程管理异步任务并随桥接生命周期自动回收，消除遗留裸线程与 `AsyncTask` 隐患。
+- **自研 AndroidX Media3 播放内核**：基于 `ExoPlayer 1.8.0` 内化实现 `XmusicPlaybackService` 与 `XmusicPlayerController`，彻底移除 `react-native-track-player` 及其 21 处第三方源码补丁，支持音频焦点管理、AudioOffload、倍速播放与后台/多任务划掉彻底释放。
+- **零 GC 浮点 DSP 音效引擎**：原生内置 `XmusicDspAudioProcessor`，在音频线程采用纯基本类型数组零分配运算，支持 5 段参量均衡器（`60 / 230 / 910 / 3600 / 14000 Hz`）、多曲风预设、85Hz 低音增强、响度增益与软拐点限幅；配合 60fps 柔和启停包络与 0–5 秒切歌淡入淡出，消除启停爆音与卡顿。
+- **全曲后台缓存与下一曲预拉取**：基于 Media3 `SimpleCache` 实现 `PlayerMediaCache`，支持边听边存全曲音频与低优先级下一曲首段预加载，兼顾弱网流畅度与缓存上限自动淘汰。
+- **原生 SQLite WAL 存储引擎**：自研 `XmusicStorageEngine`（SQLite WAL + 256K 字符阈值大值文件原子溢出），取代旧版 `AsyncStorage` 分片方案，突破 `CursorWindow` 限制并支持老版本升级首次启动无损自动迁移。
+- **高性能原生辅助管线**：单线程协程亲和的 QuickJS 自定义源沙箱（`QuickJsEngine`）、原生 OkHttp 协程下载器（`NativeDownloadHelper`）、Glide 统一封面与 24 色相桶取色管线（`CoverArtworkRepository` / `CoverPaletteExtractor`），以及后台 JS 定时器防冻结机制。
 
-- React Native（`0.73`）
-- TypeScript
-- react-native-navigation
-- react-native-track-player
+### 2. Material 3 Expressive 视觉与动效
 
-已支持的平台与架构：
+- **Xmusic 品牌标识与原生声波启动页**：启用浅薄荷叠色几何音符「X♪」视觉标识，提供全密度自适应图标、Android 13+ 单色主题图标及状态栏单色通知小图标；冷启动配备 `XmusicSplashOverlay` 原生声波流体动画，实时同步当前主题种子色与明暗模式。
+- **流体动态主题系统**：基于统一的 M3E 语义色系与圆角规范（`src/theme/m3.ts`），内置 6 套种子色预设（翡翠绿、晴空蓝、鸢尾紫、珊瑚粉、琥珀金、岩青灰），支持专辑封面主色实时流转与 120Hz 原生微抖动防色带流体网格背景（`FluidBgView`），适配跟随系统 / 浅色 / 深色模式。
+- **波浪进度条与沉浸式转场**：播放详情页与底部播放栏均配备 M3E 波浪形进度条（`WavyProgressView`）；全宽双向 Alpha 羽化封面支持共享元素同步展开与仿 macOS Dock 边缘侧滑弧线回落动效（含落地弹性微震）。
+- **方向感知导航与精简交互**：主页切换采用方向感知 Shared-Axis 微滑浮现动画，底部/侧边导航与设置页 6 大分组顶栏均配备流体滑动胶囊指示器；歌单页将「打开歌单」收纳至顶栏图标按钮并保留左侧滑出分类抽屉。
 
-- Android 5.0 及以上（`minSdkVersion = 21`）
-- ABI 架构：`arm64-v8a`、`armeabi-v7a`
+### 3. 播放、音质与歌词体验
 
-***注：本项目专注于 Android 端，没有计划支持 iOS 和 HarmonyOS NEXT。***
+- **音质切换与实时解码诊断**：播放详情页内置「音质与解码」面板，展示当前实际解码格式、采样率与码率，自动识别假无损、降级与自动换源状态，支持一键切换标准（128k）/ HQ 高品质（320k）/ SQ 无损（FLAC）/ 24bit 母带。
+- **逐字卡拉 OK 歌词与金句海报**：支持逐字扫词、四阶景深呼吸缩放、点击歌词跳转进度、空状态与重试交互，以及长按生成多行「歌词金句分享海报」（支持保存系统相册与原生分享）。
+- **队列与蓝牙/微件歌词**：配备「稍后播放」可视化队列抽屉与全局线性马达细腻触感反馈；移除冗余悬浮桌面歌词窗，保留蓝牙 AVRCP 与桌面微件实时歌词推送。
 
-- 安装包下载：[GitHub Releases](https://github.com/startips/Xmusic/releases)
-- 问题反馈：[GitHub Issues](https://github.com/startips/Xmusic/issues)
-- 变更记录：[CHANGELOG.md](./CHANGELOG.md)
-- 使用常见问题请参阅原版文档：[移动版常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq) 与 [音乐播放列表机制](https://lyswhut.github.io/lx-music-doc/mobile/faq/playlist)。
+### 4. 系统生态、隐私统计与更新通道
 
-### 本地开发与构建
+- **桌面微件与澎湃 OS 超级岛适配**：提供 4×1 灵动胶囊与 4×2 黑胶歌词卡两款 M3 桌面小组件；媒体会话写入 768px 高清封面位图，适配小米澎湃 OS 超级岛、下拉媒体面板与锁屏切歌稳态显示及一键免弹窗红心收藏。
+- **纯本地隐私听歌足迹**：在「我的列表」顶栏设置按钮旁提供纯本机存储的听歌足迹面板，支持查看听歌时长、偏爱歌手与常听排行，并可一键同步「常听 Top 50」智能歌单。
+- **稳定版 / 开发版双更新通道**：支持在「设置 → 更新与关于」中按需切换稳定版与 `dev` 预览通道；采用首页设置按钮红点静默提醒，告别启动弹窗打断。
+- **多尺寸自适应与独立共存**：全面适配手机竖屏、横屏四边沉浸式分栏（含挖孔/安全区避让）及平板/折叠屏多列排布；使用独立包名 `com.startips.xmusic`，可与原版应用同机共存。
 
-环境搭建可先参考原版[源码使用方法](https://lyswhut.github.io/lx-music-doc/mobile/use-source-code)：
+---
+
+## 技术栈与原生架构
+
+### 主要技术栈
+
+- **跨端框架**：React Native `0.73`（Hermes）、TypeScript、React `18.2`
+- **导航与手势**：`react-native-navigation`、`react-native-pager-view`
+- **Android 原生核心**：Kotlin `1.9`（JVM 17）+ `kotlinx-coroutines-android`
+- **音频与媒体**：AndroidX Media3 (`ExoPlayer 1.8.0` / `SimpleCache`)、自研浮点 DSP、`androidx.media`
+- **图像、脚本与存储**：Glide `4.15`、QuickJS (`wrapper-android`)、SQLite WAL + 文件溢出引擎
+
+### Android 原生模块布局（`android/app/src/main/java/cn/toside/music/mobile/`）
+
+| 包路径 | 核心职责 |
+| :--- | :--- |
+| `player/` | `XmusicPlaybackService`、`XmusicPlayerController`、`AudioEffectModule`、`player/dsp/` 浮点音效处理器、`player/cache/` Media3 缓存预加载、`player/session/` 媒体通知与超级岛适配 |
+| `storage/` | `XmusicStorageEngine`（SQLite WAL + 大值文件溢出 + 旧版 `RKStorage`/`AsyncStorage` 分片无损迁移） |
+| `splash/` | `XmusicSplashOverlay`、`SplashThemeStore`（M3E 声波流体冷启动动画与主题同步） |
+| `artwork/` | `CoverArtworkRepository`、`CoverPaletteExtractor`（Glide 共享封面加载与主色提取） |
+| `view/` | `FluidBgView`、`WavyProgressView`、`FadeImageView`、`EdgeSwipeView`、`EdgeToEdgeModalView`、`AlphaFadeView`、`LinearGradientView`、`SolidHeartView` |
+| `widget/` | `XmusicCapsuleWidgetProvider`（4×1）、`XmusicCardWidgetProvider`（4×2）、`XmusicWidgetUpdater`、`XmusicWidgetActionReceiver` |
+| `userApi/` | `QuickJsEngine`、`QuickJsConsole`、`UserApiModule`（单线程协程 QuickJS 自定义源沙箱） |
+| `lyric/` | `Lyric`、`LyricPlayer`、`LyricModule`（LRC 解析与蓝牙/微件歌词调度） |
+| `crypto/`、`cache/`、`utils/`、`core/` | `AES`/`RSA` 加解密、缓存统计清理、OkHttp 协程下载、海报名片分享、安全区/触感/权限工具及协程生命周期底座 |
+
+---
+
+## 支持平台与下载
+
+- **系统要求**：Android 5.0 及以上（`minSdkVersion = 21`，`compileSdkVersion = 36`）
+- **支持架构**：
+  - `arm64-v8a`（绝大多数现代 64 位设备推荐）
+  - `armeabi-v7a`（老旧 32 位设备）
+  - `universal`（全架构通用包）
+
+> **注**：本项目专注于 Android 端，没有计划支持 iOS 和 HarmonyOS NEXT。
+
+- **安装包下载**：[GitHub Releases](https://github.com/startips/Xmusic/releases)（`master` 分支自动发布正式版；`dev` 分支自动构建 `dev` 预发布预览版）
+- **问题反馈**：[GitHub Issues](https://github.com/startips/Xmusic/issues)
+- **变更记录**：[CHANGELOG.md](./CHANGELOG.md)
+- **使用常见问题**：可参阅上游原版文档 [移动版常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq) 与 [音乐播放列表机制](https://lyswhut.github.io/lx-music-doc/mobile/faq/playlist)
+
+---
+
+## 本地开发、测试与构建
+
+### 环境准备
+
+- Node.js `>= 18`（见 `.nvmrc`）、npm `>= 8.5.2`
+- JDK 17 与 Android SDK（环境搭建基础可参考原版[源码使用方法](https://lyswhut.github.io/lx-music-doc/mobile/use-source-code)）
+
+### 常用命令
 
 ```bash
-# 安装依赖
+# 安装依赖（postinstall 会自动执行 dependencies-patch.js 修补 react-native-navigation）
 npm ci
 
-# 代码检查
+# 代码规范与类型检查
 npm run lint
+npx tsc --noEmit
 
-# 构建 Android Release 安装包
+# 运行 Android 原生单元测试
+cd android && ./gradlew testDebugUnitTest
+
+# 构建 Debug APK
+cd android && ./gradlew assembleDebug
+
+# 构建 Release APK（需提前配置 android/keystore.properties 或传入 -PMYAPP_UPLOAD_* 签名参数）
 cd android && ./gradlew assembleRelease
 ```
 
 ### 数据同步服务
 
-如需跨设备同步本地歌单，可部署原版独立的[数据同步服务](https://github.com/lyswhut/lx-music-sync-server#readme)作为私人多端同步服务端使用。
+如需跨设备同步本地歌单，可部署上游独立的[数据同步服务](https://github.com/lyswhut/lx-music-sync-server#readme)作为私人多端同步服务端使用。
+
+---
 
 ## 贡献代码
 
@@ -67,6 +128,8 @@ cd android && ./gradlew assembleRelease
 
 - 提交新功能建议或较大界面改动前，建议先在 [Issues](https://github.com/startips/Xmusic/issues) 中说明想法；
 - 修复 Bug 时，请尽量附上机型、Android 版本、复现步骤与前后对比截图。
+
+---
 
 ## 项目协议
 

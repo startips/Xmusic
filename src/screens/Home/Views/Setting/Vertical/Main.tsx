@@ -13,7 +13,6 @@ import {
   normalizeSettingScreenId,
   type SettingScreenIds,
 } from '../Main'
-import { registerSettingPagerLock } from '../pagerLock'
 import { hapticTick } from '@/utils/haptics'
 import { createStyle } from '@/utils/tools'
 import { createSettingPagerMotion, type SettingPagerMotion } from './pagerMotion'
@@ -165,15 +164,6 @@ export default () => {
       mountedMapRef.current = next
       return next
     })
-  }, [])
-
-  useEffect(() => {
-    registerSettingPagerLock((locked) => {
-      pagerViewRef.current?.setScrollEnabled(!locked)
-    })
-    return () => {
-      registerSettingPagerLock(null)
-    }
   }, [])
 
   useEffect(() => {

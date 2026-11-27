@@ -50,22 +50,6 @@ const defaultSetting: LX.AppSetting = {
   'playDetail.isShowLyricProgressSetting': false,
   'playDetail.isShowKaraokeLyric': true,
 
-  'desktopLyric.enable': false,
-  'desktopLyric.isLock': false,
-  'desktopLyric.width': 100,
-  'desktopLyric.maxLineNum': 5,
-  'desktopLyric.isSingleLine': false,
-  'desktopLyric.showToggleAnima': true,
-  'desktopLyric.position.x': 0,
-  'desktopLyric.position.y': 0,
-  'desktopLyric.textPosition.x': 'center',
-  'desktopLyric.textPosition.y': 'top',
-  'desktopLyric.style.fontSize': 180,
-  'desktopLyric.style.opacity': 100,
-  'desktopLyric.style.lyricUnplayColor': 'rgba(255, 255, 255, 1)',
-  'desktopLyric.style.lyricPlayedColor': 'rgba(7, 197, 86, 1)',
-  'desktopLyric.style.lyricShadowColor': 'rgba(0, 0, 0, 0.6)',
-
   'search.isShowHotSearch': true,
   'search.isShowHistorySearch': false,
 
