@@ -79,6 +79,7 @@ interface NativeXmusicPlayerSpec {
   isCached: (url: string) => Promise<boolean>
   getCacheSize: () => Promise<number>
   clearCache: () => Promise<void>
+  prefetchTrack: (track: LX.Player.Track, maxBytes?: number) => Promise<void>
   destroy: () => Promise<void>
 }
 

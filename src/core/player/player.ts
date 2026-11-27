@@ -1,4 +1,5 @@
 import { isInitialized, initial as playerInitial, isEmpty, setPause, setPlay, setResource, setStop, initTrackInfo } from '@/plugins/player'
+import { prefetchTrackAudio } from '@/plugins/player/utils'
 import {
   setStatusText,
 } from '@/core/player/playStatus'
@@ -248,7 +249,7 @@ const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) =>
   })
 
   loadTrackLyric(musicInfo)
-}, 200)
+}, 80)
 
 // 处理音乐播放
 const handlePlay = async() => {
@@ -365,6 +366,9 @@ export const prefetchNextMusic = () => {
       musicInfo: nextMusic,
       isRefresh: false,
       allowToggleSource: true,
+    }).then((url) => {
+      if (!url || playerState.playMusicInfo.musicInfo?.id !== currentId) return
+      void prefetchTrackAudio(nextMusic, url).catch(() => {})
     }).catch(() => {})
     void getLyricInfo({
       musicInfo: nextMusic,

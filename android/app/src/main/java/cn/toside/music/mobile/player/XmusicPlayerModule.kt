@@ -402,6 +402,28 @@ class XmusicPlayerModule(
   }
 
   @ReactMethod
+  fun prefetchTrack(track: ReadableMap?, maxBytes: Double, promise: Promise) {
+    val url = track.getStringOrNull("url")
+    if (url.isNullOrBlank()) {
+      promise.resolve(null)
+      return
+    }
+    val userAgent = track.getStringOrNull("userAgent")
+    val cacheKey = track.getStringOrNull("cacheKey")
+    val headersMap = extractStringMap(track?.getMap("headers"))
+    val limitBytes = if (maxBytes > 0.0) maxBytes.toLong() else 4L * 1024L * 1024L
+    PlayerMediaCache.prefetchNextTrack(
+      context = reactAppContext,
+      url = url,
+      userAgent = userAgent,
+      headers = headersMap,
+      cacheKey = cacheKey,
+      maxBytes = limitBytes,
+    )
+    promise.resolve(null)
+  }
+
+  @ReactMethod
   fun destroy(promise: Promise) {
     val b = binder
     if (b != null) {

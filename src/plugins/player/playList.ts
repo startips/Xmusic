@@ -37,15 +37,19 @@ const getCurrentFullLyric = (targetId: string | null) => {
     : undefined
 }
 
+export const buildTrackCacheKey = (musicInfo: LX.Player.PlayMusic, url?: string): string | undefined => {
+  if (url != null && !remoteHttpRxp.test(url)) return undefined
+  const mInfo = formatMusicInfo(musicInfo)
+  return `${mInfo.id}_${settingState.setting['player.playQuality']}`
+}
+
 const buildTrack = (musicInfo: LX.Player.PlayMusic, url: string, duration?: number): LX.Player.Track => {
   const mInfo = formatMusicInfo(musicInfo)
   const isShowNotificationImage = settingState.setting['player.isShowNotificationImage']
   const album = mInfo.album || undefined
   const artwork = isShowNotificationImage && mInfo.pic && httpRxp.test(mInfo.pic) ? mInfo.pic : undefined
   const lyric = getCurrentFullLyric(mInfo.id)
-  const cacheKey = remoteHttpRxp.test(url)
-    ? `${mInfo.id}_${settingState.setting['player.playQuality']}`
-    : undefined
+  const cacheKey = buildTrackCacheKey(musicInfo, url)
   return {
     id: `${mInfo.id}__//${Math.random()}__//${url}`,
     url,
@@ -59,6 +63,12 @@ const buildTrack = (musicInfo: LX.Player.PlayMusic, url: string, duration?: numb
     lyric,
     duration,
   }
+}
+
+export const prefetchTrackAudio = async(musicInfo: LX.Player.PlayMusic, url: string, maxBytes = 4 * 1024 * 1024): Promise<void> => {
+  if (!remoteHttpRxp.test(url)) return
+  const track = buildTrack(musicInfo, url)
+  await nativePlayer.prefetchTrack(track, maxBytes)
 }
 
 export const updateMetaData = async(musicInfo: LX.Player.MusicInfo, isPlay: boolean, force = false) => {

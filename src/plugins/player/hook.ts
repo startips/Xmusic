@@ -37,6 +37,7 @@ export function useBufferProgress() {
           break
         case PlayerState.Playing:
           clearItv()
+          interval = setInterval(updateBuffer, 2000)
           void updateBuffer()
           break
         case PlayerState.Buffering:

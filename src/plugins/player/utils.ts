@@ -1,14 +1,15 @@
 import BackgroundTimer from 'react-native-background-timer'
 import nativePlayer from './nativePlayer'
-import { playMusic as handlePlayMusic } from './playList'
+import { buildTrackCacheKey, playMusic as handlePlayMusic, prefetchTrackAudio } from './playList'
 import { existsFile, moveFile, privateStorageDirectoryPath, temporaryDirectoryPath } from '@/utils/fs'
 import { toast } from '@/utils/tools'
 
 export { useBufferProgress } from './hook'
+export { buildTrackCacheKey, prefetchTrackAudio }
 
 export const isEmpty = (trackId = global.lx.playerTrackId) => !trackId
 
-const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: number) => void, delay = 800) => {
+const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: number) => void, delay = 250) => {
   let delayTimer: number | null = null
   let isDelayRun = false
   let timer: number | null = null
@@ -45,7 +46,7 @@ const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: numb
       delayTimer = BackgroundTimer.setTimeout(() => {
         delayTimer = null
         isDelayRun = false
-      }, 500)
+      }, 250)
     }
   }
 })((musicInfo, url, time) => {

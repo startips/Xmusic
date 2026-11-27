@@ -31,7 +31,7 @@ export default () => {
         prevTimeoutId = playerState.musicInfo.id
         if (playerState.playMusicInfo.musicInfo) setMusicUrl(playerState.playMusicInfo.musicInfo, true)
       }
-    }, 25000)
+    }, 12000)
   }
   const clearLoadingTimeout = () => {
     if (!loadingTimeout) return
@@ -83,6 +83,7 @@ export default () => {
   }
 
   const handleWating = () => {
+    if (!global.lx.isPlayedStop && playerState.isPlay) startLoadingTimeout()
     setStatusText(global.i18n.t('player__buffering'))
   }
 
