@@ -4,7 +4,9 @@ import { syncNativeAudioSession } from '@/utils/nativeModules/audioEffect'
 import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
 import { cancelNextMusicPrefetch, pause, playNext, resetNextMusicPrefetch, scheduleNextMusicPrefetch } from '@/core/player/player'
+import { setPlayQualityInfo } from '@/core/player/playInfo'
 import { setStatusText, setIsPlay } from '@/core/player/playStatus'
+import { isQualityDowngraded } from '@/utils/quality'
 // import { resetPlayerMusicInfo } from '@/core/player/playInfo'
 import { setStop } from '@/plugins/player'
 import { delayUpdateMusicInfo } from '@/plugins/player/playList'
@@ -64,6 +66,17 @@ export default async(setting: LX.AppSetting) => {
       resetNextMusicPrefetch()
       const playMusicInfo = playerState.playMusicInfo
       if (newValue == 'random' && playMusicInfo.musicInfo && !playMusicInfo.isTempPlay) addPlayedList({ ...(playMusicInfo as LX.Player.PlayMusicInfo) })
+      if (playerState.isPlay) scheduleNextMusicPrefetch(2000)
+    }
+    if (keys.includes('player.playQuality')) {
+      const newQuality = settings['player.playQuality'] ?? settingState.setting['player.playQuality']
+      resetNextMusicPrefetch()
+      if (playerState.playMusicInfo.musicInfo) {
+        setPlayQualityInfo({
+          targetQuality: newQuality,
+          isDowngraded: isQualityDowngraded(newQuality, playerState.playQualityInfo.actualQuality),
+        })
+      }
       if (playerState.isPlay) scheduleNextMusicPrefetch(2000)
     }
     if (keys.includes('player.isSoftPlayPause') || keys.includes('player.crossfadeDuration')) {

@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState } from './nativePlayer'
+import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState, type AudioFormatInfo } from './nativePlayer'
 import { isEmpty } from './utils'
 import { exitApp } from '@/core/common'
 import { pause, play, playNext, playPrev } from '@/core/player/player'
+import { setPlayAudioFormat } from '@/core/player/playInfo'
 import { toggleCurrentTrackFavoriteSilently } from '@/core/player/favoriteSync'
 
 let isInitialized = false
@@ -49,6 +50,11 @@ const registerPlaybackService = () => {
 
   addPlayerEventListener(PlayerEvent.RemoteToggleFavorite, () => {
     void toggleCurrentTrackFavoriteSilently()
+  })
+
+  addPlayerEventListener<AudioFormatInfo>(PlayerEvent.PlaybackAudioFormat, format => {
+    if (isEmpty()) return
+    setPlayAudioFormat(format)
   })
 
   addPlayerEventListener<{ state: PlayerState }>(PlayerEvent.PlaybackState, info => {

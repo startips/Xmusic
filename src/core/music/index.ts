@@ -6,6 +6,7 @@ import {
   getMusicUrl as getOnlineMusicUrl,
   getPicUrl as getOnlinePicUrl,
   getLyricInfo as getOnlineLyricInfo,
+  type ResolvedMusicQualityMeta,
 } from './online'
 import {
   getMusicUrl as getDownloadMusicUrl,
@@ -24,20 +25,22 @@ export const getMusicUrl = async({
   quality,
   isRefresh = false,
   onToggleSource,
+  onResolvedQuality,
   allowToggleSource,
 }: {
   musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
   isRefresh?: boolean
   quality?: LX.Quality
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
+  onResolvedQuality?: (meta: ResolvedMusicQualityMeta) => void
   allowToggleSource?: boolean
 }): Promise<string> => {
   if ('progress' in musicInfo) {
-    return getDownloadMusicUrl({ musicInfo, isRefresh, onToggleSource, allowToggleSource })
+    return getDownloadMusicUrl({ musicInfo, quality, isRefresh, onToggleSource, onResolvedQuality, allowToggleSource })
   } else if (musicInfo.source == 'local') {
     return getLocalMusicUrl({ musicInfo, isRefresh, onToggleSource, allowToggleSource })
   } else {
-    return getOnlineMusicUrl({ musicInfo, isRefresh, quality, onToggleSource, allowToggleSource })
+    return getOnlineMusicUrl({ musicInfo, isRefresh, quality, onToggleSource, onResolvedQuality, allowToggleSource })
   }
 }
 

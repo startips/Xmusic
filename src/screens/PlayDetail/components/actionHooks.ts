@@ -1,40 +1,14 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { MUSIC_TOGGLE_MODE, MUSIC_TOGGLE_MODE_LIST } from '@/config/constant'
 import { updateSetting } from '@/core/common'
-import { toggleDesktopLyricLock } from '@/core/desktopLyric'
 import { navigations } from '@/navigation'
 import commonState from '@/store/common/state'
 import { toggleCurrentTrackFavoriteSilently } from '@/core/player/favoriteSync'
 import { useIsMusicInLoveList } from '@/store/list/hook'
 import { usePlayMusicInfo } from '@/store/player/hook'
 import { useSettingValue } from '@/store/setting/hook'
-import settingState from '@/store/setting/state'
-import { type DesktopLyricEnableType } from '@/components/DesktopLyricEnable'
 import { type MusicAddModalType } from '@/components/MusicAddModal'
 import { hapticHeart, hapticTick } from '@/utils/haptics'
-
-export const useDesktopLyricAction = () => {
-  const enabledLyric = useSettingValue('desktopLyric.enable')
-  const desktopLyricEnableRef = useRef<DesktopLyricEnableType>(null)
-
-  const toggleDesktopLyric = useCallback(() => {
-    desktopLyricEnableRef.current?.setEnabled(!enabledLyric)
-  }, [enabledLyric])
-
-  const toggleLock = useCallback(() => {
-    const isLock = !settingState.setting['desktopLyric.isLock']
-    void toggleDesktopLyricLock(isLock).then(() => {
-      updateSetting({ 'desktopLyric.isLock': isLock })
-    })
-  }, [])
-
-  return {
-    enabledLyric,
-    desktopLyricEnableRef,
-    toggleDesktopLyric,
-    toggleLock,
-  }
-}
 
 export const useLoveMusicAction = () => {
   const playMusicInfo = usePlayMusicInfo()

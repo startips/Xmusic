@@ -9,17 +9,19 @@ export { buildTrackCacheKey, prefetchTrackAudio }
 
 export const isEmpty = (trackId = global.lx.playerTrackId) => !trackId
 
-const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: number) => void, delay = 250) => {
+const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: number, autoPlay?: boolean) => void, delay = 250) => {
   let delayTimer: number | null = null
   let isDelayRun = false
   let timer: number | null = null
   let _musicInfo: LX.Player.PlayMusic | null = null
   let _url = ''
   let _time = 0
-  return (musicInfo: LX.Player.PlayMusic, url: string, time: number) => {
+  let _autoPlay: boolean | undefined
+  return (musicInfo: LX.Player.PlayMusic, url: string, time: number, autoPlay?: boolean) => {
     _musicInfo = musicInfo
     _url = url
     _time = time
+    _autoPlay = autoPlay
     if (timer) {
       BackgroundTimer.clearTimeout(timer)
       timer = null
@@ -34,35 +36,39 @@ const playMusic = ((fn: (musicInfo: LX.Player.PlayMusic, url: string, time: numb
         const musicInfo = _musicInfo
         const url = _url
         const time = _time
+        const nextAutoPlay = _autoPlay
         _musicInfo = null
         _url = ''
         _time = 0
+        _autoPlay = undefined
         isDelayRun = false
-        fn(musicInfo!, url, time)
+        fn(musicInfo!, url, time, nextAutoPlay)
       }, delay)
     } else {
       isDelayRun = true
-      fn(musicInfo, url, time)
+      fn(musicInfo, url, time, autoPlay)
       delayTimer = BackgroundTimer.setTimeout(() => {
         delayTimer = null
         isDelayRun = false
       }, 250)
     }
   }
-})((musicInfo, url, time) => {
-  handlePlayMusic(musicInfo, url, time)
+})((musicInfo, url, time, autoPlay) => {
+  handlePlayMusic(musicInfo, url, time, autoPlay)
 })
 
-export const setResource = (musicInfo: LX.Player.PlayMusic, url: string, duration?: number) => {
-  playMusic(musicInfo, url, duration ?? 0)
+export const setResource = (musicInfo: LX.Player.PlayMusic, url: string, duration?: number, autoPlay?: boolean) => {
+  playMusic(musicInfo, url, duration ?? 0, autoPlay)
 }
+
+export const getAudioFormat = async() => nativePlayer.getAudioFormat()
 
 export const setPlay = async() => nativePlayer.play()
 export const getPosition = async() => nativePlayer.getPosition()
 export const getDuration = async() => nativePlayer.getDuration()
-export const setStop = async() => {
+export const setStop = async(keepSession = false) => {
   global.lx.playerTrackId = ''
-  await nativePlayer.stop()
+  await nativePlayer.stop(keepSession)
 }
 
 export const setPause = async() => nativePlayer.pause()
@@ -113,4 +119,4 @@ export const updateOptions = async(options = {
   return nativePlayer.updateOptions(options)
 }
 
-export { updateMetaData, initTrackInfo } from './playList'
+export { updateMetaData, initTrackInfo, updateTrackSwitchMetadata } from './playList'

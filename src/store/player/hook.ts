@@ -29,6 +29,20 @@ export const useLyricStatus = () => {
   return value
 }
 
+export const usePlayQualityInfo = () => {
+  const [value, update] = useState(state.playQualityInfo)
+
+  useEffect(() => {
+    update(state.playQualityInfo)
+    global.state_event.on('playQualityInfoChanged', update)
+    return () => {
+      global.state_event.off('playQualityInfoChanged', update)
+    }
+  }, [])
+
+  return value
+}
+
 export const usePlayMusicInfo = () => {
   const [value, update] = useState(state.playMusicInfo)
 

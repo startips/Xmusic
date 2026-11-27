@@ -218,7 +218,7 @@ class XmusicMediaNotificationManager(
     updateNotification()
   }
 
-  fun updateMetadata(meta: NowPlayingTrackMetadata) {
+  fun updateMetadata(meta: NowPlayingTrackMetadata, snapshotOverride: PlaybackSnapshotForSession? = null) {
     val mdBuilder = MediaMetadataCompat.Builder().apply {
       putString(MediaMetadataCompat.METADATA_KEY_TITLE, meta.title)
       putString(MediaMetadataCompat.METADATA_KEY_ARTIST, meta.artist)
@@ -288,7 +288,7 @@ class XmusicMediaNotificationManager(
     builder.setSubText(meta.album)
 
     session.setMetadata(mdBuilder.build())
-    val snap = snapshotProvider()
+    val snap = snapshotOverride ?: snapshotProvider()
     updatePlaybackActions(snap.isPlaying)
     updatePlaybackState(snap)
     updateNotification()

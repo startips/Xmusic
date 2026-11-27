@@ -197,14 +197,14 @@ class XmusicPlayerModule(
   }
 
   @ReactMethod
-  fun stop(promise: Promise) {
+  fun stop(keepSession: Boolean, promise: Promise) {
     val b = binder
     if (b == null) {
       promise.resolve(null)
       return
     }
     b.post {
-      b.controller.stop()
+      b.controller.stop(keepSession)
       promise.resolve(null)
     }
   }
@@ -378,6 +378,31 @@ class XmusicPlayerModule(
         putDouble("buffered", ctrl.getBufferedPositionSec())
       }
       promise.resolve(map)
+    }
+  }
+
+  @ReactMethod
+  fun getAudioFormat(promise: Promise) {
+    val b = binder
+    if (b == null) {
+      promise.resolve(null)
+      return
+    }
+    b.post {
+      val fmt = b.controller.getAudioFormat()
+      if (fmt == null) {
+        promise.resolve(null)
+      } else {
+        val map = Arguments.createMap().apply {
+          putString("codec", fmt.codec)
+          putString("mimeType", fmt.mimeType)
+          putInt("sampleRate", fmt.sampleRate)
+          putInt("bitDepth", fmt.bitDepth)
+          putInt("bitrate", fmt.bitrate)
+          putInt("channelCount", fmt.channelCount)
+        }
+        promise.resolve(map)
+      }
     }
   }
 

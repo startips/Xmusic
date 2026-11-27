@@ -1,9 +1,12 @@
 import playerActions from '@/store/player/action'
 import playerState, { type LyricStatus } from '@/store/player/state'
+import settingState from '@/store/setting/state'
 
 import { getListMusicSync } from '@/utils/listManage'
 import { setProgress } from '@/core/player/progress'
 import { LIST_IDS } from '@/config/constant'
+import { getPlayQuality } from '@/core/music/utils'
+import { extractOnlineMusicInfo, isQualityDowngraded } from '@/utils/quality'
 
 
 export const setMusicInfo = (musicInfo: Partial<LX.Player.MusicInfo>) => {
@@ -12,6 +15,60 @@ export const setMusicInfo = (musicInfo: Partial<LX.Player.MusicInfo>) => {
 
 export const setLyricStatus = (status: LyricStatus) => {
   playerActions.setLyricStatus(status)
+}
+
+export const setPlayQualityInfo = (info: Partial<LX.Player.PlayQualityInfo>) => {
+  playerActions.setPlayQualityInfo(info)
+}
+
+export const resetPlayQualityInfo = () => {
+  playerActions.resetPlayQualityInfo()
+}
+
+export const setPlayAudioFormat = (audioFormat: LX.Player.AudioFormatInfo | null) => {
+  if (!playerState.playMusicInfo.musicInfo) return
+  playerActions.setPlayQualityInfo({ audioFormat })
+}
+
+export const initPlayQualityInfoForTrack = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem | null) => {
+  if (!musicInfo) {
+    playerActions.resetPlayQualityInfo()
+    return
+  }
+  const onlineInfo = extractOnlineMusicInfo(musicInfo)
+  if (!onlineInfo) {
+    const ext = !('progress' in musicInfo) && musicInfo.source === 'local' ? (musicInfo.meta.ext || null) : null
+    playerActions.setPlayQualityInfo({
+      musicId: musicInfo.id,
+      targetQuality: null,
+      requestedQuality: null,
+      actualQuality: null,
+      source: 'local',
+      actualSource: 'local',
+      isSourceToggled: false,
+      isDowngraded: false,
+      localExt: ext,
+      audioFormat: null,
+      isSwitching: false,
+    })
+    return
+  }
+  const targetQuality = settingState.setting['player.playQuality']
+  const activeInfo = onlineInfo.meta.toggleMusicInfo ?? onlineInfo
+  const requestedQuality = getPlayQuality(targetQuality, activeInfo)
+  playerActions.setPlayQualityInfo({
+    musicId: musicInfo.id,
+    targetQuality,
+    requestedQuality,
+    actualQuality: requestedQuality,
+    source: onlineInfo.source,
+    actualSource: activeInfo.source,
+    isSourceToggled: activeInfo.source !== onlineInfo.source,
+    isDowngraded: isQualityDowngraded(targetQuality, requestedQuality),
+    localExt: null,
+    audioFormat: null,
+    isSwitching: false,
+  })
 }
 
 export const setLoadErrorPicUrl = (url: string) => {
@@ -126,6 +183,7 @@ const setPlayerMusicInfo = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem
 export const setPlayMusicInfo = (listId: string | null, musicInfo: LX.Download.ListItem | LX.Music.MusicInfo | null, isTempPlay: boolean = false) => {
   playerActions.setPlayMusicInfo(listId, musicInfo, isTempPlay)
   setPlayerMusicInfo(musicInfo)
+  initPlayQualityInfoForTrack(musicInfo)
 
   setProgress(0, 0)
 

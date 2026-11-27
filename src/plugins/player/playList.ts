@@ -14,6 +14,8 @@ export const state = {
   prevTrackId: '',
 }
 
+let prevArtwork: string | undefined
+
 const formatMusicInfo = (musicInfo: LX.Player.PlayMusic) => {
   return 'progress' in musicInfo ? {
     id: musicInfo.id,
@@ -98,13 +100,33 @@ export const initTrackInfo = async(_musicInfo: LX.Player.PlayMusic, mInfo: LX.Pl
   delayUpdateMusicInfo(mInfo)
 }
 
-const handlePlayMusic = async(musicInfo: LX.Player.PlayMusic, url: string, time: number) => {
+/**
+ * 切歌加载中立即同步新曲目元数据到 MediaSession，避免灵动岛/通知栏闪烁或短暂消失
+ */
+export const updateTrackSwitchMetadata = async(mInfo: LX.Player.MusicInfo) => {
+  const isShowNotificationImage = settingState.setting['player.isShowNotificationImage']
+  const artwork = isShowNotificationImage ? (mInfo.pic ?? undefined) : undefined
+  if (mInfo.pic) prevArtwork = mInfo.pic
+  state.isPlaying = true
+  state.prevDuration = 0
+  await syncCurrentTrackFavoriteNotification()
+  await nativePlayer.updateNowPlayingMetadata({
+    title: mInfo.name || 'Unknow',
+    artist: mInfo.singer || 'Unknow',
+    album: mInfo.album || undefined,
+    artwork,
+    duration: 0,
+    lyric: getCurrentFullLyric(mInfo.id),
+  }, true)
+}
+
+const handlePlayMusic = async(musicInfo: LX.Player.PlayMusic, url: string, time: number, autoPlayOverride?: boolean) => {
   const track = buildTrack(musicInfo, url)
   state.isPlaying = false
   state.prevDuration = -1
   state.prevTrackId = ''
   global.lx.playerTrackId = track.id ?? ''
-  const autoPlay = !global.lx.restorePlayInfo
+  const autoPlay = autoPlayOverride ?? !global.lx.restorePlayInfo
   if (global.lx.restorePlayInfo) {
     global.lx.restorePlayInfo = null
   }
@@ -113,15 +135,14 @@ const handlePlayMusic = async(musicInfo: LX.Player.PlayMusic, url: string, time:
 
 let playPromise = Promise.resolve()
 let actionId = Math.random()
-export const playMusic = (musicInfo: LX.Player.PlayMusic, url: string, time: number) => {
+export const playMusic = (musicInfo: LX.Player.PlayMusic, url: string, time: number, autoPlay?: boolean) => {
   const id = actionId = Math.random()
   void playPromise.finally(() => {
     if (id != actionId) return
-    playPromise = handlePlayMusic(musicInfo, url, time)
+    playPromise = handlePlayMusic(musicInfo, url, time, autoPlay)
   })
 }
 
-let prevArtwork: string | undefined
 const updateMetaInfo = async(mInfo: LX.Player.MusicInfo) => {
   const isShowNotificationImage = settingState.setting['player.isShowNotificationImage']
   state.isPlaying = await nativePlayer.getState() == PlayerState.Playing

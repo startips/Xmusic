@@ -19,6 +19,29 @@ declare global {
         rawlrcInfo: LX.Music.LyricInfo
       }
 
+      interface AudioFormatInfo {
+        codec: string
+        mimeType: string
+        sampleRate: number
+        bitDepth: number
+        bitrate: number
+        channelCount: number
+      }
+
+      interface PlayQualityInfo {
+        musicId: string | null
+        targetQuality: LX.Quality | null
+        requestedQuality: LX.Quality | null
+        actualQuality: LX.Quality | null
+        source: LX.Source | null
+        actualSource: LX.Source | null
+        isSourceToggled: boolean
+        isDowngraded: boolean
+        localExt: string | null
+        audioFormat: AudioFormatInfo | null
+        isSwitching: boolean
+      }
+
       type PlayMusic = LX.Music.MusicInfo | LX.Download.ListItem
 
       type PlayMusicInfo = Readonly<{

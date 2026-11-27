@@ -39,28 +39,65 @@ export const setPic = (datas: {
  */
 
 
-const inFlightMusicUrlPromises = new Map<string, Promise<string>>()
+export interface ResolvedMusicQualityMeta {
+  requestedQuality: LX.Quality
+  actualQuality: LX.Quality
+  actualSource: LX.OnlineSource
+}
 
-export const getMusicUrl = async({ musicInfo, quality, isRefresh, allowToggleSource = true, onToggleSource = () => {} }: {
+const inFlightMusicUrlPromises = new Map<string, Promise<string>>()
+const resolvedQualityMetaCache = new Map<string, { actualQuality: LX.Quality, actualSource: LX.OnlineSource }>()
+
+const rememberResolvedQuality = (key: string, actualQuality: LX.Quality, actualSource: LX.OnlineSource) => {
+  if (resolvedQualityMetaCache.size > 200) {
+    const oldestKey = resolvedQualityMetaCache.keys().next().value
+    if (oldestKey) resolvedQualityMetaCache.delete(oldestKey)
+  }
+  resolvedQualityMetaCache.set(key, { actualQuality, actualSource })
+}
+
+export const getMusicUrl = async({ musicInfo, quality, isRefresh, allowToggleSource = true, onToggleSource = () => {}, onResolvedQuality }: {
   musicInfo: LX.Music.MusicInfoOnline
   quality?: LX.Quality
   isRefresh: boolean
   allowToggleSource?: boolean
   onToggleSource?: (musicInfo?: LX.Music.MusicInfoOnline) => void
+  onResolvedQuality?: (meta: ResolvedMusicQualityMeta) => void
 }): Promise<string> => {
   const requestedQuality = quality ?? getPlayQuality(settingState.setting['player.playQuality'], musicInfo)
-  const dedupKey = `${musicInfo.id}_${requestedQuality}_${allowToggleSource ? '1' : '0'}`
+  const metaKey = `${musicInfo.id}_${requestedQuality}`
+  const dedupKey = `${metaKey}_${allowToggleSource ? '1' : '0'}`
   if (!isRefresh) {
     const cachedUrl = await getStoreMusicUrl(musicInfo, requestedQuality)
-    if (cachedUrl) return cachedUrl
+    if (cachedUrl) {
+      const cachedMeta = resolvedQualityMetaCache.get(metaKey)
+      onResolvedQuality?.({
+        requestedQuality,
+        actualQuality: cachedMeta?.actualQuality ?? requestedQuality,
+        actualSource: cachedMeta?.actualSource ?? musicInfo.source,
+      })
+      return cachedUrl
+    }
     const inFlight = inFlightMusicUrlPromises.get(dedupKey)
-    if (inFlight) return inFlight
+    if (inFlight) {
+      return inFlight.then((url) => {
+        const cachedMeta = resolvedQualityMetaCache.get(metaKey)
+        onResolvedQuality?.({
+          requestedQuality,
+          actualQuality: cachedMeta?.actualQuality ?? requestedQuality,
+          actualSource: cachedMeta?.actualSource ?? musicInfo.source,
+        })
+        return url
+      })
+    }
   }
 
   const reqPromise = handleGetOnlineMusicUrl({ musicInfo, quality, onToggleSource, isRefresh, allowToggleSource }).then(({ url, quality: actualQuality, musicInfo: targetMusicInfo, isFromCache }) => {
     if (targetMusicInfo.id != musicInfo.id) {
       musicInfo.meta.toggleMusicInfo = targetMusicInfo
       const toggleReqQuality = quality ?? getPlayQuality(settingState.setting['player.playQuality'], targetMusicInfo)
+      rememberResolvedQuality(`${targetMusicInfo.id}_${actualQuality}`, actualQuality, targetMusicInfo.source)
+      rememberResolvedQuality(`${targetMusicInfo.id}_${toggleReqQuality}`, actualQuality, targetMusicInfo.source)
       if (!isFromCache) {
         void saveMusicUrl(targetMusicInfo, actualQuality, url)
         if (actualQuality != toggleReqQuality) {
@@ -68,6 +105,13 @@ export const getMusicUrl = async({ musicInfo, quality, isRefresh, allowToggleSou
         }
       }
     }
+    rememberResolvedQuality(`${musicInfo.id}_${actualQuality}`, actualQuality, targetMusicInfo.source)
+    rememberResolvedQuality(metaKey, actualQuality, targetMusicInfo.source)
+    onResolvedQuality?.({
+      requestedQuality,
+      actualQuality,
+      actualSource: targetMusicInfo.source,
+    })
     void saveMusicUrl(musicInfo, actualQuality, url)
     if (actualQuality != requestedQuality) {
       void saveMusicUrl(musicInfo, requestedQuality, url)

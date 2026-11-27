@@ -64,6 +64,10 @@ export class StateEvent extends Event {
     this.emit('lyricStatusChanged', status)
   }
 
+  playQualityInfoChanged(info: PlayerState['playQualityInfo']) {
+    this.emit('playQualityInfoChanged', info)
+  }
+
   playMusicInfoChanged(playMusicInfo: PlayerState['playMusicInfo']) {
     this.emit('playMusicInfoChanged', playMusicInfo)
   }

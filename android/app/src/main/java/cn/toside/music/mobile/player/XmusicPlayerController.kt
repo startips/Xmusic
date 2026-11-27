@@ -16,10 +16,12 @@ import android.os.SystemClock
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -35,6 +37,15 @@ import cn.toside.music.mobile.player.session.PlaybackSnapshotForSession
 import cn.toside.music.mobile.player.session.XmusicMediaNotificationManager
 import kotlin.math.max
 import kotlin.math.min
+
+data class AudioFormatSnapshot(
+  val codec: String,
+  val mimeType: String,
+  val sampleRate: Int,
+  val bitDepth: Int,
+  val bitrate: Int,
+  val channelCount: Int,
+)
 
 /**
  * Main-thread Media3 ExoPlayer controller with 60fps soft play/pause envelope,
@@ -62,7 +73,11 @@ class XmusicPlayerController(
   private var previousState: Int = PlaybackStateCompat.STATE_NONE
   private var lastMetadataPlayState: String? = null
   private var hasActiveTrack: Boolean = false
+  private var isSwitchingTrack: Boolean = false
+  private var isLoadingTrack: Boolean = false
   private var currentTrackIsLocal: Boolean = false
+  private var currentTrackUrl: String = ""
+  private var currentAudioFormat: AudioFormatSnapshot? = null
   private var explicitDurationMs: Long = 0L
 
   // 60fps volume envelope state
@@ -210,6 +225,8 @@ class XmusicPlayerController(
 
   fun getAudioSessionId(): Int = player?.audioSessionId ?: 0
 
+  fun getAudioFormat(): AudioFormatSnapshot? = currentAudioFormat
+
   fun loadTrack(
     url: String,
     userAgent: String?,
@@ -230,9 +247,13 @@ class XmusicPlayerController(
     rampFactor = 1.0f
 
     val uri = Uri.parse(url)
+    currentTrackUrl = url
+    currentAudioFormat = null
     currentTrackIsLocal = PlayerMediaCache.isLocalUri(uri)
     explicitDurationMs = if (durationSec > 0.0) (durationSec * 1000.0).toLong() else 0L
     hasActiveTrack = true
+    isSwitchingTrack = false
+    isLoadingTrack = autoPlay
 
     val source = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers, cacheKey)
     p.playWhenReady = false
@@ -241,6 +262,7 @@ class XmusicPlayerController(
     if (startTimeSec > 0.0) {
       p.seekTo((startTimeSec * 1000.0).toLong())
     }
+    isLoadingTrack = false
     if (autoPlay) {
       play()
     } else {
@@ -252,6 +274,7 @@ class XmusicPlayerController(
   fun play() {
     val p = player ?: return
     cancelActiveRamp()
+    isSwitchingTrack = false
     pauseRamping = false
     pendingPlayRampMs = 0
     eofFactor = 1.0f
@@ -290,6 +313,9 @@ class XmusicPlayerController(
 
   fun pause() {
     val p = player ?: return
+    val wasSwitching = isSwitchingTrack || isLoadingTrack
+    isSwitchingTrack = false
+    isLoadingTrack = false
     pendingPlayRampMs = 0
     mainHandler.removeCallbacks(eofMonitorTask)
     if (!softPlayPause || !p.isPlaying || !p.playWhenReady) {
@@ -299,6 +325,19 @@ class XmusicPlayerController(
       eofFactor = 1.0f
       p.playWhenReady = false
       applyEffectiveVolume()
+      if (wasSwitching && notificationManager.session.isActive) {
+        previousState = PlaybackStateCompat.STATE_PAUSED
+        lastMetadataPlayState = "paused"
+        notificationManager.updatePlayback(
+          PlaybackSnapshotForSession(
+            state = PlaybackStateCompat.STATE_PAUSED,
+            positionMs = 0L,
+            bufferedMs = 0L,
+            rate = 0f,
+            isPlaying = false,
+          )
+        )
+      }
       return
     }
     if (pauseRamping) return
@@ -336,7 +375,7 @@ class XmusicPlayerController(
     mainHandler.postDelayed(task, 16L)
   }
 
-  fun stop() {
+  fun stop(keepSession: Boolean = false) {
     cancelActiveRamp()
     PlayerMediaCache.cancelAllPrefetch()
     mainHandler.removeCallbacks(eofMonitorTask)
@@ -346,8 +385,37 @@ class XmusicPlayerController(
     rampFactor = 1.0f
     eofFactor = 1.0f
     hasActiveTrack = false
+    currentTrackUrl = ""
+    currentAudioFormat = null
     explicitDurationMs = 0L
 
+    if (keepSession) {
+      isSwitchingTrack = true
+      isLoadingTrack = false
+      player?.let { p ->
+        p.stop()
+        p.playWhenReady = false
+        p.clearMediaItems()
+      }
+      applyEffectiveVolume()
+      if (notificationManager.session.isActive) {
+        previousState = PlaybackStateCompat.STATE_BUFFERING
+        lastMetadataPlayState = "playing"
+        notificationManager.updatePlayback(
+          PlaybackSnapshotForSession(
+            state = PlaybackStateCompat.STATE_BUFFERING,
+            positionMs = 0L,
+            bufferedMs = 0L,
+            rate = 0f,
+            isPlaying = true,
+          )
+        )
+      }
+      return
+    }
+
+    isSwitchingTrack = false
+    isLoadingTrack = false
     player?.let { p ->
       p.stop()
       p.playWhenReady = false
@@ -388,6 +456,9 @@ class XmusicPlayerController(
   }
 
   fun getState(): Int {
+    if (isSwitchingTrack || isLoadingTrack) {
+      return PlaybackStateCompat.STATE_BUFFERING
+    }
     val p = player ?: return PlaybackStateCompat.STATE_NONE
     return when (p.playbackState) {
       Player.STATE_BUFFERING -> if (p.playWhenReady) {
@@ -395,7 +466,7 @@ class XmusicPlayerController(
       } else {
         PlaybackStateCompat.STATE_CONNECTING
       }
-      Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
+      Player.STATE_ENDED -> PlaybackStateCompat.STATE_PAUSED
       Player.STATE_IDLE -> PlaybackStateCompat.STATE_NONE
       Player.STATE_READY -> {
         if (pauseRamping) PlaybackStateCompat.STATE_PAUSED
@@ -423,12 +494,22 @@ class XmusicPlayerController(
       explicitDurationMs = meta.durationMs
     }
     notificationManager.setActive(true)
-    notificationManager.updateMetadata(meta)
-    if (isPlayingOverride != null) {
-      notificationManager.updatePlayback(
-        buildSessionSnapshot().copy(isPlaying = isPlayingOverride)
+    val baseSnap = buildSessionSnapshot()
+    val snap = if (isPlayingOverride != null) {
+      val resolvedState = when {
+        isPlayingOverride && !isPlayingLikeState(baseSnap.state) -> PlaybackStateCompat.STATE_BUFFERING
+        !isPlayingOverride && (baseSnap.state == PlaybackStateCompat.STATE_NONE || baseSnap.state == PlaybackStateCompat.STATE_STOPPED) -> PlaybackStateCompat.STATE_PAUSED
+        else -> baseSnap.state
+      }
+      baseSnap.copy(
+        state = resolvedState,
+        rate = if (resolvedState == PlaybackStateCompat.STATE_PLAYING) baseSnap.rate else 0f,
+        isPlaying = isPlayingOverride,
       )
+    } else {
+      baseSnap
     }
+    notificationManager.updateMetadata(meta, snap)
   }
 
   fun updateTitles(title: String?, artist: String?, album: String?, lyric: String?) {
@@ -451,6 +532,10 @@ class XmusicPlayerController(
     mainHandler.removeCallbacks(eofMonitorTask)
     pendingPlayRampMs = 0
     pauseRamping = false
+    isSwitchingTrack = false
+    isLoadingTrack = false
+    currentTrackUrl = ""
+    currentAudioFormat = null
     broadcastAudioSession(0)
     onStoppedSideEffects()
     player?.let { p ->
@@ -473,13 +558,120 @@ class XmusicPlayerController(
     handlePlaybackStateChange()
   }
 
+  override fun onTracksChanged(tracks: Tracks) {
+    refreshAudioFormat(tracks)
+  }
+
   override fun onPlaybackStateChanged(playbackState: Int) {
     handlePlaybackStateChange()
+    if (playbackState == Player.STATE_READY) {
+      refreshAudioFormat(player?.currentTracks)
+    }
     if (playbackState == Player.STATE_ENDED && hasActiveTrack) {
       hasActiveTrack = false
       cancelActiveRamp()
       mainHandler.removeCallbacks(eofMonitorTask)
       XmusicPlayerEventBus.emit("playback-track-ended")
+    }
+  }
+
+  private fun refreshAudioFormat(tracks: Tracks?) {
+    val p = player ?: return
+    var trackFmt: Format? = null
+    if (tracks != null) {
+      for (group in tracks.groups) {
+        if (group.type == C.TRACK_TYPE_AUDIO && group.length > 0) {
+          if (group.isSelected) {
+            for (i in 0 until group.length) {
+              if (group.isTrackSelected(i)) {
+                trackFmt = group.getTrackFormat(i)
+                break
+              }
+            }
+            if (trackFmt != null) break
+          } else if (trackFmt == null) {
+            trackFmt = group.getTrackFormat(0)
+          }
+        }
+      }
+    }
+    val decoderFmt = p.audioFormat
+    val primary = trackFmt ?: decoderFmt ?: return
+
+    val mimeType = primary.sampleMimeType ?: decoderFmt?.sampleMimeType ?: ""
+    val containerMime = primary.containerMimeType ?: decoderFmt?.containerMimeType
+    val codec = resolveCodecLabel(mimeType, containerMime, primary.codecs, currentTrackUrl)
+    val sampleRate = when {
+      primary.sampleRate > 0 -> primary.sampleRate
+      (decoderFmt?.sampleRate ?: 0) > 0 -> decoderFmt!!.sampleRate
+      else -> 0
+    }
+    val channelCount = when {
+      primary.channelCount > 0 -> primary.channelCount
+      (decoderFmt?.channelCount ?: 0) > 0 -> decoderFmt!!.channelCount
+      else -> 0
+    }
+    val bitrate = when {
+      primary.averageBitrate > 0 -> primary.averageBitrate
+      primary.bitrate > 0 -> primary.bitrate
+      primary.peakBitrate > 0 -> primary.peakBitrate
+      (decoderFmt?.bitrate ?: 0) > 0 -> decoderFmt!!.bitrate
+      else -> 0
+    }
+    val isLossless = codec == "FLAC" || codec == "WAV" || codec == "APE" || codec == "ALAC" || codec == "PCM" || codec == "DSD"
+    val rawPcmEncoding = when {
+      primary.pcmEncoding != Format.NO_VALUE -> primary.pcmEncoding
+      isLossless && (decoderFmt?.pcmEncoding ?: Format.NO_VALUE) != Format.NO_VALUE -> decoderFmt!!.pcmEncoding
+      else -> Format.NO_VALUE
+    }
+    val bitDepth = if (isLossless) pcmEncodingToBitDepth(rawPcmEncoding) else 0
+
+    val snapshot = AudioFormatSnapshot(
+      codec = codec,
+      mimeType = mimeType,
+      sampleRate = sampleRate,
+      bitDepth = bitDepth,
+      bitrate = bitrate,
+      channelCount = channelCount,
+    )
+    if (snapshot != currentAudioFormat) {
+      currentAudioFormat = snapshot
+      XmusicPlayerEventBus.emitAudioFormat(snapshot)
+    }
+  }
+
+  private fun pcmEncodingToBitDepth(encoding: Int): Int = when (encoding) {
+    C.ENCODING_PCM_8BIT -> 8
+    C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> 16
+    C.ENCODING_PCM_24BIT, C.ENCODING_PCM_24BIT_BIG_ENDIAN -> 24
+    C.ENCODING_PCM_32BIT, C.ENCODING_PCM_32BIT_BIG_ENDIAN, C.ENCODING_PCM_FLOAT -> 32
+    else -> 0
+  }
+
+  private fun resolveCodecLabel(
+    mimeType: String,
+    containerMime: String?,
+    codecs: String?,
+    url: String,
+  ): String {
+    val m = mimeType.lowercase()
+    val c = containerMime?.lowercase().orEmpty()
+    val u = url.substringBefore('?').lowercase()
+    return when {
+      m.contains("flac") -> "FLAC"
+      m == "audio/mpeg" || m == "audio/mp3" -> "MP3"
+      m == "audio/mp4a-latm" || m.contains("aac") -> "AAC"
+      m == "audio/alac" -> "ALAC"
+      m == "audio/vorbis" -> "OGG"
+      m == "audio/opus" -> "OPUS"
+      m.contains("ape") -> "APE"
+      m.contains("wav") || (m == "audio/raw" && (c.contains("wav") || u.endsWith(".wav"))) -> "WAV"
+      m == "audio/raw" -> "PCM"
+      m == "audio/ac3" -> "AC3"
+      m == "audio/eac3" -> "EAC3"
+      m.startsWith("audio/") -> m.removePrefix("audio/").uppercase()
+      !codecs.isNullOrBlank() -> codecs.uppercase()
+      else -> ""
     }
   }
 
@@ -530,6 +722,7 @@ class XmusicPlayerController(
   }
 
   private fun handlePlaybackStateChange() {
+    if (isSwitchingTrack || isLoadingTrack) return
     val state = getState()
     if (state != previousState) {
       if (isPlayingLikeState(state) && !isPlayingLikeState(previousState)) {
@@ -544,8 +737,8 @@ class XmusicPlayerController(
       XmusicPlayerEventBus.emitState(state)
 
       val playStateStr = if (isPlayingLikeState(state)) "playing" else "paused"
-      if (playStateStr != lastMetadataPlayState || state == PlaybackStateCompat.STATE_PLAYING) {
-        lastMetadataPlayState = playStateStr
+      lastMetadataPlayState = playStateStr
+      if (notificationManager.session.isActive) {
         notificationManager.updatePlayback(buildSessionSnapshot())
       }
     }
@@ -657,11 +850,16 @@ class XmusicPlayerController(
   private fun buildSessionSnapshot(): PlaybackSnapshotForSession {
     val state = getState()
     val p = player
+    val rate = if (state == PlaybackStateCompat.STATE_PLAYING) {
+      p?.playbackParameters?.speed ?: 1.0f
+    } else {
+      0f
+    }
     return PlaybackSnapshotForSession(
       state = state,
-      positionMs = p?.currentPosition ?: 0L,
-      bufferedMs = p?.bufferedPosition ?: 0L,
-      rate = p?.playbackParameters?.speed ?: 1.0f,
+      positionMs = if (isSwitchingTrack) 0L else (p?.currentPosition ?: 0L),
+      bufferedMs = if (isSwitchingTrack) 0L else (p?.bufferedPosition ?: 0L),
+      rate = rate,
       isPlaying = isPlayingLikeState(state),
     )
   }

@@ -1,4 +1,4 @@
-import { isInitialized, initial as playerInitial, isEmpty, setPause, setPlay, setResource, setStop, initTrackInfo } from '@/plugins/player'
+import { isInitialized, initial as playerInitial, isEmpty, setPause, setPlay, setResource, setStop, initTrackInfo, getPosition, updateTrackSwitchMetadata } from '@/plugins/player'
 import { prefetchTrackAudio } from '@/plugins/player/utils'
 import {
   setStatusText,
@@ -11,6 +11,7 @@ import {
   setMusicInfo,
   setPlayListId,
   setLyricStatus,
+  setPlayQualityInfo,
 } from '@/core/player/playInfo'
 import {
   clearPlayedList,
@@ -22,6 +23,7 @@ import {
   removeTempPlayList,
 } from '@/core/player/tempPlayList'
 import { getMusicUrl, getPicPath, getLyricInfo } from '@/core/music'
+import { type ResolvedMusicQualityMeta } from '@/core/music/online'
 import { requestMsg } from '@/utils/message'
 import { getRandom } from '@/utils/common'
 import { filterList } from './utils'
@@ -30,8 +32,9 @@ import { checkIgnoringBatteryOptimization, checkNotificationPermission, debounce
 import { LIST_IDS } from '@/config/constant'
 import { addListMusics, removeListMusics } from '@/core/list'
 import { addDislikeInfo } from '@/core/dislikeList'
-import { setBgPic } from '@/core/common'
+import { setBgPic, updateSetting } from '@/core/common'
 import { setCoverPalette } from '@/core/theme'
+import { extractOnlineMusicInfo, getOnlineQualityAvailability, isQualityDowngraded } from '@/utils/quality'
 
 // import { checkMusicFileAvailable } from '@renderer/utils/music'
 
@@ -97,6 +100,26 @@ const delayRetry = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, i
     }
   })
 }
+let qualitySwitchToken = 0
+
+const applyResolvedQuality = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, meta: ResolvedMusicQualityMeta) => {
+  if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
+  const onlineInfo = extractOnlineMusicInfo(musicInfo)
+  if (!onlineInfo) return
+  const targetQuality = settingState.setting['player.playQuality']
+  setPlayQualityInfo({
+    musicId: musicInfo.id,
+    targetQuality,
+    requestedQuality: meta.requestedQuality,
+    actualQuality: meta.actualQuality,
+    source: onlineInfo.source,
+    actualSource: meta.actualSource,
+    isSourceToggled: meta.actualSource !== onlineInfo.source,
+    isDowngraded: isQualityDowngraded(targetQuality, meta.actualQuality),
+    isSwitching: false,
+  })
+}
+
 const getMusicPlayUrl = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, isRefresh = false, isRetryed = false): Promise<string | null> => {
   // this.musicInfo.url = await getMusicPlayUrl(targetSong, type)
   setStatusText(global.i18n.t('player__getting_url'))
@@ -109,6 +132,10 @@ const getMusicPlayUrl = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListIt
     musicInfo: toggleMusicInfo,
     isRefresh,
     allowToggleSource: false,
+    onResolvedQuality(meta) {
+      if (diffCurrentMusicInfo(musicInfo)) return
+      applyResolvedQuality(musicInfo, meta)
+    },
   }) : Promise.reject(new Error('not found'))).catch(async() => {
     return getMusicUrl({
       musicInfo,
@@ -116,6 +143,10 @@ const getMusicPlayUrl = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListIt
       onToggleSource(mInfo) {
         if (diffCurrentMusicInfo(musicInfo)) return
         setStatusText(global.i18n.t('toggle_source_try'))
+      },
+      onResolvedQuality(meta) {
+        if (diffCurrentMusicInfo(musicInfo)) return
+        applyResolvedQuality(musicInfo, meta)
       },
     })
   }).then(url => {
@@ -266,6 +297,7 @@ const handlePlay = async() => {
   }
 
   global.lx.isPlayedStop &&= false
+  qualitySwitchToken++
   cancelNextMusicPrefetch()
   prefetchedMusicId = null
   resetRandomNextMusicInfo()
@@ -281,7 +313,8 @@ const handlePlay = async() => {
 
   if (!musicInfo) return
 
-  await setStop()
+  await setStop(true)
+  void updateTrackSwitchMetadata(playerState.musicInfo)
   global.app_event.pause()
 
   clearDelayNextTimeout()
@@ -341,6 +374,7 @@ export const playTempPlayListIndex = async(index: number) => {
 }
 
 const handleToggleStop = async() => {
+  qualitySwitchToken++
   cancelNextMusicPrefetch()
   prefetchedMusicId = null
   setLyricStatus('idle')
@@ -348,6 +382,98 @@ const handleToggleStop = async() => {
   BackgroundTimer.setTimeout(() => {
     setPlayMusicInfo(null, null)
   }, 0)
+}
+
+/**
+ * 切换全局优先音质，并在当前歌曲支持该档位时从当前进度无缝重载新音质音频流
+ */
+export const switchPlayQuality = async(newQuality: LX.Quality): Promise<'reloaded' | 'preference_only' | 'unchanged' | 'failed'> => {
+  const prevTarget = settingState.setting['player.playQuality']
+  const targetMusic = playerState.playMusicInfo.musicInfo
+  const onlineInfo = extractOnlineMusicInfo(targetMusic)
+
+  if (prevTarget !== newQuality) {
+    updateSetting({ 'player.playQuality': newQuality })
+  }
+
+  if (!targetMusic || !onlineInfo) {
+    return prevTarget !== newQuality ? 'preference_only' : 'unchanged'
+  }
+
+  const availability = getOnlineQualityAvailability(onlineInfo, newQuality)
+  const curActual = playerState.playQualityInfo.actualQuality
+  if (!availability.supported) {
+    setPlayQualityInfo({
+      targetQuality: newQuality,
+      isDowngraded: isQualityDowngraded(newQuality, curActual),
+      isSwitching: false,
+    })
+    return prevTarget !== newQuality ? 'preference_only' : 'unchanged'
+  }
+
+  if (prevTarget === newQuality && curActual === newQuality && !playerState.playQualityInfo.isDowngraded) {
+    return 'unchanged'
+  }
+
+  const token = ++qualitySwitchToken
+  const wasPlaying = playerState.isPlay
+  const initialPos = await getPosition().catch(() => playerState.progress.nowPlayTime)
+  setPlayQualityInfo({
+    targetQuality: newQuality,
+    isSwitching: true,
+  })
+
+  if (onlineInfo.meta.toggleMusicInfo && (newQuality === '128k' || onlineInfo.meta._qualitys[newQuality])) {
+    onlineInfo.meta.toggleMusicInfo = null
+  }
+
+  let resolvedMeta: ResolvedMusicQualityMeta | null = null
+  try {
+    const url = await getMusicUrl({
+      musicInfo: targetMusic,
+      quality: newQuality,
+      isRefresh: false,
+      allowToggleSource: true,
+      onResolvedQuality(meta) {
+        resolvedMeta = meta
+      },
+    })
+
+    if (token !== qualitySwitchToken || playerState.playMusicInfo.musicInfo?.id !== targetMusic.id) {
+      return 'unchanged'
+    }
+    if (!url) {
+      setPlayQualityInfo({ isSwitching: false })
+      return 'failed'
+    }
+
+    const latestPos = await getPosition().catch(() => initialPos)
+    const resumeTime = latestPos > 0 ? latestPos : (initialPos > 0 ? initialPos : playerState.progress.nowPlayTime)
+
+    if (resolvedMeta) {
+      applyResolvedQuality(targetMusic, resolvedMeta)
+    } else {
+      setPlayQualityInfo({
+        targetQuality: newQuality,
+        requestedQuality: newQuality,
+        actualQuality: newQuality,
+        isDowngraded: false,
+        isSwitching: false,
+      })
+    }
+    setPlayQualityInfo({ audioFormat: null, isSwitching: false })
+    setResource(targetMusic, url, resumeTime, wasPlaying)
+    return 'reloaded'
+  } catch (err) {
+    console.log('switchPlayQuality failed', err)
+    if (token === qualitySwitchToken && playerState.playMusicInfo.musicInfo?.id === targetMusic.id) {
+      setPlayQualityInfo({
+        isDowngraded: isQualityDowngraded(newQuality, playerState.playQualityInfo.actualQuality),
+        isSwitching: false,
+      })
+    }
+    return 'failed'
+  }
 }
 
 let earlyPrefetchTimer: number | null = null

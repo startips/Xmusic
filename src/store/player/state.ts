@@ -23,6 +23,7 @@ export interface InitState {
   playRate: number
   statusText: string
   lyricStatus: LyricStatus
+  playQualityInfo: LX.Player.PlayQualityInfo
 
   playedList: LX.Player.PlayMusicInfo[]
   tempPlayList: LX.Player.PlayMusicInfo[]
@@ -40,6 +41,20 @@ export interface InitState {
 
   lastLyric: string | undefined
 }
+
+export const createDefaultPlayQualityInfo = (): LX.Player.PlayQualityInfo => ({
+  musicId: null,
+  targetQuality: null,
+  requestedQuality: null,
+  actualQuality: null,
+  source: null,
+  actualSource: null,
+  isSourceToggled: false,
+  isDowngraded: false,
+  localExt: null,
+  audioFormat: null,
+  isSwitching: false,
+})
 
 const state: InitState = {
   playInfo: {
@@ -71,6 +86,7 @@ const state: InitState = {
   playRate: 1,
   statusText: '',
   lyricStatus: 'idle',
+  playQualityInfo: createDefaultPlayQualityInfo(),
   loadErrorPicUrl: '',
 
   playedList: [],

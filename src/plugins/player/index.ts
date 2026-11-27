@@ -42,8 +42,10 @@ export {
   getDuration,
   setStop,
   getPosition,
+  getAudioFormat,
   updateMetaData,
   isEmpty,
   useBufferProgress,
   initTrackInfo,
+  updateTrackSwitchMetadata,
 } from './utils'

@@ -50,4 +50,17 @@ object XmusicPlayerEventBus {
     val map = Arguments.createMap().apply { putDouble("position", positionSec) }
     ctx.sendJsEvent("remote-seek", map)
   }
+
+  fun emitAudioFormat(format: AudioFormatSnapshot) {
+    val ctx = reactContext ?: return
+    val map = Arguments.createMap().apply {
+      putString("codec", format.codec)
+      putString("mimeType", format.mimeType)
+      putInt("sampleRate", format.sampleRate)
+      putInt("bitDepth", format.bitDepth)
+      putInt("bitrate", format.bitrate)
+      putInt("channelCount", format.channelCount)
+    }
+    ctx.sendJsEvent("playback-audio-format", map)
+  }
 }

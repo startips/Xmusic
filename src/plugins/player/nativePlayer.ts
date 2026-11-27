@@ -13,6 +13,7 @@ export enum PlayerEvent {
   PlaybackState = 'playback-state',
   PlaybackTrackEnded = 'playback-track-ended',
   PlaybackError = 'playback-error',
+  PlaybackAudioFormat = 'playback-audio-format',
   RemotePlay = 'remote-play',
   RemotePause = 'remote-pause',
   RemoteStop = 'remote-stop',
@@ -21,6 +22,15 @@ export enum PlayerEvent {
   RemoteSeek = 'remote-seek',
   RemoteDuck = 'remote-duck',
   RemoteToggleFavorite = 'remote-toggle-favorite',
+}
+
+export interface AudioFormatInfo {
+  codec: string
+  mimeType: string
+  sampleRate: number
+  bitDepth: number
+  bitrate: number
+  channelCount: number
 }
 
 export interface PlaybackSnapshot {
@@ -63,7 +73,7 @@ interface NativeXmusicPlayerSpec {
   loadTrack: (track: LX.Player.Track, startTimeSec: number, autoPlay: boolean) => Promise<void>
   play: () => Promise<void>
   pause: () => Promise<void>
-  stop: () => Promise<void>
+  stop: (keepSession: boolean) => Promise<void>
   seekTo: (seconds: number) => Promise<void>
   setVolume: (volume: number) => Promise<void>
   setRate: (rate: number) => Promise<void>
@@ -76,6 +86,7 @@ interface NativeXmusicPlayerSpec {
   getPosition: () => Promise<number>
   getDuration: () => Promise<number>
   getPlaybackSnapshot: () => Promise<PlaybackSnapshot>
+  getAudioFormat: () => Promise<AudioFormatInfo | null>
   isCached: (url: string) => Promise<boolean>
   getCacheSize: () => Promise<number>
   clearCache: () => Promise<void>

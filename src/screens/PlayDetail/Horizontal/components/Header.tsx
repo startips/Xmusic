@@ -12,7 +12,7 @@ import commonState from '@/store/common/state'
 import CommentBtn from './CommentBtn'
 import Btn from './Btn'
 import SettingPopup, { type SettingPopupType } from '../../components/SettingPopup'
-import DesktopLyricBtn from './DesktopLyricBtn'
+import QualityBtn from '../../components/QualityBtn'
 
 export const HEADER_HEIGHT = scaleSizeH(_HEADER_HEIGHT)
 
@@ -48,7 +48,7 @@ export default memo(({ onBack }: { onBack?: () => void }) => {
       <View style={styles.container}>
         <Btn icon="chevron-left" onPress={back} />
         <Title />
-        <DesktopLyricBtn />
+        <QualityBtn variant="horizontal" />
         <CommentBtn />
         <Btn icon="slider" onPress={showSetting} />
       </View>

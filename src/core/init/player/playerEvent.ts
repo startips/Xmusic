@@ -104,7 +104,7 @@ export default () => {
       })
       return
     }
-    if (!isEmpty()) void setStop()
+    if (!isEmpty()) void setStop(true)
 
     if (isActive()) {
       setStatusText(global.i18n.t('player__error'))

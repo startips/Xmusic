@@ -1,17 +1,10 @@
 package cn.toside.music.mobile.lyric
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.provider.Settings
 import android.util.Log
-import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.ReadableMap
 
 class LyricModule(
   private val reactAppContext: ReactApplicationContext,
@@ -43,18 +36,6 @@ class LyricModule(
   @ReactMethod
   fun removeListeners(count: Int) {
     listenerCount = (listenerCount - count).coerceAtLeast(0)
-  }
-
-  @ReactMethod
-  fun showDesktopLyric(data: ReadableMap, promise: Promise) {
-    val bundle: Bundle = Arguments.toBundle(data) ?: Bundle()
-    ensureLyric().showDesktopLyric(bundle, promise)
-  }
-
-  @ReactMethod
-  fun hideDesktopLyric(promise: Promise) {
-    lyric?.hideDesktopLyric()
-    promise.resolve(null)
   }
 
   @ReactMethod
@@ -101,92 +82,6 @@ class LyricModule(
   fun pause(promise: Promise) {
     Log.d("Lyric", "play pause")
     lyric?.pauseLyric()
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun toggleLock(isLock: Boolean, promise: Promise) {
-    if (isLock) lyric?.lockLyric() else lyric?.unlockLyric()
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setColor(unplayColor: String, playedColor: String, shadowColor: String, promise: Promise) {
-    lyric?.setPlayedColor(unplayColor, playedColor, shadowColor)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setAlpha(alpha: Float, promise: Promise) {
-    lyric?.setAlpha(alpha)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setTextSize(size: Float, promise: Promise) {
-    lyric?.setTextSize(size)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setMaxLineNum(maxLineNum: Int, promise: Promise) {
-    lyric?.setMaxLineNum(maxLineNum)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setSingleLine(singleLine: Boolean, promise: Promise) {
-    lyric?.setSingleLine(singleLine)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setShowToggleAnima(showToggleAnima: Boolean, promise: Promise) {
-    lyric?.setShowToggleAnima(showToggleAnima)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setWidth(width: Int, promise: Promise) {
-    lyric?.setWidth(width)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setPosition(x: Float, y: Float, promise: Promise) {
-    lyric?.setPosition(x, y)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun setLyricTextPosition(positionX: String, positionY: String, promise: Promise) {
-    lyric?.setLyricTextPosition(positionX, positionY)
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun checkOverlayPermission(promise: Promise) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(reactAppContext)) {
-      promise.reject(Exception("Permission denied"))
-      return
-    }
-    promise.resolve(null)
-  }
-
-  @ReactMethod
-  fun openOverlayPermissionActivity(promise: Promise) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(reactAppContext)) {
-      val intent = Intent(
-        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-        Uri.parse("package:${reactAppContext.applicationContext.packageName}"),
-      )
-      if (reactAppContext.currentActivity != null) {
-        reactAppContext.startActivityForResult(intent, 1, null)
-      } else {
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        reactAppContext.startActivity(intent)
-      }
-    }
     promise.resolve(null)
   }
 }
