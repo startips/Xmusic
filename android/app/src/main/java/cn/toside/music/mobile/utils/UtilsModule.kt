@@ -1,6 +1,7 @@
 package cn.toside.music.mobile.utils
 
 import android.graphics.Bitmap
+import cn.toside.music.mobile.BuildConfig
 import cn.toside.music.mobile.artwork.CoverArtworkRepository
 import cn.toside.music.mobile.artwork.CoverPaletteExtractor
 import cn.toside.music.mobile.core.ModuleCoroutineScope
@@ -42,6 +43,11 @@ class UtilsModule(
   }
 
   override fun getName(): String = "UtilsModule"
+
+  override fun getConstants(): MutableMap<String, Any> = hashMapOf(
+    "appVersion" to BuildConfig.VERSION_NAME,
+    "appVersionCode" to BuildConfig.VERSION_CODE,
+  )
 
   override fun invalidate() {
     downloadHelper.cancelAll()

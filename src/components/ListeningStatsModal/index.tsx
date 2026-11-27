@@ -64,8 +64,7 @@ const StatsBody = memo(({ onClose }: { onClose: () => void }) => {
 
   return (
     <View style={styles.wrapper}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View onStartShouldSetResponder={() => true}>
+      <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Hero Metrics Grid */}
           <View style={styles.heroRow}>
             <View style={{ ...styles.heroCard, backgroundColor: withAlpha(theme['m3-primary-container'], 0.68) }}>
@@ -100,7 +99,14 @@ const StatsBody = memo(({ onClose }: { onClose: () => void }) => {
                   <Text size={12.5} color={theme['m3-primary']} style={styles.sectionTitle}>
                     {t('stats_top_artists')}
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.artistRow}>
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    directionalLockEnabled
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.artistScroll}
+                    contentContainerStyle={styles.artistRow}
+                  >
                     {snap.topArtists.map((a, idx) => (
                       <View
                         key={a.singer}
@@ -177,7 +183,6 @@ const StatsBody = memo(({ onClose }: { onClose: () => void }) => {
                   </View>
                 )}
           </View>
-        </View>
       </ScrollView>
 
       {/* Bottom Action Bar */}
@@ -271,11 +276,17 @@ const styles = createStyle({
     fontWeight: '700',
     marginBottom: 8,
   },
+  artistScroll: {
+    flexGrow: 0,
+  },
   artistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    paddingRight: 4,
+    paddingRight: 8,
   },
   artistChip: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

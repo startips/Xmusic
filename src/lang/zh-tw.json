@@ -446,6 +446,12 @@
   "setting_sync_status_enabled": "已連線",
   "setting_theme": "主題設定",
   "setting_version": "軟體更新",
+  "setting_version_channel": "更新通道",
+  "setting_version_channel_dev": "開發版",
+  "setting_version_channel_dev_tip": "搶先體驗最新功能與修復預覽包，可能存在不穩定因素",
+  "setting_version_channel_downloading_tip": "安裝包下載中，請等待完成或取消後再切換通道",
+  "setting_version_channel_stable": "穩定版",
+  "setting_version_channel_stable_tip": "僅接收經過完整測試的正式版本（預設）",
   "setting_version_show_ver_modal": "開啟更新視窗 🚀",
   "share_card_title_music": "將「{name}」分享到...",
   "share_title_music": "歌曲分享",
@@ -588,5 +594,7 @@
   "stats_smart_playlist_name": "常聽 Top 50",
   "stats_sync_playlist_btn": "產生/同步「常聽 Top 50」",
   "stats_play_top_btn": "播放榜單",
-  "stats_synced_toast": "已同步 {count} 首歌曲至「常聽 Top 50」"
+  "stats_synced_toast": "已同步 {count} 首歌曲至「常聽 Top 50」",
+  "version_channel_dev_badge": "開發版",
+  "version_tip_dev_ahead": "目前安裝的開發版高於最新穩定版，將在下一正式版發佈時自動提示更新"
 }

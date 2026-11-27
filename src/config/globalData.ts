@@ -1,14 +1,24 @@
+import { NativeModules } from 'react-native'
 import { version } from '../../package.json'
 import { createAppEventHub } from '@/event/appEvent'
 import { createListEventHub } from '@/event/listEvent'
 import { createDislikeEventHub } from '@/event/dislikeEvent'
 import { createStateEventHub } from '@/event/stateEvent'
+
+let resolvedAppVersion = version
+try {
+  const nativeVer = NativeModules.UtilsModule?.getConstants?.()?.appVersion ?? NativeModules.UtilsModule?.appVersion
+  if (typeof nativeVer === 'string' && nativeVer.trim().length > 0) {
+    resolvedAppVersion = nativeVer.trim()
+  }
+} catch {}
+
 if (process.versions == null) {
   // @ts-expect-error
   process.versions = {
-    app: version,
+    app: resolvedAppVersion,
   }
-} else process.versions.app = version
+} else process.versions.app = resolvedAppVersion
 
 // global.i18n = null
 

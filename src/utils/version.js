@@ -1,3 +1,4 @@
+import { compareVer } from '@/utils'
 import { httpGet } from '@/utils/request'
 import { name } from '../../package.json'
 import { downloadFile, stopDownload, temporaryDirectoryPath } from '@/utils/fs'
@@ -28,6 +29,13 @@ const address = [
   [`https://gcore.jsdelivr.net/gh/${FORK_OWNER}/${FORK_REPO}@master/publish/version.json`, 'direct'],
 ]
 
+const devAddress = [
+  [`https://api.github.com/repos/${FORK_OWNER}/${FORK_REPO}/releases?per_page=15`, 'githubReleasesDev'],
+  [`https://cdn.jsdelivr.net/gh/${FORK_OWNER}/${FORK_REPO}@dev/publish/dev-version.json`, 'directDev'],
+  [`https://fastly.jsdelivr.net/gh/${FORK_OWNER}/${FORK_REPO}@dev/publish/dev-version.json`, 'directDev'],
+  [`https://raw.githubusercontent.com/${FORK_OWNER}/${FORK_REPO}/dev/publish/dev-version.json`, 'directDev'],
+]
+
 const appendCacheBuster = (url) => {
   const sep = url.includes('?') ? '&' : '?'
   return `${url}${sep}t=${Date.now()}`
@@ -53,11 +61,31 @@ const request = async(url, { retryNum = 0, bustCache = true, headers = {} } = {}
   })
 }
 
-const getDirectInfo = async(url, bustCache = true) => {
+const getDirectInfo = async(url, bustCache = true, defaultChannel = 'stable') => {
   return request(url, { bustCache }).then(info => {
     if (info?.version == null) throw new Error('failed')
-    return info
+    return {
+      ...info,
+      channel: info.channel || defaultChannel,
+    }
   })
+}
+
+const extractReleaseAssets = (release) => {
+  const assets = {}
+  if (!Array.isArray(release?.assets)) return assets
+  for (const asset of release.assets) {
+    const downloadUrl = typeof asset?.browser_download_url === 'string' ? asset.browser_download_url : ''
+    const assetName = typeof asset?.name === 'string' ? asset.name : ''
+    if (!downloadUrl || !assetName.toLowerCase().endsWith('.apk')) continue
+    for (const abi of abis) {
+      if (assetName.includes(`-${abi}.apk`)) {
+        assets[abi] = downloadUrl
+        break
+      }
+    }
+  }
+  return assets
 }
 
 const getJsDelivrTagInfo = async(url) => {
@@ -92,6 +120,39 @@ const getGithubReleaseInfo = async(url) => {
     version,
     desc: typeof release?.body === 'string' ? release.body : '',
     history: [],
+    channel: 'stable',
+    assets: extractReleaseAssets(release),
+  }
+}
+
+const getGithubDevReleasesInfo = async(url) => {
+  const releases = await request(url, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+    },
+  })
+  if (!Array.isArray(releases)) throw new Error('failed')
+  const candidates = []
+  for (const release of releases) {
+    if (!release || release.draft || typeof release.tag_name !== 'string') continue
+    const version = release.tag_name.trim().replace(/^v/i, '')
+    if (!/^\d+\.\d+/.test(version)) continue
+    candidates.push({
+      version,
+      desc: typeof release.body === 'string' ? release.body : '',
+      prerelease: Boolean(release.prerelease),
+      assets: extractReleaseAssets(release),
+    })
+  }
+  if (!candidates.length) throw new Error('no releases')
+  candidates.sort((a, b) => compareVer(b.version, a.version))
+  const best = candidates[0]
+  return {
+    version: best.version,
+    desc: best.desc,
+    history: candidates.slice(1, 10).map(item => ({ version: item.version, desc: item.desc })),
+    channel: best.prerelease ? 'dev' : 'stable',
+    assets: best.assets,
   }
 }
 
@@ -100,22 +161,36 @@ const getNpmPkgInfo = async(url) => {
     if (!json.versionInfo) throw new Error('failed')
     const info = JSON.parse(json.versionInfo)
     if (info.version == null) throw new Error('failed')
-    return info
+    return {
+      ...info,
+      channel: 'stable',
+    }
   })
 }
 
-export const getVersionInfo = async(index = 0) => {
-  const [url, source] = address[index]
+export const getVersionInfo = async(channel = 'stable', index = 0) => {
+  if (typeof channel === 'number') {
+    index = channel
+    channel = 'stable'
+  }
+  const sourceList = channel === 'dev' ? devAddress : address
+  const [url, source] = sourceList[index]
   let promise
   switch (source) {
     case 'direct':
-      promise = getDirectInfo(url)
+      promise = getDirectInfo(url, true, 'stable')
+      break
+    case 'directDev':
+      promise = getDirectInfo(url, true, 'dev')
       break
     case 'jsdelivrTag':
       promise = getJsDelivrTagInfo(url)
       break
     case 'githubRelease':
       promise = getGithubReleaseInfo(url)
+      break
+    case 'githubReleasesDev':
+      promise = getGithubDevReleasesInfo(url)
       break
     case 'npm':
       promise = getNpmPkgInfo(url)
@@ -124,8 +199,11 @@ export const getVersionInfo = async(index = 0) => {
 
   return promise.catch(async(err) => {
     index++
-    if (index >= address.length) throw err
-    return getVersionInfo(index)
+    if (index >= sourceList.length) {
+      if (channel === 'dev') return getVersionInfo('stable', 0)
+      throw err
+    }
+    return getVersionInfo(channel, index)
   })
 }
 
@@ -140,9 +218,16 @@ let downloadJobId = null
 const noop = (total, download) => {}
 let apkSavePath
 
-export const downloadNewVersion = async(version, onDownload = noop) => {
+/**
+ * @param {string} version
+ * @param {(total: number, current: number) => void} [onDownload]
+ * @param {Record<string, string> | null} [assets]
+ */
+export const downloadNewVersion = async(version, onDownload = noop, assets = null) => {
   const abi = await getTargetAbi()
-  const url = `https://github.com/${FORK_OWNER}/${FORK_REPO}/releases/download/v${version}/${name}-v${version}-${abi}.apk`
+  const templateUrl = `https://github.com/${FORK_OWNER}/${FORK_REPO}/releases/download/v${version}/${name}-v${version}-${abi}.apk`
+  const hasAssets = assets && typeof assets === 'object' && Object.keys(assets).length > 0
+  const url = (hasAssets && (assets[abi] || assets.universal)) || templateUrl
   let savePath = temporaryDirectoryPath + '/xmusic-mobile.apk'
 
   if (downloadJobId) stopDownload(downloadJobId)

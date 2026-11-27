@@ -1,0 +1,136 @@
+name: Build Dev Pre-release
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+    inputs:
+      target_version:
+        description: 'Target next version (e.g. 2.3.2). Empty = auto-bump patch from package.json'
+        required: false
+        default: ''
+      dev_num:
+        description: 'Dev build number (1-99). Empty = auto-increment from existing tags'
+        required: false
+        default: ''
+      release_notes:
+        description: 'Optional release notes. Empty = generate from recent git commits'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dev-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  DevRelease:
+    name: Build & Publish Dev Pre-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Env
+        uses: ./.github/actions/setup
+
+      - name: Resolve Dev Version
+        id: ver
+        shell: bash
+        run: |
+          BASE_VER="$(node -p "require('./package.json').version")"
+          TARGET_VER="${{ github.event.inputs.target_version }}"
+          if [ -z "$TARGET_VER" ]; then
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VER"
+            TARGET_VER="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+
+          DEV_NUM="${{ github.event.inputs.dev_num }}"
+          if [ -z "$DEV_NUM" ]; then
+            MAX_NUM=0
+            while IFS= read -r tag; do
+              num="${tag##*-dev.}"
+              if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -gt "$MAX_NUM" ]; then
+                MAX_NUM="$num"
+              fi
+            done < <(git tag -l "v${TARGET_VER}-dev.*")
+            DEV_NUM=$((MAX_NUM + 1))
+          fi
+
+          FULL_VER="${TARGET_VER}-dev.${DEV_NUM}"
+          echo "TARGET_VERSION=${TARGET_VER}" >> "$GITHUB_ENV"
+          echo "DEV_NUM=${DEV_NUM}" >> "$GITHUB_ENV"
+          echo "FULL_VERSION=${FULL_VER}" >> "$GITHUB_ENV"
+          echo "Full dev version: v${FULL_VER}"
+
+      - name: Build Dev Release APKs
+        env:
+          DISABLE_SVG: 1
+          KEYSTORE_STORE_FILE_BASE64: ${{ secrets.KEYSTORE_STORE_FILE_BASE64 }}
+          KEYSTORE_STORE_FILE: ${{ secrets.KEYSTORE_STORE_FILE }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          cd android
+          trap 'rm -f "app/$KEYSTORE_STORE_FILE"' EXIT
+          printf '%s' "$KEYSTORE_STORE_FILE_BASE64" | tr -d '\r\n ' | base64 --decode > "app/$KEYSTORE_STORE_FILE"
+          ./gradlew assembleRelease \
+            "-PMYAPP_VERSION_NAME=${TARGET_VERSION}" \
+            "-PMYAPP_VERSION_SUFFIX=dev.${DEV_NUM}" \
+            "-PMYAPP_DEV_BUILD_NUM=${DEV_NUM}" \
+            "-PMYAPP_UPLOAD_STORE_FILE=$KEYSTORE_STORE_FILE" \
+            "-PMYAPP_UPLOAD_KEY_ALIAS=$KEYSTORE_KEY_ALIAS" \
+            "-PMYAPP_UPLOAD_STORE_PASSWORD=$KEYSTORE_PASSWORD" \
+            "-PMYAPP_UPLOAD_KEY_PASSWORD=$KEYSTORE_KEY_PASSWORD"
+
+      - name: Generate Release Notes & MD5
+        shell: bash
+        run: |
+          NOTES_FILE="./dev-release-notes.md"
+          CUSTOM_NOTES="${{ github.event.inputs.release_notes }}"
+          {
+            echo "## Xmusic v${FULL_VERSION}（开发版预览构建）"
+            echo ""
+            if [ -n "$CUSTOM_NOTES" ]; then
+              echo "$CUSTOM_NOTES"
+            else
+              LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+              echo "### Recent Changes"
+              if [ -n "$LAST_TAG" ]; then
+                git log "${LAST_TAG}..HEAD" --pretty=format:"- %s (%h)" -n 20
+              else
+                git log --pretty=format:"- %s (%h)" -n 15
+              fi
+              echo ""
+            fi
+            echo ""
+            echo "### File MD5"
+            echo '```'
+            (cd android/app/build/outputs/apk/release && md5sum "xmusic-v${FULL_VERSION}-arm64-v8a.apk" "xmusic-v${FULL_VERSION}-armeabi-v7a.apk" "xmusic-v${FULL_VERSION}-universal.apk")
+            echo '```'
+            echo ""
+            echo "> 仅向设置中开启「开发版」更新通道的用户推送，不影响正式版（稳定版）更新。"
+          } > "$NOTES_FILE"
+
+      - name: Publish Dev Pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.FULL_VERSION }}
+          name: v${{ env.FULL_VERSION }} (Dev Preview)
+          body_path: ./dev-release-notes.md
+          prerelease: true
+          make_latest: false
+          draft: false
+          files: |
+            android/app/build/outputs/apk/release/xmusic-v${{ env.FULL_VERSION }}-arm64-v8a.apk
+            android/app/build/outputs/apk/release/xmusic-v${{ env.FULL_VERSION }}-armeabi-v7a.apk
+            android/app/build/outputs/apk/release/xmusic-v${{ env.FULL_VERSION }}-universal.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

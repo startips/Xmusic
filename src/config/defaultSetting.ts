@@ -1,5 +1,6 @@
 const defaultSetting: LX.AppSetting = {
   version: '2.1',
+  'common.updateChannel': 'stable',
   'common.themeMode': 'system',
   'common.langId': null,
   'common.apiSource': '',

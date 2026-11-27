@@ -9,6 +9,8 @@ export interface VersionInfo {
   version: string
   desc: string
   history?: LX.VersionInfo[]
+  channel?: LX.UpdateChannel
+  assets?: Record<string, string>
 }
 
 export interface InitState {
@@ -21,6 +23,7 @@ export interface InitState {
     isLatest: boolean
     reCheck: boolean
     status: LX.UpdateStatus
+    channel: LX.UpdateChannel
   }
   ignoreVersion: string | null
   progress: ProgressInfo
@@ -29,13 +32,14 @@ export interface InitState {
 const state: InitState = {
   showModal: false,
   versionInfo: {
-    version,
+    version: process.versions?.app || version,
     newVersion: null,
     showModal: false,
     reCheck: false,
     isUnknown: false,
     isLatest: false,
     status: 'checking',
+    channel: 'stable',
   },
   ignoreVersion: null,
   progress: {

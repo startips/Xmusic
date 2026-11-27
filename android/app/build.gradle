@@ -104,9 +104,10 @@ def getNpmPackageJson() {
     return packageJson
 }
 def npmPackageJson = getNpmPackageJson()
-def verCode = npmPackageJson["versionCode"]
-def verName = npmPackageJson["version"]
+def verCode = (project.findProperty("MYAPP_VERSION_CODE")?.toString()?.trim()?.toInteger()) ?: npmPackageJson["versionCode"]
+def verName = project.findProperty("MYAPP_VERSION_NAME")?.toString()?.trim() ?: npmPackageJson["version"]
 def verSuffix = project.findProperty("MYAPP_VERSION_SUFFIX")?.toString()?.trim() ?: ""
+def devBuildNum = (project.findProperty("MYAPP_DEV_BUILD_NUM")?.toString()?.trim()?.toInteger()) ?: 0
 def fullVerName = verSuffix ? "${verName}-${verSuffix}" : verName
 def applicationName = npmPackageJson["name"]
 
@@ -203,8 +204,9 @@ android {
                 output.outputFileName =
                         "${applicationName}-v${defaultConfig.versionName}-universal.apk"
             } else {
+                def devSlot = Math.max(0, Math.min(devBuildNum, 99))
                 output.versionCodeOverride =
-                        defaultConfig.versionCode * 1000 + versionCodes.get(abi)
+                        defaultConfig.versionCode * 1000 + devSlot * 10 + versionCodes.get(abi)
                 output.outputFileName =
                         "${applicationName}-v${defaultConfig.versionName}-${abi}.apk"
             }

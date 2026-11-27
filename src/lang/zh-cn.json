@@ -446,6 +446,12 @@
   "setting_sync_status_enabled": "已连接",
   "setting_theme": "主题设置",
   "setting_version": "软件更新",
+  "setting_version_channel": "更新通道",
+  "setting_version_channel_dev": "开发版",
+  "setting_version_channel_dev_tip": "抢先体验最新功能与修复预览包，可能存在不稳定因素",
+  "setting_version_channel_downloading_tip": "安装包下载中，请等待完成或取消后再切换通道",
+  "setting_version_channel_stable": "稳定版",
+  "setting_version_channel_stable_tip": "仅接收经过完整测试的正式版本（默认）",
   "setting_version_show_ver_modal": "打开更新窗口 🚀",
   "share_card_title_music": "将「{name}」分享到...",
   "share_title_music": "歌曲分享",
@@ -588,5 +594,7 @@
   "stats_smart_playlist_name": "常听 Top 50",
   "stats_sync_playlist_btn": "生成/同步「常听 Top 50」",
   "stats_play_top_btn": "播放榜单",
-  "stats_synced_toast": "已同步 {count} 首歌曲至「常听 Top 50」"
+  "stats_synced_toast": "已同步 {count} 首歌曲至「常听 Top 50」",
+  "version_channel_dev_badge": "开发版",
+  "version_tip_dev_ahead": "当前安装的开发版高于最新稳定版，将在下一正式版发布时自动提示更新"
 }

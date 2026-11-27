@@ -25,11 +25,14 @@ const VersionItem = ({ version, desc }: VersionInfo) => {
   )
 }
 
-const Content = memo(({ title, newVersionInfo }: {
+const Content = memo(({ title, currentVer, newVersionInfo }: {
   title: string
+  currentVer: string
   newVersionInfo: VersionInfo | null
 }) => {
   const t = useI18n()
+  const theme = useTheme()
+  const isDevNewVersion = newVersionInfo?.channel === 'dev' || (newVersionInfo?.version?.includes('-') ?? false)
 
   const history = useMemo(() => {
     if (!newVersionInfo?.history) return []
@@ -38,13 +41,24 @@ const Content = memo(({ title, newVersionInfo }: {
       if (compareVer(currentVer, ver.version) < 0) arr.push(ver)
     }
     return arr
-  }, [newVersionInfo])
+  }, [currentVer, newVersionInfo])
 
   return (
     <View style={styles.main}>
       <Text style={styles.title}>{title}</Text>
       <ScrollView style={styles.content} keyboardShouldPersistTaps={'always'}>
-        <Text style={styles.label}>{t('version_label_latest_ver')}{newVersionInfo?.version}</Text>
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>{t('version_label_latest_ver')}{newVersionInfo?.version ?? '--'}</Text>
+          {isDevNewVersion
+            ? (
+                <View style={{ ...styles.channelBadge, backgroundColor: theme['m3-secondary-container'] }}>
+                  <Text size={10.5} style={styles.channelBadgeText} color={theme['m3-on-secondary-container']}>
+                    {t('version_channel_dev_badge')}
+                  </Text>
+                </View>
+              )
+            : null}
+        </View>
         <Text style={styles.label}>{t('version_label_current_ver')}{currentVer}</Text>
         {
           newVersionInfo?.desc
@@ -75,11 +89,11 @@ const Content = memo(({ title, newVersionInfo }: {
   )
 })
 
-const currentVer = process.versions.app
 const VersionModal = ({ componentId }: { componentId: string }) => {
   const theme = useTheme()
   const t = useI18n()
   const versionInfo = useVersionInfo()
+  const currentVer = versionInfo.version || process.versions.app
   const progress = useVersionDownloadProgressUpdated()
   const ignoreVersion = useVersionInfoIgnoreVersionUpdated()
   const [ignoreBtn, setIgnoreBtn] = useState({ text: t('version_btn_ignore'), show: true, disabled: false })
@@ -92,8 +106,11 @@ const VersionModal = ({ componentId }: { componentId: string }) => {
   useEffect(() => {
     let ignoreBtnConfig = { ...ignoreBtn }
     if (versionInfo.isLatest) {
+      const aheadStable = versionInfo.channel === 'stable' &&
+        versionInfo.newVersion?.version &&
+        compareVer(currentVer, versionInfo.newVersion.version) > 0
       setTitle(t('version_title_latest'))
-      setTip('')
+      setTip(aheadStable ? t('version_tip_dev_ahead') : '')
       ignoreBtnConfig.show = false
       setConfirmBtn({ text: t('version_btn_new'), show: false, disabled: true })
       setCloseBtnText(t('version_btn_close'))
@@ -184,7 +201,7 @@ const VersionModal = ({ componentId }: { componentId: string }) => {
 
   return (
     <ModalContent>
-      <Content title={title} newVersionInfo={versionInfo.newVersion} />
+      <Content title={title} currentVer={currentVer} newVersionInfo={versionInfo.newVersion} />
       { tip.length ? <Text style={styles.tip} color={theme['c-primary-font']}>{tip}</Text> : null }
       <View style={styles.btns}>
         {
@@ -236,6 +253,21 @@ const styles = createStyle({
   },
   versionItem: {
     marginBottom: 10,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 2,
+  },
+  channelBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: M3Radius.full,
+  },
+  channelBadgeText: {
+    fontWeight: '700',
   },
   label: {
     fontSize: 14,

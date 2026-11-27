@@ -446,6 +446,12 @@
   "setting_sync_status_enabled": "connected",
   "setting_theme": "Theme",
   "setting_version": "Update",
+  "setting_version_channel": "Update Channel",
+  "setting_version_channel_dev": "Dev",
+  "setting_version_channel_dev_tip": "Receive early preview builds with new features and fixes; may be less stable",
+  "setting_version_channel_downloading_tip": "Download in progress; finish or wait before switching channels",
+  "setting_version_channel_stable": "Stable",
+  "setting_version_channel_stable_tip": "Receive tested official releases only (default)",
   "setting_version_show_ver_modal": "Open Update Window 🚀",
   "share_card_title_music": "Share \"{name}\" to...",
   "share_title_music": "Song Sharing",
@@ -588,5 +594,7 @@
   "stats_smart_playlist_name": "Most Played Top 50",
   "stats_sync_playlist_btn": "Sync 'Top 50' Playlist",
   "stats_play_top_btn": "Play Top 50",
-  "stats_synced_toast": "Synced {count} tracks to 'Most Played Top 50'"
+  "stats_synced_toast": "Synced {count} tracks to 'Most Played Top 50'",
+  "version_channel_dev_badge": "DEV",
+  "version_tip_dev_ahead": "Your installed dev build is newer than the latest stable release; updates will appear when the next stable version is published."
 }

@@ -133,7 +133,7 @@ export const buildListeningStatsSnapshot = (): ListeningStatsSnapshot => {
 
   const topArtists = Array.from(artistMap.values())
     .sort((a, b) => (b.plays * 90 + b.seconds) - (a.plays * 90 + a.seconds))
-    .slice(0, 6)
+    .slice(0, 10)
 
   return {
     totalSeconds: memStats.totalSeconds,

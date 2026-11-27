@@ -3,9 +3,14 @@ import type { I18n } from '@/lang/i18n'
 declare global {
   namespace LX {
     type AddMusicLocationType = 'top' | 'bottom'
+    type UpdateChannel = 'stable' | 'dev'
 
     interface AppSetting {
       version: string
+      /**
+       * 应用更新通道：稳定版 / 开发版
+       */
+      'common.updateChannel': UpdateChannel
       /**
        * 主题模式：跟随系统 / 浅色 / 深色
        */
