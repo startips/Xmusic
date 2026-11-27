@@ -16,6 +16,7 @@ class XmusicViewPackage : ReactPackage {
       EdgeToEdgeModalViewManager(),
       FluidBgViewManager(),
       WavyProgressViewManager(),
+      SpectrumViewManager(),
     )
 
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =

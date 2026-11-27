@@ -33,6 +33,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import cn.toside.music.mobile.player.cache.PlayerMediaCache
+import cn.toside.music.mobile.player.dsp.AudioSpectrumEngine
 import cn.toside.music.mobile.player.dsp.XmusicDspAudioProcessor
 import cn.toside.music.mobile.player.session.NowPlayingTrackMetadata
 import cn.toside.music.mobile.player.session.PlaybackSnapshotForSession
@@ -72,6 +73,7 @@ class XmusicPlayerController(
   private val wifiLock: WifiManager.WifiLock?
 
   private var stopWithApp: Boolean = true
+  private var requestedAudioOffload: Boolean = false
   private var previousState: Int = PlaybackStateCompat.STATE_NONE
   private var lastMetadataPlayState: String? = null
   private var hasActiveTrack: Boolean = false
@@ -144,6 +146,28 @@ class XmusicPlayerController(
     wifiLock = wm?.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "xmusic-player-wifi-lock")?.apply {
       setReferenceCounted(false)
     }
+    AudioSpectrumEngine.onConsumerPresenceChanged = {
+      mainHandler.post {
+        player?.let { applyAudioOffloadPreference(it) }
+      }
+    }
+  }
+
+  private fun applyAudioOffloadPreference(exo: ExoPlayer) {
+    val mode = if (requestedAudioOffload && !AudioSpectrumEngine.hasConsumers()) {
+      TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+    } else {
+      TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED
+    }
+    val tsp = exo.trackSelectionParameters.buildUpon()
+      .setAudioOffloadPreferences(
+        TrackSelectionParameters.AudioOffloadPreferences.Builder()
+          .setAudioOffloadMode(mode)
+          .setIsSpeedChangeSupportRequired(true)
+          .build(),
+      )
+      .build()
+    exo.trackSelectionParameters = tsp
   }
 
   fun setupPlayer(
@@ -187,17 +211,8 @@ class XmusicPlayerController(
       .setWakeMode(C.WAKE_MODE_NONE)
       .build()
 
-    if (audioOffload) {
-      val tsp = exo.trackSelectionParameters.buildUpon()
-        .setAudioOffloadPreferences(
-          TrackSelectionParameters.AudioOffloadPreferences.Builder()
-            .setAudioOffloadMode(TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED)
-            .setIsSpeedChangeSupportRequired(true)
-            .build()
-        )
-        .build()
-      exo.trackSelectionParameters = tsp
-    }
+    requestedAudioOffload = audioOffload
+    applyAudioOffloadPreference(exo)
 
     exo.setAudioAttributes(
       AudioAttributes.Builder()
@@ -642,12 +657,15 @@ class XmusicPlayerController(
   }
 
   fun destroy() {
+    AudioSpectrumEngine.onConsumerPresenceChanged = null
+    AudioSpectrumEngine.reset()
     destroyPlayerOnly()
     notificationManager.destroy()
     PlayerMediaCache.release()
   }
 
   private fun destroyPlayerOnly() {
+    AudioSpectrumEngine.reset()
     cancelActiveRamp()
     PlayerMediaCache.cancelAllPrefetch()
     mainHandler.removeCallbacks(eofMonitorTask)

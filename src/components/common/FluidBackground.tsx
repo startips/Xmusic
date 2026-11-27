@@ -10,6 +10,7 @@ interface NativeFluidBgProps extends ViewProps {
   baseColor?: number
   colors: number[]
   playing?: boolean
+  audioReactive?: boolean
 }
 
 const NativeFluidBgView = requireNativeComponent<NativeFluidBgProps>('XmusicFluidBgView')
@@ -41,7 +42,7 @@ const toNativeArgb = (r: number, g: number, b: number, alpha: number): number =>
   return (processColor(rgba) as number) ?? 0
 }
 
-export default memo(({ style }: { style?: ViewProps['style'] }) => {
+export default memo(({ style, audioReactive = false }: { style?: ViewProps['style'], audioReactive?: boolean }) => {
   const theme = useTheme()
   const coverPalette = useCoverPalette()
   const isDynamicCoverColor = useSettingValue('theme.dynamicCoverColor')
@@ -110,12 +111,15 @@ export default memo(({ style }: { style?: ViewProps['style'] }) => {
     })
   }, [coverPalette, isDynamicCoverColor, theme])
 
+  const active = isPlay && isActive && !isExternallyPaused
+
   return (
     <NativeFluidBgView
       pointerEvents="none"
       baseColor={baseColor}
       colors={orbColors}
-      playing={isPlay && isActive && !isExternallyPaused}
+      playing={active}
+      audioReactive={audioReactive && active}
       style={[StyleSheet.absoluteFill, style]}
     />
   )

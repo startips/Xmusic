@@ -11,9 +11,10 @@ import SizeView from './SizeView'
 interface Props {
   children: React.ReactNode
   horizontalSafeArea?: boolean
+  audioReactive?: boolean
 }
 
-export default ({ children, horizontalSafeArea = true }: Props) => {
+export default ({ children, horizontalSafeArea = true, audioReactive = false }: Props) => {
   const theme = useTheme()
   const isDynamicBg = useSettingValue('theme.dynamicBg')
   const safeInsets = useSafeAreaInsets()
@@ -46,7 +47,7 @@ export default ({ children, horizontalSafeArea = true }: Props) => {
 
   const fluidComponent = useMemo(() => (
     <View style={{ flex: 1, overflow: 'hidden', backgroundColor: theme['m3-background'] }}>
-      <FluidBackground style={StyleSheet.absoluteFill} />
+      <FluidBackground audioReactive={audioReactive} style={StyleSheet.absoluteFill} />
       <View
         style={{
           flex: 1,
@@ -58,7 +59,7 @@ export default ({ children, horizontalSafeArea = true }: Props) => {
         {children}
       </View>
     </View>
-  ), [children, padLeft, padRight, theme])
+  ), [audioReactive, children, padLeft, padRight, theme])
 
   return (
     <>

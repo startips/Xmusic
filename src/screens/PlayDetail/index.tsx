@@ -10,11 +10,13 @@ import EdgeSwipeContainer, { type EdgeSwipeContainerRef } from '@/components/com
 import { removeComponentId, setComponentId } from '@/core/common'
 import { COMPONENT_IDS } from '@/config/constant'
 import commonState from '@/store/common/state'
+import { useSettingValue } from '@/store/setting/hook'
 import { navigations } from '@/navigation'
 import { registerPlayDetailMinimizePreparer } from '@/navigation/playerBarTarget'
 
 export default ({ componentId }: { componentId: string }) => {
   const isHorizontalMode = useHorizontalMode()
+  const visualizerMode = useSettingValue('playDetail.visualizerMode')
   const isDismissingRef = useRef(false)
   const edgeSwipeRef = useRef<EdgeSwipeContainerRef>(null)
 
@@ -51,7 +53,7 @@ export default ({ componentId }: { componentId: string }) => {
       onEdgeDismiss={triggerDismiss}
       style={{ flex: 1 }}
     >
-      <PageContent horizontalSafeArea={false}>
+      <PageContent horizontalSafeArea={false} audioReactive={visualizerMode !== 'off'}>
         <StatusBar />
         {
           isHorizontalMode

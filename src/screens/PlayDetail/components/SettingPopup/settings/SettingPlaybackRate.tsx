@@ -56,7 +56,7 @@ export default () => {
   const isDefaultRate = playbackRate === 100 && (!isSliding || sliderSize === 100)
 
   return (
-    <SegmentedCardItem index={0} count={1}>
+    <SegmentedCardItem index={0} count={2}>
       <View style={styles.sliderCard}>
         <View style={styles.sliderHeader}>
           <View style={styles.sliderHeaderLeft}>

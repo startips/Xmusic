@@ -4,6 +4,7 @@ import cn.toside.music.mobile.lyric.LyricLine
 import cn.toside.music.mobile.lyric.LyricPlayer
 import cn.toside.music.mobile.player.PlaybackRecoveryStore
 import cn.toside.music.mobile.player.cache.PlayerMediaCache
+import cn.toside.music.mobile.player.dsp.AudioSpectrumEngine
 import cn.toside.music.mobile.player.dsp.XmusicDspConfig
 import cn.toside.music.mobile.storage.XmusicStorageEngine
 import cn.toside.music.mobile.userApi.QuickJsHttpClient
@@ -23,6 +24,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.PI
+import kotlin.math.sin
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.ServerSocket
@@ -268,5 +271,87 @@ class XmusicCoreUnitTest {
     assertEquals("https://example.com", deserialized!!["Referer"])
     assertEquals("a=1", deserialized["Cookie"])
     assertNull(PlaybackRecoveryStore.deserializeHeaders(""))
+  }
+
+  @Test
+  fun audioSpectrumEngine_detectsLowVsHighFrequencyTones() {
+    AudioSpectrumEngine.reset()
+    val sr = 48000
+    val bands = FloatArray(AudioSpectrumEngine.BAND_COUNT)
+    val energies = FloatArray(3)
+    var ts = 1_000_000_000L
+
+    // Feed 3 frames of 100 Hz bass tone
+    for (i in 0 until AudioSpectrumEngine.FFT_SIZE * 3) {
+      val s = (0.65 * sin(2.0 * PI * 100.0 * i / sr)).toFloat()
+      ts += 20_833L
+      AudioSpectrumEngine.pushMonoSample(s, sr, ts)
+    }
+    assertTrue(AudioSpectrumEngine.sampleSpectrum(bands, energies, ts + 180_000_000L))
+    for (b in bands) assertTrue("Band out of [0,1]: $b", b in 0f..1f)
+    assertTrue("Expected bass > treble for 100Hz, got bass=${energies[0]} treble=${energies[2]}", energies[0] > energies[2] + 0.2f)
+
+    // Reset and feed 3 frames of 6000 Hz treble tone
+    AudioSpectrumEngine.reset()
+    for (i in 0 until AudioSpectrumEngine.FFT_SIZE * 3) {
+      val s = (0.65 * sin(2.0 * PI * 6000.0 * i / sr)).toFloat()
+      ts += 20_833L
+      AudioSpectrumEngine.pushMonoSample(s, sr, ts)
+    }
+    assertTrue(AudioSpectrumEngine.sampleSpectrum(bands, energies, ts + 180_000_000L))
+    assertTrue("Expected treble > bass for 6000Hz, got treble=${energies[2]} bass=${energies[0]}", energies[2] > energies[0] + 0.2f)
+  }
+
+  @Test
+  fun audioSpectrumEngine_consumerRefCountAndPresenceCallback() {
+    while (AudioSpectrumEngine.hasConsumers()) AudioSpectrumEngine.unregisterConsumer()
+    val events = mutableListOf<Boolean>()
+    AudioSpectrumEngine.onConsumerPresenceChanged = { events.add(it) }
+    try {
+      AudioSpectrumEngine.registerConsumer()
+      AudioSpectrumEngine.registerConsumer()
+      assertTrue(AudioSpectrumEngine.hasConsumers())
+      AudioSpectrumEngine.unregisterConsumer()
+      assertTrue(AudioSpectrumEngine.hasConsumers())
+      AudioSpectrumEngine.unregisterConsumer()
+      assertFalse(AudioSpectrumEngine.hasConsumers())
+      // Extra unregister must not underflow
+      AudioSpectrumEngine.unregisterConsumer()
+      assertFalse(AudioSpectrumEngine.hasConsumers())
+      assertEquals(listOf(true, false), events)
+    } finally {
+      AudioSpectrumEngine.onConsumerPresenceChanged = null
+    }
+  }
+
+  @Test
+  fun audioSpectrumEngine_latencyAlignedSamplingAndStaleDecay() {
+    AudioSpectrumEngine.reset()
+    val sr = 48000
+    val bands = FloatArray(AudioSpectrumEngine.BAND_COUNT)
+    val energies = FloatArray(3)
+    var ts = 5_000_000_000L
+
+    // Earlier burst: 100Hz bass around ts = 5.05s
+    for (i in 0 until AudioSpectrumEngine.FFT_SIZE * 2) {
+      ts += 20_833L
+      AudioSpectrumEngine.pushMonoSample((0.6f * sin(2.0 * PI * 100.0 * i / sr)).toFloat(), sr, ts)
+    }
+    val bassFrameTs = ts
+
+    // 180ms later burst: 7000Hz treble
+    for (i in 0 until AudioSpectrumEngine.FFT_SIZE * 8) {
+      ts += 20_833L
+      AudioSpectrumEngine.pushMonoSample((0.6f * sin(2.0 * PI * 7000.0 * i / sr)).toFloat(), sr, ts)
+    }
+
+    // Sampling with 180ms A/V latency near bassFrameTs + 180ms should pick the earlier bass frame
+    assertTrue(AudioSpectrumEngine.sampleSpectrum(bands, energies, nowNs = bassFrameTs + 180_000_000L, latencyNs = 180_000_000L))
+    assertTrue("Expected latency-aligned bass frame, got bass=${energies[0]} treble=${energies[2]}", energies[0] > energies[2])
+
+    // Past stale timeout -> returns false and zeros outputs
+    assertFalse(AudioSpectrumEngine.sampleSpectrum(bands, energies, nowNs = ts + 1_000_000_000L, latencyNs = 180_000_000L))
+    assertEquals(0f, energies[0], 0.0001f)
+    assertEquals(0f, bands[0], 0.0001f)
   }
 }

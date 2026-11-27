@@ -247,6 +247,11 @@ declare global {
       'playDetail.isShowKaraokeLyric': boolean
 
       /**
+       * 播放详情页-实时频谱可视化动效模式
+       */
+      'playDetail.visualizerMode': 'off' | 'ambient' | 'bars' | 'ribbon'
+
+      /**
        * 是否显示热门搜索
        */
       'search.isShowHotSearch': boolean

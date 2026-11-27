@@ -14,11 +14,14 @@ import LyricShareModal, { type LyricShareModalType } from '../components/LyricSh
 import Player from './Player'
 import { createStyle } from '@/utils/tools'
 import { useNavigationBarHeight, useSafeAreaInsets } from '@/store/common/hook'
+import { useSettingValue } from '@/store/setting/hook'
+import AudioSpectrum from '@/components/common/AudioSpectrum'
 // import MoreBtn from './MoreBtn2'
 
 export default memo(({ componentId, onBack }: { componentId: string, onBack: () => void }) => {
   const safeInsets = useSafeAreaInsets()
   const navBarHeight = useNavigationBarHeight()
+  const visualizerMode = useSettingValue('playDetail.visualizerMode')
   const lyricShareRef = useRef<LyricShareModalType>(null)
 
   const paddingTop = Math.max(8, safeInsets.top + 4)
@@ -74,6 +77,9 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
           <MoreBtn />
           <Pic componentId={componentId} />
         </View>
+        {visualizerMode === 'bars' || visualizerMode === 'ribbon'
+          ? <AudioSpectrum mode={visualizerMode} intensity={0.85} style={styles.spectrumBar} />
+          : null}
         <Player />
       </View>
       <View style={{ ...styles.right, paddingBottom: bottomPad }}>
@@ -100,6 +106,11 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     paddingRight: 8,
+  },
+  spectrumBar: {
+    width: '100%',
+    height: 32,
+    marginBottom: 4,
   },
   right: {
     width: '55%',

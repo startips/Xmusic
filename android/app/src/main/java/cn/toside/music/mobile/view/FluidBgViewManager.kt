@@ -31,4 +31,9 @@ class FluidBgViewManager : SimpleViewManager<FluidBgView>() {
   fun setPlaying(view: FluidBgView, playing: Boolean) {
     view.setPlaying(playing)
   }
+
+  @ReactProp(name = "audioReactive", defaultBoolean = false)
+  fun setAudioReactive(view: FluidBgView, audioReactive: Boolean) {
+    view.setAudioReactive(audioReactive)
+  }
 }

@@ -11,8 +11,10 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.os.PowerManager
 import android.view.View
+import cn.toside.music.mobile.player.dsp.AudioSpectrumEngine
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
@@ -27,6 +29,7 @@ class FluidBgView(context: Context) : View(context) {
     private const val ORB_COUNT = 4
     private const val TRANSITION_DURATION_NS = 760_000_000L
     private const val STEADY_FRAME_INTERVAL_MS = 33L
+    private const val REACTIVE_FRAME_INTERVAL_MS = 22L
     private val GRADIENT_STOPS = floatArrayOf(0f, 0.28f, 0.56f, 0.82f, 1.0f)
     private val ALPHA_FALLOFF = floatArrayOf(1.00f, 0.74f, 0.36f, 0.09f, 0.0f)
 
@@ -95,10 +98,16 @@ class FluidBgView(context: Context) : View(context) {
   private val powerManager: PowerManager? =
     context.applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
   private var playing = false
+  private var audioReactive = false
+  private var spectrumRegistered = false
   private var powerSaveMode = false
   private var isAttached = false
   private var windowVisible = true
   private var frameScheduled = false
+  private val energyBuf = FloatArray(3)
+  private var smoothBass = 0f
+  private var smoothMid = 0f
+  private var smoothTreble = 0f
   private val steadyFrameRunnable = Runnable {
     frameScheduled = false
     if (shouldAnimate()) {
@@ -162,14 +171,41 @@ class FluidBgView(context: Context) : View(context) {
     startColorTransition()
   }
 
+  private fun syncSpectrumRegistration() {
+    val want = audioReactive && playing && isAttached && windowVisible && isShown && !powerSaveMode
+    if (want == spectrumRegistered) return
+    spectrumRegistered = want
+    if (want) {
+      AudioSpectrumEngine.registerConsumer()
+    } else {
+      AudioSpectrumEngine.unregisterConsumer()
+    }
+  }
+
+  fun setAudioReactive(reactive: Boolean) {
+    if (this.audioReactive == reactive) return
+    this.audioReactive = reactive
+    if (!reactive) {
+      smoothBass = 0f
+      smoothMid = 0f
+      smoothTreble = 0f
+      for (i in 0 until ORB_COUNT) orbPaints[i].alpha = 255
+    }
+    syncSpectrumRegistration()
+    if (!frameScheduled) scheduleNextFrameIfNeeded()
+    invalidate()
+  }
+
   fun setPlaying(playing: Boolean) {
     refreshPowerSaveState()
     if (this.playing == playing) {
+      syncSpectrumRegistration()
       if (playing && !frameScheduled) scheduleNextFrameIfNeeded()
       return
     }
     this.playing = playing
     lastFrameNs = 0L
+    syncSpectrumRegistration()
     if (!playing && !transitionActive) {
       cancelScheduledFrames()
     } else {
@@ -196,7 +232,8 @@ class FluidBgView(context: Context) : View(context) {
     if (transitionActive) {
       postInvalidateOnAnimation()
     } else {
-      postOnAnimationDelayed(steadyFrameRunnable, STEADY_FRAME_INTERVAL_MS)
+      val interval = if (audioReactive) REACTIVE_FRAME_INTERVAL_MS else STEADY_FRAME_INTERVAL_MS
+      postOnAnimationDelayed(steadyFrameRunnable, interval)
     }
   }
 
@@ -205,11 +242,13 @@ class FluidBgView(context: Context) : View(context) {
     isAttached = true
     refreshPowerSaveState()
     lastFrameNs = 0L
+    syncSpectrumRegistration()
     scheduleNextFrameIfNeeded()
   }
 
   override fun onDetachedFromWindow() {
     isAttached = false
+    syncSpectrumRegistration()
     cancelScheduledFrames()
     lastFrameNs = 0L
     super.onDetachedFromWindow()
@@ -219,8 +258,10 @@ class FluidBgView(context: Context) : View(context) {
     super.onWindowVisibilityChanged(visibility)
     windowVisible = visibility == VISIBLE
     lastFrameNs = 0L
+    syncSpectrumRegistration()
     if (windowVisible) {
       refreshPowerSaveState()
+      syncSpectrumRegistration()
       scheduleNextFrameIfNeeded()
     } else {
       cancelScheduledFrames()
@@ -230,8 +271,10 @@ class FluidBgView(context: Context) : View(context) {
   override fun onVisibilityChanged(changedView: View, visibility: Int) {
     super.onVisibilityChanged(changedView, visibility)
     lastFrameNs = 0L
+    syncSpectrumRegistration()
     if (visibility == VISIBLE) {
       refreshPowerSaveState()
+      syncSpectrumRegistration()
       scheduleNextFrameIfNeeded()
     } else {
       cancelScheduledFrames()
@@ -271,16 +314,31 @@ class FluidBgView(context: Context) : View(context) {
     if (w <= 0 || h <= 0) return
 
     val nowNs = System.nanoTime()
+    var dtSec = 0.033f
     if (playing) {
       if (lastFrameNs != 0L) {
         val dt = (nowNs - lastFrameNs) / 1_000_000_000.0
         if (dt > 0.0 && dt < 0.25) {
           accumulatedPhaseSec += dt
+          dtSec = dt.toFloat()
         }
       }
       lastFrameNs = nowNs
     } else {
       lastFrameNs = 0L
+    }
+
+    if (audioReactive && playing && !powerSaveMode && AudioSpectrumEngine.sampleSpectrum(null, energyBuf, nowNs)) {
+      val atk = 1.0f - exp(-dtSec * 16.0f)
+      val dec = 1.0f - exp(-dtSec * 5.0f)
+      smoothBass += (energyBuf[0] - smoothBass) * (if (energyBuf[0] > smoothBass) atk else dec)
+      smoothMid += (energyBuf[1] - smoothMid) * (if (energyBuf[1] > smoothMid) atk else dec)
+      smoothTreble += (energyBuf[2] - smoothTreble) * (if (energyBuf[2] > smoothTreble) atk else dec)
+    } else {
+      val dec = 1.0f - exp(-dtSec * 6.0f)
+      smoothBass -= smoothBass * dec
+      smoothMid -= smoothMid * dec
+      smoothTreble -= smoothTreble * dec
     }
 
     if (transitionActive) {
@@ -307,32 +365,43 @@ class FluidBgView(context: Context) : View(context) {
     val maxDim = max(w, h).toFloat()
     val t = accumulatedPhaseSec
 
+    val bassScale = 1.0f + smoothBass * 0.18f
+    val midScale = 1.0f + smoothMid * 0.13f + smoothTreble * 0.05f
+    if (audioReactive) {
+      val bassAlpha = (222 + (smoothBass * 33f).roundToInt()).coerceIn(222, 255)
+      val midAlpha = (222 + (smoothMid * 33f).roundToInt()).coerceIn(222, 255)
+      orbPaints[0].alpha = bassAlpha
+      orbPaints[1].alpha = midAlpha
+      orbPaints[2].alpha = midAlpha
+      orbPaints[3].alpha = bassAlpha
+    }
+
     drawOrb(
       canvas, 0, w, h,
       w * (0.20f + 0.16f * sin(t * 0.27 + 0.4).toFloat()),
       h * (0.18f + 0.13f * cos(t * 0.21 + 0.2).toFloat()),
-      maxDim * (0.78f + 0.05f * sin(t * 0.33).toFloat()),
+      maxDim * (0.78f + 0.05f * sin(t * 0.33).toFloat()) * bassScale,
     )
 
     drawOrb(
       canvas, 1, w, h,
       w * (0.82f + 0.14f * cos(t * 0.23 + 1.7).toFloat()),
       h * (0.30f + 0.15f * sin(t * 0.19 + 1.1).toFloat()),
-      maxDim * (0.74f + 0.05f * cos(t * 0.29 + 0.8).toFloat()),
+      maxDim * (0.74f + 0.05f * cos(t * 0.29 + 0.8).toFloat()) * midScale,
     )
 
     drawOrb(
       canvas, 2, w, h,
       w * (0.26f + 0.18f * cos(t * 0.18 + 3.1).toFloat()),
       h * (0.68f + 0.14f * sin(t * 0.24 + 2.4).toFloat()),
-      maxDim * (0.72f + 0.04f * sin(t * 0.25 + 2.0).toFloat()),
+      maxDim * (0.72f + 0.04f * sin(t * 0.25 + 2.0).toFloat()) * midScale,
     )
 
     drawOrb(
       canvas, 3, w, h,
       w * (0.78f + 0.15f * sin(t * 0.20 + 4.5).toFloat()),
       h * (0.82f + 0.12f * cos(t * 0.16 + 3.8).toFloat()),
-      maxDim * (0.80f + 0.05f * cos(t * 0.22 + 3.1).toFloat()),
+      maxDim * (0.80f + 0.05f * cos(t * 0.22 + 3.1).toFloat()) * bassScale,
     )
 
     if (sNoiseShader != null) {

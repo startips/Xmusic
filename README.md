@@ -19,7 +19,7 @@
 
 - **Android 原生层 100% Kotlin 化**：原生业务与自定义视图已全面重构为 Kotlin（`main` 源码共 67 个 `.kt` 文件、0 个 `.java` 文件），全面采用 Kotlin 协程管理异步任务并随桥接生命周期自动回收，消除遗留裸线程与 `AsyncTask` 隐患。
 - **自研 AndroidX Media3 播放内核与 Gapless 队列**：基于 `ExoPlayer 1.8.0` 内化实现 `XmusicPlaybackService` 与 `XmusicPlayerController`，彻底移除 `react-native-track-player` 及其 21 处第三方源码补丁；支持原生下一曲 Gapless 无缝预挂载、本地/缓存曲目微件冷启动恢复（`PlaybackRecoveryStore`）、音频焦点管理、AudioOffload、倍速播放与多任务划掉彻底释放。
-- **零 GC 浮点 DSP 音效引擎**：原生内置 `XmusicDspAudioProcessor`，在音频线程采用纯基本类型数组零分配运算，支持 5 段参量均衡器（`60 / 230 / 910 / 3600 / 14000 Hz`）、多曲风预设、85Hz 低音增强、响度增益与软拐点限幅；配合 60fps 柔和启停包络与 0–5 秒切歌淡入淡出，消除启停爆音与卡顿。
+- **零 GC 浮点 DSP 音效引擎**：原生内置 `XmusicDspAudioProcessor`，在音频线程采用纯基本类型数组零分配运算，支持 5 段参量均衡器（`60 / 230 / 910 / 3600 / 14000 Hz`）、多曲风预设、85Hz 低音增强、响度增益与软拐点限幅；内置免录音权限的 `AudioSpectrumEngine` 实时 PCM FFT 频谱引擎，配合 60fps 柔和启停包络与 0–5 秒切歌淡入淡出，消除启停爆音与卡顿。
 - **全曲后台缓存与下一曲预拉取**：基于 Media3 `SimpleCache` 实现 `PlayerMediaCache`，支持边听边存全曲音频、缓存完整度校验与低优先级下一曲首段预加载，兼顾弱网流畅度与缓存上限自动淘汰。
 - **原生 SQLite WAL 关系型歌单与存储引擎**：自研 `XmusicStorageEngine`（SQLite WAL FIFO 串行写 + 256K 字符阈值版本化大值溢出 + 关系型 `playlist_tracks` 歌单表），支持歌单 O(k) 增量增删改排、旧版 `AsyncStorage` 与 `@list__` Blob 无损自动迁移。
 - **高性能原生辅助管线**：单线程协程亲和的 QuickJS 自定义源沙箱直连原生 OkHttp（`QuickJsEngine` / `QuickJsHttpClient`，零 RN 跨桥 HTTP 往返并支持即时取消）、原生 OkHttp 协程下载器（`NativeDownloadHelper`）、Glide 统一封面与 24 色相桶取色管线（`CoverArtworkRepository` / `CoverPaletteExtractor`），以及事件时间戳驱动的低功耗听歌统计。
@@ -28,7 +28,7 @@
 
 - **Xmusic 品牌标识与原生声波启动页**：启用浅薄荷叠色几何音符「X♪」视觉标识，提供全密度自适应图标、Android 13+ 单色主题图标及状态栏单色通知小图标；冷启动配备 `XmusicSplashOverlay` 原生声波流体动画，实时同步当前主题种子色与明暗模式。
 - **流体动态主题系统**：基于统一的 M3E 语义色系与圆角规范（`src/theme/m3.ts`），内置 6 套种子色预设（翡翠绿、晴空蓝、鸢尾紫、珊瑚粉、琥珀金、岩青灰），支持专辑封面主色实时流转与 120Hz 原生微抖动防色带流体网格背景（`FluidBgView`），适配跟随系统 / 浅色 / 深色模式。
-- **波浪进度条与沉浸式转场**：播放详情页与底部播放栏均配备 M3E 波浪形进度条（`WavyProgressView`）；全宽双向 Alpha 羽化封面支持共享元素同步展开与仿 macOS Dock 边缘侧滑弧线回落动效（含落地弹性微震）。
+- **波浪进度条、实时频谱与沉浸式转场**：播放详情页与底部播放栏均配备 M3E 波浪形进度条（`WavyProgressView`），播放详情页支持免录音权限的实时 PCM 频谱可视化（`SpectrumView`：光晕联动 / 镜像胶囊 / 极光丝带）；全宽双向 Alpha 羽化封面支持共享元素同步展开与仿 macOS Dock 边缘侧滑弧线回落动效（含落地弹性微震）。
 - **方向感知导航与精简交互**：主页切换采用方向感知 Shared-Axis 微滑浮现动画，底部/侧边导航与设置页 6 大分组顶栏均配备流体滑动胶囊指示器；歌单页将「打开歌单」收纳至顶栏图标按钮并保留左侧滑出分类抽屉。
 
 ### 3. 播放、音质与歌词体验

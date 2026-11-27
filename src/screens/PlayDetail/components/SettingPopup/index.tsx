@@ -14,6 +14,7 @@ import SettingLrcFontSize from './settings/SettingLrcFontSize'
 import SettingLrcAlign from './settings/SettingLrcAlign'
 import SettingTimeoutExit from './settings/SettingTimeoutExit'
 import SettingEqualizer from './settings/SettingEqualizer'
+import SettingVisualizer from './settings/SettingVisualizer'
 
 export interface SettingPopupProps extends Omit<PopupProps, 'children'> {
   direction: 'vertical' | 'horizontal'
@@ -86,6 +87,7 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
 
                   <SegmentedCardGroup>
                     <SettingPlaybackRate />
+                    <SettingVisualizer />
                   </SegmentedCardGroup>
 
                   <SegmentedCardGroup>

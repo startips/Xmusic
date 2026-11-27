@@ -168,6 +168,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
 
   override fun onFlush() {
     zeroDelayLines()
+    AudioSpectrumEngine.reset()
     appliedConfigVersion = -1
     appliedSampleRate = 0
     val initEnabled = XmusicDspConfig.isEnabled()
@@ -181,6 +182,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
 
   override fun onReset() {
     zeroDelayLines()
+    AudioSpectrumEngine.reset()
     appliedConfigVersion = -1
     appliedSampleRate = 0
     wetMix = 0.0f
@@ -209,12 +211,26 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
     }
 
     rebuildCoeffsIfNeeded(sr)
+    val tapSpectrum = AudioSpectrumEngine.hasConsumers()
+    val encoding = fmt.encoding
 
     if (!localEnabled &&
       wetMix <= 0.0001f &&
       rampFramesDone >= rampTotalFrames
     ) {
       wetMix = 0.0f
+      if (tapSpectrum) {
+        val startPos = inputBuffer.position()
+        val invCh = 1.0f / chCount.toFloat()
+        for (f in 0 until frames) {
+          var mono = 0f
+          for (c in 0 until chCount) {
+            mono += readSampleAsFloat(inputBuffer, encoding)
+          }
+          AudioSpectrumEngine.pushMonoSample(mono * invCh, sr)
+        }
+        inputBuffer.position(startPos)
+      }
       val outPass = replaceOutputBuffer(remaining)
       outPass.put(inputBuffer)
       outPass.flip()
@@ -224,7 +240,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
     val out = replaceOutputBuffer(remaining)
     val targetWet = if (localEnabled) 1.0f else 0.0f
     val wetStep = 1.0f / max(64.0f, sr * 0.035f)
-    val encoding = fmt.encoding
+    val invCh = 1.0 / chCount.toDouble()
 
     for (f in 0 until frames) {
       if (wetMix < targetWet) {
@@ -243,20 +259,10 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
       }
 
       val runDsp = wetMix > 0.0001f
+      var monoSum = 0.0
 
       for (c in 0 until chCount) {
-        val x: Double = when (encoding) {
-          C.ENCODING_PCM_16BIT -> inputBuffer.short / 32768.0
-          C.ENCODING_PCM_24BIT -> {
-            val b0Byte = inputBuffer.get().toInt() and 0xFF
-            val b1Byte = inputBuffer.get().toInt() and 0xFF
-            val b2Byte = inputBuffer.get().toInt()
-            val s24 = b0Byte or (b1Byte shl 8) or (b2Byte shl 16)
-            s24 / 8388608.0
-          }
-          C.ENCODING_PCM_32BIT -> inputBuffer.int / 2147483648.0
-          else -> inputBuffer.float.toDouble()
-        }
+        val x: Double = readSampleAsFloat(inputBuffer, encoding).toDouble()
 
         val sample: Double
         if (runDsp) {
@@ -292,6 +298,7 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
 
         var y = sample * env
         if (y > 1.0) y = 1.0 else if (y < -1.0) y = -1.0
+        if (tapSpectrum) monoSum += y
 
         when (encoding) {
           C.ENCODING_PCM_16BIT -> {
@@ -313,6 +320,9 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
           }
         }
       }
+      if (tapSpectrum) {
+        AudioSpectrumEngine.pushMonoSample((monoSum * invCh).toFloat(), sr)
+      }
     }
 
     if (inputBuffer.hasRemaining()) {
@@ -321,5 +331,18 @@ class XmusicDspAudioProcessor private constructor() : BaseAudioProcessor() {
       }
     }
     out.flip()
+  }
+
+  private fun readSampleAsFloat(buf: ByteBuffer, encoding: Int): Float = when (encoding) {
+    C.ENCODING_PCM_16BIT -> buf.short / 32768.0f
+    C.ENCODING_PCM_24BIT -> {
+      val b0Byte = buf.get().toInt() and 0xFF
+      val b1Byte = buf.get().toInt() and 0xFF
+      val b2Byte = buf.get().toInt()
+      val s24 = b0Byte or (b1Byte shl 8) or (b2Byte shl 16)
+      s24 / 8388608.0f
+    }
+    C.ENCODING_PCM_32BIT -> (buf.int / 2147483648.0).toFloat()
+    else -> buf.float
   }
 }

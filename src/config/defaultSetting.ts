@@ -47,6 +47,7 @@ const defaultSetting: LX.AppSetting = {
   'playDetail.horizontal.style.lrcFontSize': 220,
   'playDetail.isShowLyricProgressSetting': false,
   'playDetail.isShowKaraokeLyric': true,
+  'playDetail.visualizerMode': 'ambient',
 
   'search.isShowHotSearch': true,
   'search.isShowHistorySearch': false,

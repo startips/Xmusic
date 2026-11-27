@@ -534,5 +534,10 @@
   "quality_toggle_source_tip": "Auto-switched source to {source}",
   "quality_unsupported_track": "Unavailable on this track (sets global preference)",
   "quality_unsupported_source": "Unsupported by source (sets global preference)",
-  "quality_decoding_pending": "Reading decoder audio format..."
+  "quality_decoding_pending": "Reading decoder audio format...",
+  "play_detail_setting_visualizer": "Audio Visualizer",
+  "play_detail_setting_visualizer_off": "Off",
+  "play_detail_setting_visualizer_ambient": "Ambient",
+  "play_detail_setting_visualizer_bars": "Bars",
+  "play_detail_setting_visualizer_ribbon": "Ribbon"
 }

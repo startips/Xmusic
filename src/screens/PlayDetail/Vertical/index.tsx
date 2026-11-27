@@ -11,6 +11,8 @@ import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import commonState, { type InitState as CommonState } from '@/store/common/state'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { useSettingValue } from '@/store/setting/hook'
+import AudioSpectrum from '@/components/common/AudioSpectrum'
 import LinearGradientOverlay from '@/components/common/LinearGradientOverlay'
 import { M3Motion, M3Radius, withAlpha } from '@/theme/m3'
 
@@ -88,6 +90,7 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
     lyricShareRef.current?.show(lineIndex)
   }, [])
   const theme = useTheme()
+  const visualizerMode = useSettingValue('playDetail.visualizerMode')
 
   const topScrimColors = useMemo(() => {
     const base = theme['m3-background']
@@ -167,6 +170,15 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
             <LyricPage activeIndex={pageIndex} onLongPressLyric={handleLongPressLyric} />
           </View>
         </PagerView>
+        {visualizerMode === 'bars' || visualizerMode === 'ribbon'
+          ? (
+              <AudioSpectrum
+                mode={visualizerMode}
+                intensity={pageIndex === 1 ? 0.34 : 1}
+                style={styles.spectrumBar}
+              />
+            )
+          : null}
         <PageIndicator pageIndex={pageIndex} onSelectPage={handleSelectPage} />
         <Player />
       </View>
@@ -197,6 +209,12 @@ const styles = createStyle({
   },
   pagerView: {
     flex: 1,
+  },
+  spectrumBar: {
+    width: '100%',
+    height: 44,
+    marginTop: -6,
+    marginBottom: 2,
   },
   pageIndicator: {
     flex: 0,

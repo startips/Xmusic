@@ -534,5 +534,10 @@
   "quality_toggle_source_tip": "已自動換源至「{source}」播放",
   "quality_unsupported_track": "本曲無此音質（僅設為全域優先）",
   "quality_unsupported_source": "目前音源不支援（僅設為全域優先）",
-  "quality_decoding_pending": "正在讀取解碼器音訊參數..."
+  "quality_decoding_pending": "正在讀取解碼器音訊參數...",
+  "play_detail_setting_visualizer": "音訊頻譜動效",
+  "play_detail_setting_visualizer_off": "關閉",
+  "play_detail_setting_visualizer_ambient": "光暈",
+  "play_detail_setting_visualizer_bars": "膠囊",
+  "play_detail_setting_visualizer_ribbon": "絲帶"
 }

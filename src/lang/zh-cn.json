@@ -534,5 +534,10 @@
   "quality_toggle_source_tip": "已自动换源至「{source}」播放",
   "quality_unsupported_track": "本曲无此音质（仅设为全局优先）",
   "quality_unsupported_source": "当前音源不支持（仅设为全局优先）",
-  "quality_decoding_pending": "正在读取解码器音频参数..."
+  "quality_decoding_pending": "正在读取解码器音频参数...",
+  "play_detail_setting_visualizer": "音频频谱动效",
+  "play_detail_setting_visualizer_off": "关闭",
+  "play_detail_setting_visualizer_ambient": "光晕",
+  "play_detail_setting_visualizer_bars": "胶囊",
+  "play_detail_setting_visualizer_ribbon": "丝带"
 }
