@@ -5,6 +5,8 @@ import cn.toside.music.mobile.artwork.CoverArtworkRepository
 import cn.toside.music.mobile.artwork.CoverPaletteExtractor
 import cn.toside.music.mobile.core.ModuleCoroutineScope
 import cn.toside.music.mobile.core.getStringOrNull
+import cn.toside.music.mobile.splash.SplashThemeStore
+import cn.toside.music.mobile.splash.XmusicSplashController
 import cn.toside.music.mobile.widget.XmusicWidgetUpdater
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -247,4 +249,12 @@ class UtilsModule(
   @ReactMethod
   fun stopDownload(jobId: Int) =
     downloadHelper.stopDownload(jobId)
+
+  @ReactMethod
+  fun hideSplashScreen(immediate: Boolean) =
+    XmusicSplashController.requestHide(immediate)
+
+  @ReactMethod
+  fun syncSplashTheme(map: ReadableMap?) =
+    SplashThemeStore.save(reactAppContext, map)
 }

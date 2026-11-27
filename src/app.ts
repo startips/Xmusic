@@ -2,7 +2,7 @@ import '@/utils/errorHandle'
 import { init as initLog } from '@/utils/log'
 import { bootLog, getBootLog } from '@/utils/bootLog'
 import '@/config/globalData'
-import { exitApp } from './utils/nativeModules/utils'
+import { exitApp, hideSplashScreen } from './utils/nativeModules/utils'
 import { windowSizeTools } from './utils/windowSizeTools'
 import { listenLaunchEvent } from './navigation/regLaunchedEvent'
 import { tipDialog } from './utils/tools'
@@ -32,6 +32,7 @@ void windowSizeTools.init().then(async() => {
     try {
       handlePushedHomeScreen = await init()
     } catch (err: any) {
+      hideSplashScreen(true)
       void tipDialog({
         title: '初始化失败 (Init Failed)',
         message: `Boot Log:\n${tryGetBootLog()}\n\n${(err.stack ?? err.message) as string}`,
@@ -54,6 +55,7 @@ void windowSizeTools.init().then(async() => {
     await navigations.pushHomeScreen().then(() => {
       void handlePushedHomeScreen()
     }).catch((err: any) => {
+      hideSplashScreen(true)
       void tipDialog({
         title: 'Error',
         message: err.message,
@@ -65,6 +67,7 @@ void windowSizeTools.init().then(async() => {
     })
   })
 }).catch((err) => {
+  hideSplashScreen(true)
   void tipDialog({
     title: '初始化失败 (Init Failed)',
     message: `Boot Log:\n\n${(err.stack ?? err.message) as string}`,

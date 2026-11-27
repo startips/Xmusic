@@ -5,12 +5,18 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import cn.toside.music.mobile.splash.XmusicSplashController
 import com.reactnativenavigation.NavigationActivity
 
 class MainActivity : NavigationActivity() {
   @Suppress("DEPRECATION")
   override fun onCreate(savedInstanceState: Bundle?) {
+    val splashScreen = installSplashScreen()
+    splashScreen.setOnExitAnimationListener { provider ->
+      provider.remove()
+    }
     window?.let { preWindow ->
       preWindow.statusBarColor = Color.TRANSPARENT
       preWindow.navigationBarColor = Color.TRANSPARENT
@@ -35,5 +41,11 @@ class MainActivity : NavigationActivity() {
         win.isNavigationBarContrastEnforced = false
       }
     }
+    XmusicSplashController.attachIfColdStart(this, savedInstanceState)
+  }
+
+  override fun onDestroy() {
+    XmusicSplashController.onActivityDestroyed(this)
+    super.onDestroy()
   }
 }

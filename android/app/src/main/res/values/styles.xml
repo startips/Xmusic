@@ -7,6 +7,13 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
+    <!-- Android 12+ SplashScreen starting theme matching M3E surface -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F7FBF8</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
     <!-- Override React Native Modal dialog theme so Modals stay Edge-to-Edge without a black bottom nav bar -->
     <style name="Theme.FullScreenDialog">
         <item name="android:windowNoTitle">true</item>

@@ -160,3 +160,24 @@ export const requestIgnoreBatteryOptimization = async() => new Promise<boolean>(
     resolve(false)
   })
 })
+
+export interface SplashThemePayload {
+  themeMode: LX.ThemeMode
+  isCustomSeed: boolean
+  primaryLight: number
+  primaryDark: number
+  secondaryLight: number
+  secondaryDark: number
+  backgroundLight: number
+  backgroundDark: number
+  onSurfaceLight: number
+  onSurfaceDark: number
+}
+
+export const hideSplashScreen = (immediate = false): void => {
+  UtilsModule.hideSplashScreen?.(immediate)
+}
+
+export const syncSplashTheme = (payload: SplashThemePayload): void => {
+  UtilsModule.syncSplashTheme?.(payload)
+}
