@@ -87,6 +87,9 @@
     "@react-native-community/cli-platform-android": {
       "fast-xml-parser": "^5.3.4"
     },
+    "@react-native-community/cli-platform-ios": {
+      "fast-xml-parser": "^5.3.4"
+    },
     "@typescript-eslint/typescript-estree": {
       "minimatch": "^9"
     },
