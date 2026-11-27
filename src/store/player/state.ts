@@ -39,6 +39,8 @@ export interface InitState {
     maxPlayTimeStr: string
   }
 
+  bufferedProgress: number
+
   lastLyric: string | undefined
 }
 
@@ -99,6 +101,8 @@ const state: InitState = {
     nowPlayTimeStr: '00:00',
     maxPlayTimeStr: '00:00',
   },
+
+  bufferedProgress: 0,
 
   lastLyric: undefined,
 }

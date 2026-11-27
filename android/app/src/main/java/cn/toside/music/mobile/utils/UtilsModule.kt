@@ -18,8 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicInteger
 
 class UtilsModule(
@@ -161,8 +159,7 @@ class UtilsModule(
       coroutineScope.launchIO {
         widgetCoverMutex.withLock {
           lastSyncedWidgetCoverUri = ""
-          deleteWidgetCoverFile()
-          XmusicWidgetUpdater.invalidateCoverCache()
+          XmusicWidgetUpdater.clearCoverBitmap(reactAppContext)
         }
         XmusicWidgetUpdater.saveStateAndRefresh(
           reactAppContext, title, artist, lyric, isPlaying, isFavorite, accentColor, false
@@ -182,8 +179,7 @@ class UtilsModule(
     coroutineScope.launchIO {
       widgetCoverMutex.withLock {
         lastSyncedWidgetCoverUri = ""
-        deleteWidgetCoverFile()
-        XmusicWidgetUpdater.invalidateCoverCache()
+        XmusicWidgetUpdater.clearCoverBitmap(reactAppContext)
       }
       XmusicWidgetUpdater.saveStateAndRefresh(
         reactAppContext, title, artist, lyric, isPlaying, isFavorite, accentColor, false
@@ -200,19 +196,9 @@ class UtilsModule(
           var updated = false
           widgetCoverMutex.withLock {
             if (seq == widgetCoverSeq.get()) {
-              val tmp = File(reactAppContext.cacheDir, "widget_cover.tmp")
-              val out = File(reactAppContext.cacheDir, "widget_cover.png")
-              FileOutputStream(tmp).use { fos ->
-                bmp.compress(Bitmap.CompressFormat.PNG, 92, fos)
-                fos.flush()
-              }
-              if (out.exists()) out.delete()
-              if (tmp.renameTo(out)) {
+              if (XmusicWidgetUpdater.persistCoverBitmap(reactAppContext, bmp)) {
                 lastSyncedWidgetCoverUri = trimmedUri
-                XmusicWidgetUpdater.invalidateCoverCache()
                 updated = true
-              } else {
-                tmp.delete()
               }
             }
           }
@@ -227,13 +213,6 @@ class UtilsModule(
         }
       }
     }
-  }
-
-  private fun deleteWidgetCoverFile() {
-    try {
-      val out = File(reactAppContext.cacheDir, "widget_cover.png")
-      if (out.exists()) out.delete()
-    } catch (_: Exception) {}
   }
 
   @ReactMethod

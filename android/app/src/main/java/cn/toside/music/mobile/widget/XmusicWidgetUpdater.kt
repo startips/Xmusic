@@ -15,9 +15,12 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.os.Build
 import android.widget.RemoteViews
+import androidx.media3.common.util.UnstableApi
 import cn.toside.music.mobile.MainActivity
 import cn.toside.music.mobile.R
+import cn.toside.music.mobile.player.XmusicPlaybackService
 import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -51,6 +54,54 @@ object XmusicWidgetUpdater {
 
   fun invalidateCoverCache() {
     synchronized(coverLock) {
+      cachedCoverMtime = -1L
+      cachedCoverSize = -1L
+      cachedVinylAccent = 0
+      cachedRoundedCover = null
+      cachedVinylCover = null
+    }
+  }
+
+  /**
+   * Single atomic writer for cacheDir/widget_cover.png, synchronized with widget readers.
+   */
+  fun persistCoverBitmap(context: Context, bitmap: Bitmap): Boolean {
+    if (bitmap.isRecycled || bitmap.width <= 0 || bitmap.height <= 0) return false
+    val cacheDir = context.applicationContext.cacheDir
+    return synchronized(coverLock) {
+      val tmp = File(cacheDir, "widget_cover.tmp")
+      val out = File(cacheDir, "widget_cover.png")
+      try {
+        FileOutputStream(tmp).use { fos ->
+          bitmap.compress(Bitmap.CompressFormat.PNG, 92, fos)
+          fos.flush()
+        }
+        if (out.exists()) out.delete()
+        if (tmp.renameTo(out)) {
+          cachedCoverMtime = -1L
+          cachedCoverSize = -1L
+          cachedVinylAccent = 0
+          cachedRoundedCover = null
+          cachedVinylCover = null
+          true
+        } else {
+          tmp.delete()
+          false
+        }
+      } catch (_: Exception) {
+        try { tmp.delete() } catch (_: Exception) {}
+        false
+      }
+    }
+  }
+
+  fun clearCoverBitmap(context: Context) {
+    val cacheDir = context.applicationContext.cacheDir
+    synchronized(coverLock) {
+      try {
+        val out = File(cacheDir, "widget_cover.png")
+        if (out.exists()) out.delete()
+      } catch (_: Exception) {}
       cachedCoverMtime = -1L
       cachedCoverSize = -1L
       cachedVinylAccent = 0
@@ -395,16 +446,28 @@ object XmusicWidgetUpdater {
     return PendingIntent.getActivity(context, 2000, intent, flags)
   }
 
+  @androidx.annotation.OptIn(UnstableApi::class)
   private fun createActionIntent(context: Context, action: String, reqCode: Int): PendingIntent {
-    val intent = Intent(context, XmusicWidgetActionReceiver::class.java).apply {
-      this.action = action
-      setPackage(context.packageName)
+    val serviceAction = when (action) {
+      ACTION_PLAY_PAUSE -> "xmusic_widget_play_pause"
+      ACTION_PREV -> "xmusic_widget_prev"
+      ACTION_NEXT -> "xmusic_widget_next"
+      ACTION_FAVORITE -> "xmusic_toggle_favorite"
+      else -> action
+    }
+    val intent = Intent(context, XmusicPlaybackService::class.java).apply {
+      this.action = serviceAction
+      putExtra("started_as_fgs", true)
     }
     val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     } else {
       PendingIntent.FLAG_UPDATE_CURRENT
     }
-    return PendingIntent.getBroadcast(context, reqCode, intent, flags)
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      PendingIntent.getForegroundService(context, reqCode, intent, flags)
+    } else {
+      PendingIntent.getService(context, reqCode, intent, flags)
+    }
   }
 }

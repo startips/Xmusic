@@ -1,4 +1,19 @@
-import { getData, saveData, getAllKeys, removeDataMultiple, saveDataMultiple, removeData, getDataMultiple } from '@/plugins/storage'
+import {
+  getData,
+  saveData,
+  getAllKeys,
+  removeDataMultiple,
+  saveDataMultiple,
+  removeData,
+  getDataMultiple,
+  getPlaylistTracks,
+  overwritePlaylistTracks,
+  addPlaylistTracks,
+  removePlaylistTracks,
+  updatePlaylistTracks,
+  reorderPlaylistTracks,
+  clearPlaylistTracks,
+} from '@/plugins/storage'
 import { DEFAULT_SETTING, LIST_IDS, storageDataPrefix, type NAV_ID_Type } from '@/config/constant'
 import { throttleBackgroundTimer } from './tools'
 // import { gzip, ungzip } from '@/utils/nativeModules/gzip'
@@ -23,7 +38,6 @@ const listPrevSelectIdKey = storageDataPrefix.listPrevSelectId
 const syncAuthKeyPrefix = storageDataPrefix.syncAuthKey
 const syncHostPrefix = storageDataPrefix.syncHost
 const syncHostHistoryPrefix = storageDataPrefix.syncHostHistory
-const listPrefix = storageDataPrefix.list
 const dislikeListPrefix = storageDataPrefix.dislikeList
 const userApiPrefix = storageDataPrefix.userApi
 const openStoragePathPrefix = storageDataPrefix.openStoragePath
@@ -294,26 +308,50 @@ export const saveUserList = async(listInfo: LX.List.UserListInfo[]) => {
 }
 
 /**
- * 获取列表内歌曲
+ * 获取列表内歌曲（关系型 SQLite 表存储，首次自动无损迁移旧版 @list__ JSON Blob）
  * @param listId 列表id
  * @returns
  */
 export const getListMusics = async(listId: string): Promise<LX.Music.MusicInfo[]> => {
-  const list = await getData<LX.Music.MusicInfo[]>(listPrefix + listId)
-  return list ?? []
+  return getPlaylistTracks<LX.Music.MusicInfo>(listId)
 }
 
 /**
- * 保存列表内歌曲
+ * 覆盖保存列表内歌曲
  * @param listData 列表数据
  */
 export const saveListMusics = async(listData: Array<{ id: string, musics: LX.Music.MusicInfo[] }>) => {
-  if (listData.length > 1) {
-    await saveDataMultiple(listData.map(list => ([listPrefix + list.id, list.musics])))
-  } else {
-    const list = listData[0]
-    await saveData(listPrefix + list.id, list.musics)
+  for (const list of listData) {
+    await overwritePlaylistTracks(list.id, list.musics)
   }
+}
+
+/**
+ * 增量添加列表内歌曲（O(k)）
+ */
+export const addListMusicsStore = async(listId: string, musics: LX.Music.MusicInfo[], addMusicLocationType: LX.AddMusicLocationType) => {
+  await addPlaylistTracks(listId, musics, addMusicLocationType === 'top')
+}
+
+/**
+ * 增量删除列表内指定歌曲（O(k)）
+ */
+export const removeListMusicsFromListStore = async(listId: string, trackIds: string[]) => {
+  await removePlaylistTracks(listId, trackIds)
+}
+
+/**
+ * 增量更新列表内指定歌曲元数据（O(k)）
+ */
+export const updateListMusicsStore = async(updates: Array<{ id: string, musicInfo: LX.Music.MusicInfo }>) => {
+  await updatePlaylistTracks(updates)
+}
+
+/**
+ * 仅更新列表内歌曲顺序索引（无载荷重序列化）
+ */
+export const reorderListMusicsStore = async(listId: string, orderedTrackIds: string[]) => {
+  await reorderPlaylistTracks(listId, orderedTrackIds)
 }
 
 /**
@@ -321,17 +359,7 @@ export const saveListMusics = async(listData: Array<{ id: string, musics: LX.Mus
  * @param ids
  */
 export const removeListMusics = async(ids: string[]): Promise<void> => {
-  if (ids.length > 1) {
-    await removeDataMultiple(ids.map(id => {
-      // delete global.lx.listScrollPosition[id]
-      // delete global.lx.listSort[id]
-      return listPrefix + id
-    }))
-  } else {
-    await removeData(listPrefix + ids[0])
-  }
-  // await saveData(listSortPrefix, global.lx.listSort)
-  // delaySaveListScrollPosition(global.lx.listScrollPosition)
+  await clearPlaylistTracks(ids)
 }
 
 export const qualitys = ['128k', '320k', 'flac', 'flac24bit']

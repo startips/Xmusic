@@ -2,12 +2,33 @@ package cn.toside.music.mobile
 
 import cn.toside.music.mobile.lyric.LyricLine
 import cn.toside.music.mobile.lyric.LyricPlayer
+import cn.toside.music.mobile.player.PlaybackRecoveryStore
+import cn.toside.music.mobile.player.cache.PlayerMediaCache
 import cn.toside.music.mobile.player.dsp.XmusicDspConfig
 import cn.toside.music.mobile.storage.XmusicStorageEngine
+import cn.toside.music.mobile.userApi.QuickJsHttpClient
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.ServerSocket
+import java.nio.charset.StandardCharsets
+import java.util.Collections
+import java.util.concurrent.Executors
 
 class XmusicCoreUnitTest {
   @Test
@@ -101,5 +122,151 @@ class XmusicCoreUnitTest {
     assertEquals("{\"old\":true}", assembled["list_old"])
     assertFalse(assembled.containsKey("list_a_0"))
     assertFalse(assembled.containsKey("list_old_0"))
+  }
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  @Test
+  fun storageWriteDispatcher_preservesStrictFifoOrder() = runBlocking {
+    val fifo = Dispatchers.IO.limitedParallelism(1)
+    val observed = Collections.synchronizedList(ArrayList<Int>())
+    val jobs = (1..200).map { seq ->
+      launch(fifo) {
+        observed.add(seq)
+      }
+    }
+    jobs.joinAll()
+    assertEquals((1..200).toList(), observed)
+  }
+
+  @Test
+  fun playerMediaCache_returnsFalseSafelyWhenUninitialized() {
+    assertFalse(PlayerMediaCache.isCached("nonexistent_key"))
+    assertFalse(PlayerMediaCache.isLeadingCached("nonexistent_key"))
+  }
+
+  @Test
+  fun quickJsHttpClient_mergesHeadersCaseInsensitivelyAndEncodesForm() {
+    val merged = QuickJsHttpClient.mergeHeadersCaseInsensitive(
+      mapOf(
+        "user-agent" to "CustomUA/1.0",
+        "ACCEPT" to "text/plain",
+        "X-Token" to "abc",
+      )
+    )
+    assertEquals(3, merged.size)
+    assertEquals("CustomUA/1.0", QuickJsHttpClient.findHeaderCI(merged, "User-Agent"))
+    assertEquals("text/plain", QuickJsHttpClient.findHeaderCI(merged, "accept"))
+    assertEquals("abc", merged["X-Token"])
+
+    val encoded = QuickJsHttpClient.encodeFormUrlEncoded(
+      JSONObject().put("q", "hello world").put("p", 2)
+    )
+    assertTrue(encoded.contains("q=hello%20world"))
+    assertTrue(encoded.contains("p=2"))
+
+    val parsedObj = QuickJsHttpClient.parseJsonOrRawString("{\"ok\":true,\"n\":42}")
+    assertTrue(parsedObj is JSONObject)
+    assertEquals(42, (parsedObj as JSONObject).getInt("n"))
+    assertEquals("plain text", QuickJsHttpClient.parseJsonOrRawString("plain text"))
+  }
+
+  @Test
+  fun quickJsHttpClient_executesLoopbackRequestAndSupportsCancel() = runBlocking {
+    val server = ServerSocket(0)
+    val port = server.localPort
+    val pool = Executors.newCachedThreadPool()
+    val serverThread = Thread {
+      try {
+        while (!server.isClosed) {
+          val sock = server.accept()
+          pool.execute {
+            try {
+              val reader = BufferedReader(InputStreamReader(sock.getInputStream(), StandardCharsets.UTF_8))
+              val requestLine = reader.readLine() ?: ""
+              while (true) {
+                val line = reader.readLine() ?: break
+                if (line.isEmpty()) break
+              }
+              if (requestLine.contains("/slow")) {
+                Thread.sleep(5_000)
+              }
+              val body = "{\"status\":\"ok\",\"path\":\"$requestLine\"}"
+              val resp = "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: application/json\r\n" +
+                "Content-Length: ${body.toByteArray(StandardCharsets.UTF_8).size}\r\n" +
+                "Connection: close\r\n\r\n" +
+                body
+              sock.getOutputStream().write(resp.toByteArray(StandardCharsets.UTF_8))
+              sock.getOutputStream().flush()
+            } catch (_: Exception) {
+            } finally {
+              try { sock.close() } catch (_: Exception) {}
+            }
+          }
+        }
+      } catch (_: Exception) {}
+    }
+    serverThread.isDaemon = true
+    serverThread.start()
+
+    val client = QuickJsHttpClient()
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    try {
+      val getRes = CompletableDeferred<Pair<String?, JSONObject?>>()
+      client.execute("req-get", "http://127.0.0.1:$port/fast", JSONObject().put("method", "GET"), scope) { _, err, resp ->
+        getRes.complete(err to resp)
+      }
+      val (err1, resp1) = getRes.await()
+      assertNull(err1)
+      assertNotNull(resp1)
+      assertEquals(200, resp1!!.getInt("statusCode"))
+      assertEquals("ok", resp1.getJSONObject("body").getString("status"))
+
+      val cancelRes = CompletableDeferred<Pair<String?, JSONObject?>>()
+      client.execute("req-slow", "http://127.0.0.1:$port/slow", JSONObject().put("timeout", 10_000), scope) { _, err, resp ->
+        cancelRes.complete(err to resp)
+      }
+      kotlinx.coroutines.delay(150)
+      client.cancel("req-slow")
+      val (err2, resp2) = cancelRes.await()
+      assertNotNull(err2)
+      assertNull(resp2)
+    } finally {
+      client.cancelAll()
+      scope.cancel()
+      try { server.close() } catch (_: Exception) {}
+      pool.shutdownNow()
+    }
+  }
+
+  @Test
+  fun storageEngine_parsesPlaylistEntriesAndComputesO1InsertPositions() {
+    val json = """[{"id":"a","name":"Song A"},{"id":"b","name":"Song B"},{"id":"a","name":"Dup A"}]"""
+    val parsed = XmusicStorageEngine.parsePlaylistJsonEntries(json)
+    assertEquals(2, parsed.size)
+    assertEquals("a", parsed[0].first)
+    assertEquals("b", parsed[1].first)
+
+    // Top insert into [0, 1] -> [-2, -1] (preserves order before 0 with zero shifts!)
+    val topPos = XmusicStorageEngine.computeInsertPositions(minPos = 0L, maxPos = 1L, count = 2, atTop = true)
+    assertEquals(listOf(-2L, -1L), topPos.toList())
+
+    // Bottom insert into [-2, 1] -> [2, 3]
+    val botPos = XmusicStorageEngine.computeInsertPositions(minPos = -2L, maxPos = 1L, count = 2, atTop = false)
+    assertEquals(listOf(2L, 3L), botPos.toList())
+
+    // Empty playlist insert
+    val emptyBot = XmusicStorageEngine.computeInsertPositions(minPos = null, maxPos = null, count = 3, atTop = false)
+    assertEquals(listOf(0L, 1L, 2L), emptyBot.toList())
+  }
+
+  @Test
+  fun playbackRecoveryStore_roundTripsHeaders() {
+    val serialized = PlaybackRecoveryStore.serializeHeaders(mapOf("Referer" to "https://example.com", "Cookie" to "a=1"))
+    val deserialized = PlaybackRecoveryStore.deserializeHeaders(serialized)
+    assertNotNull(deserialized)
+    assertEquals("https://example.com", deserialized!!["Referer"])
+    assertEquals("a=1", deserialized["Cookie"])
+    assertNull(PlaybackRecoveryStore.deserializeHeaders(""))
   }
 }

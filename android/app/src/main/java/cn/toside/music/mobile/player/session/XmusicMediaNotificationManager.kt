@@ -26,8 +26,6 @@ import cn.toside.music.mobile.widget.XmusicWidgetUpdater
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.Executors
 
 data class NowPlayingTrackMetadata(
@@ -403,15 +401,21 @@ class XmusicMediaNotificationManager(
   private fun updateNotification() {
     if (session.isActive) {
       val notification = builder.build()
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        service.startForeground(
-          NOTIFICATION_ID,
-          notification,
-          ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
-        )
-      } else {
-        service.startForeground(NOTIFICATION_ID, notification)
-      }
+      try {
+        val svcIntent = Intent(service, XmusicPlaybackService::class.java)
+        try {
+          service.startService(svcIntent)
+        } catch (_: Exception) {}
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          service.startForeground(
+            NOTIFICATION_ID,
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+          )
+        } else {
+          service.startForeground(NOTIFICATION_ID, notification)
+        }
+      } catch (_: Exception) {}
     } else {
       stopServiceForeground()
     }
@@ -437,11 +441,9 @@ class XmusicMediaNotificationManager(
       val scaled = Bitmap.createScaledBitmap(src, 192, 192, true)
       widgetCoverExecutor.execute {
         try {
-          val out = File(service.cacheDir, "widget_cover.png")
-          FileOutputStream(out).use { fos ->
-            scaled.compress(Bitmap.CompressFormat.PNG, 92, fos)
+          if (XmusicWidgetUpdater.persistCoverBitmap(service.applicationContext, scaled)) {
+            broadcastWidgetState()
           }
-          broadcastWidgetState()
         } catch (_: Exception) {
         } finally {
           if (scaled != src && !scaled.isRecycled) {

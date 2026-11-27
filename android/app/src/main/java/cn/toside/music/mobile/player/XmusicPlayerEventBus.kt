@@ -24,6 +24,8 @@ object XmusicPlayerEventBus {
     }
   }
 
+  fun hasActiveBridge(): Boolean = reactContext?.hasActiveReactInstance() == true
+
   fun emit(eventName: String, params: Bundle? = null) {
     val ctx = reactContext ?: return
     val map: WritableMap? = params?.let { Arguments.fromBundle(it) }
@@ -62,5 +64,13 @@ object XmusicPlayerEventBus {
       putInt("channelCount", format.channelCount)
     }
     ctx.sendJsEvent("playback-audio-format", map)
+  }
+
+  fun emitAutoAdvanced(trackId: String) {
+    val ctx = reactContext ?: return
+    val map = Arguments.createMap().apply {
+      putString("trackId", trackId)
+    }
+    ctx.sendJsEvent("playback-track-auto-advanced", map)
   }
 }

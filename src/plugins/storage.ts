@@ -10,6 +10,13 @@ interface NativeXmusicStorageSpec {
   multiSet: (kvPairs: Array<[string, string]>) => Promise<void>
   multiRemove: (keys: string[]) => Promise<void>
   clear: () => Promise<void>
+  getPlaylistTracks: (listId: string) => Promise<string>
+  overwritePlaylistTracks: (listId: string, tracksJsonArray: string) => Promise<void>
+  addPlaylistTracks: (listId: string, tracksJsonArray: string, atTop: boolean) => Promise<void>
+  removePlaylistTracks: (listId: string, trackIds: string[]) => Promise<void>
+  updatePlaylistTracks: (updatesJsonArray: string) => Promise<void>
+  reorderPlaylistTracks: (listId: string, orderedTrackIds: string[]) => Promise<void>
+  clearPlaylistTracks: (listIds: string[]) => Promise<void>
 }
 
 const nativeStorage = NativeModules.XmusicStorageModule as NativeXmusicStorageSpec
@@ -94,6 +101,77 @@ export const clearAll = async() => {
     await nativeStorage.clear()
   } catch (e: any) {
     log.error('storage error[clearAll]:', e.message)
+    throw e
+  }
+}
+
+// ---- Relational Playlist Table APIs (O(k) mutations) ----
+
+export const getPlaylistTracks = async<T = LX.Music.MusicInfo>(listId: string): Promise<T[]> => {
+  try {
+    const raw = await nativeStorage.getPlaylistTracks(listId)
+    return raw ? (JSON.parse(raw) as T[]) : []
+  } catch (e: any) {
+    log.error('storage error[getPlaylistTracks]:', listId, e.message)
+    throw e
+  }
+}
+
+export const overwritePlaylistTracks = async(listId: string, tracks: LX.Music.MusicInfo[]) => {
+  try {
+    await nativeStorage.overwritePlaylistTracks(listId, JSON.stringify(tracks))
+  } catch (e: any) {
+    log.error('storage error[overwritePlaylistTracks]:', listId, e.message)
+    throw e
+  }
+}
+
+export const addPlaylistTracks = async(listId: string, tracks: LX.Music.MusicInfo[], atTop: boolean) => {
+  if (!tracks.length) return
+  try {
+    await nativeStorage.addPlaylistTracks(listId, JSON.stringify(tracks), atTop)
+  } catch (e: any) {
+    log.error('storage error[addPlaylistTracks]:', listId, e.message)
+    throw e
+  }
+}
+
+export const removePlaylistTracks = async(listId: string, trackIds: string[]) => {
+  if (!trackIds.length) return
+  try {
+    await nativeStorage.removePlaylistTracks(listId, trackIds)
+  } catch (e: any) {
+    log.error('storage error[removePlaylistTracks]:', listId, e.message)
+    throw e
+  }
+}
+
+export const updatePlaylistTracks = async(updates: Array<{ id: string, musicInfo: LX.Music.MusicInfo }>) => {
+  if (!updates.length) return
+  try {
+    await nativeStorage.updatePlaylistTracks(JSON.stringify(updates))
+  } catch (e: any) {
+    log.error('storage error[updatePlaylistTracks]:', e.message)
+    throw e
+  }
+}
+
+export const reorderPlaylistTracks = async(listId: string, orderedTrackIds: string[]) => {
+  if (!orderedTrackIds.length) return
+  try {
+    await nativeStorage.reorderPlaylistTracks(listId, orderedTrackIds)
+  } catch (e: any) {
+    log.error('storage error[reorderPlaylistTracks]:', listId, e.message)
+    throw e
+  }
+}
+
+export const clearPlaylistTracks = async(listIds: string[]) => {
+  if (!listIds.length) return
+  try {
+    await nativeStorage.clearPlaylistTracks(listIds)
+  } catch (e: any) {
+    log.error('storage error[clearPlaylistTracks]:', e.message)
     throw e
   }
 }

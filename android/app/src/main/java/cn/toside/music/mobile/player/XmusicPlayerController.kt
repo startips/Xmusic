@@ -14,9 +14,11 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Format
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -76,9 +78,16 @@ class XmusicPlayerController(
   private var isSwitchingTrack: Boolean = false
   private var isLoadingTrack: Boolean = false
   private var currentTrackIsLocal: Boolean = false
+  private var currentTrackId: String = ""
   private var currentTrackUrl: String = ""
   private var currentAudioFormat: AudioFormatSnapshot? = null
   private var explicitDurationMs: Long = 0L
+
+  // Native Gapless next-track queue state
+  private var queuedNextTrackId: String? = null
+  private var queuedNextUrl: String = ""
+  private var queuedNextIsLocal: Boolean = false
+  private var queuedNextDurationMs: Long = 0L
 
   // 60fps volume envelope state
   private var userVolume: Float = 1.0f
@@ -239,9 +248,11 @@ class XmusicPlayerController(
     durationSec: Double,
     startTimeSec: Double,
     autoPlay: Boolean,
+    trackId: String = "",
   ) {
     val p = player ?: return
     cancelActiveRamp()
+    clearQueuedNextStateOnly()
     PlayerMediaCache.cancelAllPrefetch()
     mainHandler.removeCallbacks(eofMonitorTask)
     pauseRamping = false
@@ -251,6 +262,7 @@ class XmusicPlayerController(
     rampFactor = 1.0f
 
     val uri = Uri.parse(url)
+    currentTrackId = trackId
     currentTrackUrl = url
     currentAudioFormat = null
     currentTrackIsLocal = PlayerMediaCache.isLocalUri(uri)
@@ -259,7 +271,17 @@ class XmusicPlayerController(
     isSwitchingTrack = false
     isLoadingTrack = autoPlay
 
-    val source = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers, cacheKey)
+    val source = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers, cacheKey, mediaId = trackId)
+    PlaybackRecoveryStore.saveTrackSource(
+      context = service,
+      trackId = trackId,
+      url = url,
+      cacheKey = cacheKey,
+      userAgent = userAgent,
+      headers = headers,
+      durationMs = explicitDurationMs,
+      isLocal = currentTrackIsLocal,
+    )
     p.playWhenReady = false
     p.setMediaSource(source)
     p.prepare()
@@ -273,6 +295,50 @@ class XmusicPlayerController(
       p.playWhenReady = false
       applyEffectiveVolume()
     }
+  }
+
+  /**
+   * Queues the next track directly onto ExoPlayer's native playlist so transitions happen
+   * with zero silence gap and without waiting for a JS round-trip.
+   */
+  fun setNextTrack(
+    trackId: String,
+    url: String,
+    userAgent: String?,
+    headers: Map<String, String>?,
+    cacheKey: String?,
+    durationSec: Double,
+  ) {
+    val p = player ?: return
+    if (!hasActiveTrack || trackId.isBlank() || url.isBlank()) return
+    if (trackId == currentTrackId) return
+    if (queuedNextTrackId == trackId && queuedNextUrl == url && p.mediaItemCount > 1) return
+
+    val uri = Uri.parse(url)
+    val nextSource = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers, cacheKey, mediaId = trackId)
+    if (p.mediaItemCount > 1) {
+      p.removeMediaItems(1, p.mediaItemCount)
+    }
+    p.addMediaSource(nextSource)
+    queuedNextTrackId = trackId
+    queuedNextUrl = url
+    queuedNextIsLocal = PlayerMediaCache.isLocalUri(uri)
+    queuedNextDurationMs = if (durationSec > 0.0) (durationSec * 1000.0).toLong() else 0L
+  }
+
+  fun clearNextTrack() {
+    clearQueuedNextStateOnly()
+    val p = player ?: return
+    if (p.mediaItemCount > 1) {
+      p.removeMediaItems(1, p.mediaItemCount)
+    }
+  }
+
+  private fun clearQueuedNextStateOnly() {
+    queuedNextTrackId = null
+    queuedNextUrl = ""
+    queuedNextIsLocal = false
+    queuedNextDurationMs = 0L
   }
 
   fun play() {
@@ -388,9 +454,11 @@ class XmusicPlayerController(
     rampFactor = 1.0f
     eofFactor = 1.0f
     hasActiveTrack = false
+    currentTrackId = ""
     currentTrackUrl = ""
     currentAudioFormat = null
     explicitDurationMs = 0L
+    clearQueuedNextStateOnly()
 
     if (keepSession) {
       isSwitchingTrack = true
@@ -508,6 +576,14 @@ class XmusicPlayerController(
       baseSnap
     }
     notificationManager.updateMetadata(meta, snap)
+    PlaybackRecoveryStore.saveMetadata(
+      context = service,
+      title = meta.title,
+      artist = meta.artist,
+      album = meta.album,
+      artwork = meta.artwork,
+      durationMs = meta.durationMs,
+    )
   }
 
   fun updateTitles(title: String?, artist: String?, album: String?, lyric: String?) {
@@ -516,6 +592,53 @@ class XmusicPlayerController(
 
   fun setFavoriteState(favorite: Boolean) {
     notificationManager.setFavoriteState(favorite)
+    PlaybackRecoveryStore.saveFavorite(service, favorite)
+  }
+
+  /**
+   * Attempts cold-start native playback resume (local or cached audio) when triggered
+   * by a desktop widget or Bluetooth media key without an active RN JS instance.
+   */
+  fun tryResumeFromRecovery(): Boolean {
+    PlayerMediaCache.init(service, 512L * 1024L * 1024L)
+    val track = PlaybackRecoveryStore.load(service) ?: return false
+    if (!PlaybackRecoveryStore.canResumeNatively(service, track)) return false
+    if (player == null) {
+      setupPlayer(
+        maxCacheSizeKb = 512L * 1024L,
+        maxBufferSec = 300.0,
+        handleAudioFocus = true,
+        audioOffload = false,
+      )
+    }
+    notificationManager.setFavoriteState(track.isFavorite)
+    updateMetadata(
+      NowPlayingTrackMetadata(
+        title = track.title,
+        artist = track.artist,
+        album = track.album,
+        artwork = track.artwork,
+        durationMs = track.durationMs,
+        lyric = null,
+      ),
+      isPlayingOverride = true,
+    )
+    val startSec = if (track.positionMs > 0L && (track.durationMs <= 0L || track.positionMs < track.durationMs - 2000L)) {
+      track.positionMs / 1000.0
+    } else {
+      0.0
+    }
+    loadTrack(
+      url = track.url,
+      userAgent = track.userAgent,
+      headers = track.headers,
+      cacheKey = track.cacheKey,
+      durationSec = track.durationMs / 1000.0,
+      startTimeSec = startSec,
+      autoPlay = true,
+      trackId = track.trackId.ifBlank { "recovery_${System.currentTimeMillis()}" },
+    )
+    return true
   }
 
   fun destroy() {
@@ -532,8 +655,10 @@ class XmusicPlayerController(
     pauseRamping = false
     isSwitchingTrack = false
     isLoadingTrack = false
+    currentTrackId = ""
     currentTrackUrl = ""
     currentAudioFormat = null
+    clearQueuedNextStateOnly()
     broadcastAudioSession(0)
     onStoppedSideEffects()
     player?.let { p ->
@@ -559,6 +684,37 @@ class XmusicPlayerController(
       }
     }
     handlePlaybackStateChange()
+  }
+
+  override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+    if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || mediaItem == null) return
+    val nextId = queuedNextTrackId ?: return
+    if (mediaItem.mediaId != nextId) return
+
+    currentTrackId = nextId
+    currentTrackUrl = queuedNextUrl
+    currentTrackIsLocal = queuedNextIsLocal
+    explicitDurationMs = queuedNextDurationMs
+    currentAudioFormat = null
+    freshTrack = false
+    eofFactor = 1.0f
+    clearQueuedNextStateOnly()
+
+    val p = player
+    if (p != null && p.currentMediaItemIndex > 0) {
+      p.removeMediaItems(0, p.currentMediaItemIndex)
+    }
+
+    if (crossfadeMs > 0 && p != null && p.isPlaying) {
+      startFadeInRamp(0.05f, min(crossfadeMs, 1400))
+      mainHandler.postDelayed(eofMonitorTask, 120L)
+    } else {
+      rampFactor = 1.0f
+      applyEffectiveVolume()
+    }
+
+    refreshAudioFormat(p?.currentTracks)
+    XmusicPlayerEventBus.emitAutoAdvanced(nextId)
   }
 
   override fun onTracksChanged(tracks: Tracks) {
@@ -713,6 +869,7 @@ class XmusicPlayerController(
 
   override fun onPlayerError(error: PlaybackException) {
     hasActiveTrack = false
+    clearQueuedNextStateOnly()
     cancelActiveRamp()
     mainHandler.removeCallbacks(eofMonitorTask)
     val cause = error.cause
@@ -752,7 +909,12 @@ class XmusicPlayerController(
     if (!receivingNoisyEvents) {
       receivingNoisyEvents = true
       try {
-        service.registerReceiver(noisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+        ContextCompat.registerReceiver(
+          service,
+          noisyReceiver,
+          IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY),
+          ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
       } catch (_: Exception) {}
     }
     if (wakeLock != null && !wakeLock.isHeld) {
@@ -769,6 +931,9 @@ class XmusicPlayerController(
   private fun onPausedSideEffects() {
     unregisterNoisyReceiver()
     releaseLocks()
+    player?.currentPosition?.takeIf { it > 0L }?.let { pos ->
+      PlaybackRecoveryStore.savePosition(service, pos)
+    }
     if (hasActiveTrack) {
       notificationManager.setActive(true)
     }

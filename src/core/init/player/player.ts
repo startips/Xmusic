@@ -3,7 +3,7 @@ import { syncAudioEffectsFromSetting, syncAudioTransitionFromSetting } from '@/c
 import { syncNativeAudioSession } from '@/utils/nativeModules/audioEffect'
 import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
-import { cancelNextMusicPrefetch, pause, playNext, resetNextMusicPrefetch, scheduleNextMusicPrefetch } from '@/core/player/player'
+import { cancelNextMusicPrefetch, isGaplessTempPlayConsuming, pause, playNext, resetNextMusicPrefetch, scheduleNextMusicPrefetch } from '@/core/player/player'
 import { setPlayQualityInfo } from '@/core/player/playInfo'
 import { setStatusText, setIsPlay } from '@/core/player/playStatus'
 import { isQualityDowngraded } from '@/utils/quality'
@@ -102,6 +102,12 @@ export default async(setting: LX.AppSetting) => {
     void syncCurrentTrackFavoriteNotification()
   }
 
+  const handleTempPlayListChanged = () => {
+    if (isGaplessTempPlayConsuming()) return
+    resetNextMusicPrefetch()
+    if (playerState.isPlay) scheduleNextMusicPrefetch(1200)
+  }
+
   global.app_event.on('play', setPlayStatus)
   global.app_event.on('pause', setPauseStatus)
   global.app_event.on('error', setPauseStatus)
@@ -110,6 +116,7 @@ export default async(setting: LX.AppSetting) => {
   global.app_event.on('picUpdated', updatePic)
   global.app_event.on('myListMusicUpdate', handleListMusicUpdate)
   global.state_event.on('playMusicInfoChanged', handlePlayMusicChanged)
+  global.state_event.on('playTempPlayListChanged', handleTempPlayListChanged)
   global.state_event.on('configUpdated', handleConfigUpdated)
   void syncCurrentTrackFavoriteNotification()
 }

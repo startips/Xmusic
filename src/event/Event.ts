@@ -1,6 +1,3 @@
-// import mitt from 'mitt'
-// import type { Emitter } from 'mitt'
-
 export default class Event {
   listeners: Map<string, Array<(...args: any[]) => any>>
   constructor() {
@@ -23,11 +20,16 @@ export default class Event {
 
   emit(eventName: string, ...args: any[]) {
     setImmediate(() => {
-      let targetListeners = this.listeners.get(eventName)
-      if (!targetListeners) return
-      for (const listener of targetListeners) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        listener(...args)
+      const targetListeners = this.listeners.get(eventName)
+      if (!targetListeners?.length) return
+      const snapshot = [...targetListeners]
+      for (const listener of snapshot) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          listener(...args)
+        } catch (err) {
+          console.error('[Event]', eventName, err)
+        }
       }
     })
   }
@@ -38,21 +40,3 @@ export default class Event {
     this.listeners.delete(eventName)
   }
 }
-
-// export class App_EVENT {
-//   listeners: Map<string, Array<() => void>>
-//   constructor() {
-//     this.listeners = new Map()
-//   }
-
-//   on(eventName: string, listener: () => void) {
-//     let targetListeners = this.listeners.get(eventName)
-//     if (targetListeners) this.listeners.set(eventName, targetListeners = [])
-//     targetListeners!.push(listener)
-//   }
-
-//   off(eventName: string, listener: () => void) {
-
-//   }
-// }
-

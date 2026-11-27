@@ -1,5 +1,14 @@
 import { isInitialized, initial as playerInitial, isEmpty, setPause, setPlay, setResource, setStop, initTrackInfo, getPosition, updateTrackSwitchMetadata } from '@/plugins/player'
-import { prefetchTrackAudio } from '@/plugins/player/utils'
+import {
+  buildTrackCacheKey,
+  clearQueuedNextTrack,
+  isCached,
+  prefetchTrackAudio,
+  promoteAutoAdvancedTrack,
+  queueNextTrackAudio,
+} from '@/plugins/player/utils'
+import { checkUrl } from '@/utils/request'
+import { cancelPendingMusicUrlRequests } from '@/core/music/utils'
 import {
   setStatusText,
 } from '@/core/player/playStatus'
@@ -298,6 +307,8 @@ const handlePlay = async() => {
 
   global.lx.isPlayedStop &&= false
   qualitySwitchToken++
+  cancelPendingMusicUrlRequests()
+  clearGaplessNextTrack()
   cancelNextMusicPrefetch()
   prefetchedMusicId = null
   resetRandomNextMusicInfo()
@@ -477,6 +488,23 @@ export const switchPlayQuality = async(newQuality: LX.Quality): Promise<'reloade
 }
 
 let earlyPrefetchTimer: number | null = null
+let queuedGaplessNext: {
+  trackId: string
+  playMusicInfo: LX.Player.PlayMusicInfo
+  url: string
+} | null = null
+let isConsumingGaplessTempPlay = false
+
+export const isGaplessTempPlayConsuming = () => isConsumingGaplessTempPlay
+
+export const clearGaplessNextTrack = () => {
+  if (queuedGaplessNext != null) {
+    queuedGaplessNext = null
+  }
+  if (isInitialized()) {
+    void clearQueuedNextTrack().catch(() => {})
+  }
+}
 
 export const cancelNextMusicPrefetch = () => {
   if (earlyPrefetchTimer != null) {
@@ -487,6 +515,7 @@ export const cancelNextMusicPrefetch = () => {
 
 export const resetNextMusicPrefetch = () => {
   cancelNextMusicPrefetch()
+  clearGaplessNextTrack()
   prefetchedMusicId = null
   resetRandomNextMusicInfo()
 }
@@ -507,7 +536,8 @@ export const scheduleNextMusicPrefetch = (delayMs = 3000) => {
 }
 
 /**
- * 歌曲稳定播放后或临近结束时静默预解析下一首直链、歌词与音频前 4 MiB 缓存
+ * 歌曲稳定播放后或临近结束时静默预解析下一首直链（校验未完整缓存曲目的链接有效性）、歌词、
+ * 音频前 4 MiB 缓存并原生预挂载至 ExoPlayer 实现 Gapless 无缝切歌
  */
 export const prefetchNextMusic = () => {
   cancelNextMusicPrefetch()
@@ -517,22 +547,101 @@ export const prefetchNextMusic = () => {
   if (toggleMethod === 'singleLoop' || toggleMethod === 'none') return
   prefetchedMusicId = currentId
 
-  void getNextPlayMusicInfo().then((nextInfo) => {
+  void getNextPlayMusicInfo().then(async(nextInfo) => {
     const nextMusic = nextInfo?.musicInfo
     if (!nextMusic || nextMusic.id === currentId) return
     if (playerState.playMusicInfo.musicInfo?.id !== currentId) return
-    void getMusicUrl({
-      musicInfo: nextMusic,
-      isRefresh: false,
-      allowToggleSource: true,
-    }).then((url) => {
-      if (!url || playerState.playMusicInfo.musicInfo?.id !== currentId) return
-      void prefetchTrackAudio(nextMusic, url).catch(() => {})
-    }).catch(() => {})
+
     void getLyricInfo({
       musicInfo: nextMusic,
     }).catch(() => {})
+
+    let url = await getMusicUrl({
+      musicInfo: nextMusic,
+      isRefresh: false,
+      allowToggleSource: true,
+    }).catch(() => '')
+    if (!url || playerState.playMusicInfo.musicInfo?.id !== currentId) return
+
+    const isRemote = /^https?:\/\//i.test(url)
+    if (isRemote) {
+      const cacheKey = buildTrackCacheKey(nextMusic, url)
+      const fullyCached = await isCached(cacheKey ?? url).catch(() => false)
+      if (playerState.playMusicInfo.musicInfo?.id !== currentId) return
+
+      if (!fullyCached) {
+        const available = await checkUrl(url).then(() => true).catch(() => false)
+        if (playerState.playMusicInfo.musicInfo?.id !== currentId) return
+        if (!available) {
+          url = await getMusicUrl({
+            musicInfo: nextMusic,
+            isRefresh: true,
+            allowToggleSource: true,
+          }).catch(() => '')
+          if (!url || playerState.playMusicInfo.musicInfo?.id !== currentId) return
+        }
+        void prefetchTrackAudio(nextMusic, url).catch(() => {})
+      }
+    }
+
+    if (playerState.playMusicInfo.musicInfo?.id !== currentId || !playerState.isPlay) return
+    const queuedTrackId = await queueNextTrackAudio(nextMusic, url).catch(() => null)
+    if (queuedTrackId && playerState.playMusicInfo.musicInfo?.id === currentId) {
+      queuedGaplessNext = {
+        trackId: queuedTrackId,
+        playMusicInfo: nextInfo,
+        url,
+      }
+    }
   }).catch(() => {})
+}
+
+/**
+ * 响应 ExoPlayer 原生 Gapless 自动无缝过渡到已预挂载的下一首曲目
+ */
+export const handleAutoAdvancedTrack = async(trackId: string) => {
+  const next = queuedGaplessNext
+  if (!next || next.trackId !== trackId) return
+  queuedGaplessNext = null
+  prefetchedMusicId = null
+  resetRandomNextMusicInfo()
+  clearDelayNextTimeout()
+  clearLoadTimeout()
+
+  const { playMusicInfo } = next
+  const musicInfo = playMusicInfo.musicInfo
+  if (playMusicInfo.isTempPlay && playerState.tempPlayList[0]?.musicInfo.id === musicInfo.id) {
+    isConsumingGaplessTempPlay = true
+    try {
+      removeTempPlayList(0)
+    } finally {
+      isConsumingGaplessTempPlay = false
+    }
+  }
+
+  setPlayMusicInfo(playMusicInfo.listId, musicInfo, playMusicInfo.isTempPlay)
+  if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) {
+    addPlayedList(playMusicInfo)
+  }
+
+  promoteAutoAdvancedTrack(trackId, playerState.musicInfo)
+  global.app_event.play()
+
+  void getPicPath({ musicInfo, listId: playMusicInfo.listId }).then((url: string) => {
+    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
+    if (!url || playerState.loadErrorPicUrl == url) {
+      clearCoverThemeIfNoPic(musicInfo.id)
+      return
+    }
+    if (playerState.musicInfo.pic == url) return
+    setMusicInfo({ pic: url })
+    global.app_event.picUpdated()
+  }).catch(() => {
+    clearCoverThemeIfNoPic(musicInfo.id)
+  })
+
+  loadTrackLyric(musicInfo)
+  scheduleNextMusicPrefetch(3000)
 }
 
 

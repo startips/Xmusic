@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.ContextCompat
 import cn.toside.music.mobile.MainActivity
 
 class XmusicWidgetActionReceiver : BroadcastReceiver() {
@@ -33,14 +34,21 @@ class XmusicWidgetActionReceiver : BroadcastReceiver() {
       else -> null
     } ?: return
 
+    val svc = Intent().apply {
+      component = ComponentName(context.packageName, MUSIC_SERVICE_CLASS)
+      this.action = serviceAction
+    }
     try {
-      val svc = Intent().apply {
-        component = ComponentName(context.packageName, MUSIC_SERVICE_CLASS)
-        this.action = serviceAction
-      }
       context.startService(svc)
     } catch (_: Exception) {
-      // App process was cold-killed in background on Android 12+; wake MainActivity cleanly
+      // App process was cold-killed in background on Android 12+; try FGS for play/pause recovery first
+      if (action == XmusicWidgetUpdater.ACTION_PLAY_PAUSE) {
+        try {
+          svc.putExtra("started_as_fgs", true)
+          ContextCompat.startForegroundService(context, svc)
+          return
+        } catch (_: Exception) {}
+      }
       try {
         val launch = Intent(context, MainActivity::class.java).apply {
           addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)

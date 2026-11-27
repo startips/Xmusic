@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AppState } from 'react-native'
 import BackgroundTimer from 'react-native-background-timer'
 
 import { createList, overwriteListMusics, setActiveList } from '@/core/list'
@@ -7,12 +8,14 @@ import { playList } from '@/core/player/player'
 import { getData, saveData } from '@/plugins/storage'
 import listState from '@/store/list/state'
 import playerState from '@/store/player/state'
-import { throttleBackgroundTimer } from '@/utils/tools'
 
 const STORAGE_KEY = '@xmusic_listening_stats_v1'
 export const SMART_TOP50_LIST_ID = 'userlist_xmusic_top50'
 const MAX_STORED_TRACKS = 300
 const MAX_STORED_DAYS = 35
+const CHECKPOINT_INTERVAL_MS = 60_000
+const PERSIST_MIN_INTERVAL_MS = 60_000
+const MAX_SINGLE_FLUSH_SEC = 600
 
 export interface TrackListenEntry {
   musicInfo: LX.Music.MusicInfo
@@ -51,6 +54,13 @@ const memStats: PersistedListeningStats = {
 }
 
 let loaded = false
+let dirty = false
+let lastPersistMs = 0
+let sessionStartMs: number | null = null
+let sessionTrack: LX.Music.MusicInfo | null = null
+let sessionAccumSec = 0
+let sessionCountedPlay = false
+let checkpointTimer: number | null = null
 const listeners = new Set<() => void>()
 
 const notifyListeners = () => {
@@ -89,12 +99,70 @@ const pruneStatsInPlace = () => {
   }
 }
 
-const persistStatsThrottled = throttleBackgroundTimer(() => {
+const persistStats = (force = false) => {
+  if (!dirty) return
+  const now = Date.now()
+  if (!force && now - lastPersistMs < PERSIST_MIN_INTERVAL_MS) return
+  dirty = false
+  lastPersistMs = now
   pruneStatsInPlace()
   void saveData(STORAGE_KEY, memStats)
-}, 3000)
+}
+
+const ensureTrackEntry = (musicInfo: LX.Music.MusicInfo, now: number): TrackListenEntry => {
+  const existing = memStats.tracks[musicInfo.id]
+  if (existing) {
+    existing.musicInfo = musicInfo
+    existing.lastPlayedAt = now
+    return existing
+  }
+  const created: TrackListenEntry = {
+    musicInfo,
+    count: 0,
+    seconds: 0,
+    lastPlayedAt: now,
+  }
+  memStats.tracks[musicInfo.id] = created
+  return created
+}
+
+const flushSessionElapsed = (now = Date.now(), forcePersist = false, minPlayCountSec = 15) => {
+  if (sessionStartMs == null) {
+    if (forcePersist) persistStats(true)
+    return
+  }
+  const track = sessionTrack ?? resolveCurrentPlayMusicInfo()
+  const rawDeltaSec = Math.floor((now - sessionStartMs) / 1000)
+  if (rawDeltaSec > 0 && track) {
+    const deltaSec = Math.min(rawDeltaSec, MAX_SINGLE_FLUSH_SEC)
+    sessionStartMs = rawDeltaSec > MAX_SINGLE_FLUSH_SEC ? now : sessionStartMs + rawDeltaSec * 1000
+    sessionAccumSec += deltaSec
+    memStats.totalSeconds += deltaSec
+    const today = getDateKey(new Date(now))
+    memStats.dailySeconds[today] = (memStats.dailySeconds[today] ?? 0) + deltaSec
+    const entry = ensureTrackEntry(track, now)
+    entry.seconds += deltaSec
+    dirty = true
+
+    if (!sessionCountedPlay && sessionAccumSec >= minPlayCountSec) {
+      sessionCountedPlay = true
+      entry.count += 1
+      memStats.totalPlays += 1
+      notifyListeners()
+    }
+  } else if (rawDeltaSec < 0) {
+    // Wall clock moved backward; resync anchor cleanly
+    sessionStartMs = now
+  }
+
+  persistStats(forcePersist)
+}
 
 export const buildListeningStatsSnapshot = (): ListeningStatsSnapshot => {
+  if (playerState.isPlay && sessionStartMs != null) {
+    flushSessionElapsed(Date.now(), false)
+  }
+
   const todayKey = getDateKey()
   const todaySeconds = memStats.dailySeconds[todayKey] ?? 0
 
@@ -203,95 +271,79 @@ export const initListeningStats = async() => {
     }
   } catch {}
 
-  let sessionTrackId: string | null = null
-  let sessionAccumSec = 0
-  let sessionCountedPlay = false
-  let tickerId: number | null = null
-
-  const ensureTrackEntry = (musicInfo: LX.Music.MusicInfo): TrackListenEntry => {
-    const existing = memStats.tracks[musicInfo.id]
-    if (existing) {
-      existing.musicInfo = musicInfo
-      existing.lastPlayedAt = Date.now()
-      return existing
-    }
-    const created: TrackListenEntry = {
-      musicInfo,
-      count: 0,
-      seconds: 0,
-      lastPlayedAt: Date.now(),
-    }
-    memStats.tracks[musicInfo.id] = created
-    return created
-  }
-
-  const stopTicker = () => {
-    if (tickerId != null) {
-      BackgroundTimer.clearInterval(tickerId)
-      tickerId = null
+  const stopCheckpointTimer = () => {
+    if (checkpointTimer != null) {
+      BackgroundTimer.clearInterval(checkpointTimer)
+      checkpointTimer = null
     }
   }
 
-  const tickSecond = () => {
-    if (!playerState.isPlay) {
-      stopTicker()
-      return
-    }
+  const startSession = () => {
+    const now = Date.now()
     const current = resolveCurrentPlayMusicInfo()
-    if (!current) return
-
-    if (sessionTrackId !== current.id) {
-      sessionTrackId = current.id
+    if (sessionStartMs != null) {
+      flushSessionElapsed(now, false)
+    }
+    if (current && current.id !== sessionTrack?.id) {
+      sessionTrack = current
       sessionAccumSec = 0
       sessionCountedPlay = false
+    } else if (current) {
+      sessionTrack = current
     }
-
-    sessionAccumSec += 1
-    memStats.totalSeconds += 1
-    const today = getDateKey()
-    memStats.dailySeconds[today] = (memStats.dailySeconds[today] ?? 0) + 1
-
-    const entry = ensureTrackEntry(current)
-    entry.seconds += 1
-
-    if (!sessionCountedPlay && sessionAccumSec >= 15) {
-      sessionCountedPlay = true
-      entry.count += 1
-      memStats.totalPlays += 1
-      notifyListeners()
-    }
-
-    persistStatsThrottled()
+    sessionStartMs = now
+    stopCheckpointTimer()
+    checkpointTimer = BackgroundTimer.setInterval(() => {
+      if (!playerState.isPlay) {
+        stopCheckpointTimer()
+        return
+      }
+      flushSessionElapsed(Date.now(), true)
+    }, CHECKPOINT_INTERVAL_MS)
   }
 
-  const startTicker = () => {
-    stopTicker()
-    tickerId = BackgroundTimer.setInterval(tickSecond, 1000)
+  const pauseSession = () => {
+    flushSessionElapsed(Date.now(), true)
+    sessionStartMs = null
+    stopCheckpointTimer()
   }
 
-  global.app_event.on('play', startTicker)
-  global.app_event.on('pause', stopTicker)
-  global.app_event.on('stop', stopTicker)
-  global.app_event.on('error', stopTicker)
+  global.app_event.on('play', startSession)
+  global.app_event.on('pause', pauseSession)
+  global.app_event.on('stop', pauseSession)
+  global.app_event.on('error', pauseSession)
   global.app_event.on('playerEnded', () => {
-    const current = resolveCurrentPlayMusicInfo()
+    const now = Date.now()
+    flushSessionElapsed(now, false, 5)
+    const current = sessionTrack ?? resolveCurrentPlayMusicInfo()
     if (current && !sessionCountedPlay && sessionAccumSec >= 5) {
       sessionCountedPlay = true
-      const entry = ensureTrackEntry(current)
+      const entry = ensureTrackEntry(current, now)
       entry.count += 1
       memStats.totalPlays += 1
-      persistStatsThrottled()
+      dirty = true
       notifyListeners()
     }
+    sessionStartMs = null
+    stopCheckpointTimer()
+    persistStats(true)
   })
   global.state_event.on('playMusicInfoChanged', () => {
-    const current = resolveCurrentPlayMusicInfo()
-    if (current?.id !== sessionTrackId) {
-      sessionTrackId = current?.id ?? null
+    const now = Date.now()
+    const nextTrack = resolveCurrentPlayMusicInfo()
+    if (nextTrack?.id !== sessionTrack?.id) {
+      flushSessionElapsed(now, true)
+      sessionTrack = nextTrack
       sessionAccumSec = 0
       sessionCountedPlay = false
+      sessionStartMs = playerState.isPlay && nextTrack ? now : null
+    }
+  })
+  AppState.addEventListener('change', (state) => {
+    if (state !== 'active') {
+      flushSessionElapsed(Date.now(), true)
     }
   })
 
-  if (playerState.isPlay) startTicker()
+  if (playerState.isPlay) startSession()
 }

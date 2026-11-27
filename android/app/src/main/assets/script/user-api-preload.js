@@ -180,26 +180,37 @@ globalThis.lx_setup = (key, id, name, description, version, author, homepage, ra
   }
 
   const requestQueue = new Map()
+  const userRequestSubAborts = new Map()
+  const cancelledUserRequests = new Set()
+  let activeUserRequestKey = null
   let isInitedApi = false
   let isShowedUpdateAlert = false
 
   const sendNativeRequest = (url, options, callback) => {
     const requestKey = Math.random().toString()
+    const parentUserKey = activeUserRequestKey
     const requestInfo = {
       aborted: false,
       abort: () => {
+        if (requestInfo.aborted) return
+        requestInfo.aborted = true
+        requestQueue.delete(requestKey)
         nativeCall(NATIVE_EVENTS_NAMES.cancelRequest, requestKey)
       },
     }
     requestQueue.set(requestKey, {
       callback,
-      // timeout: setTimeout(() => {
-      //   const req = requestQueue.get(requestKey)
-      //   if (req) req.timeout = null
-      //   nativeCall(NATIVE_EVENTS_NAMES.cancelRequest, requestKey)
-      // }, 30000),
       requestInfo,
+      parentUserKey,
     })
+    if (parentUserKey != null) {
+      let aborts = userRequestSubAborts.get(parentUserKey)
+      if (!aborts) {
+        aborts = new Set()
+        userRequestSubAborts.set(parentUserKey, aborts)
+      }
+      aborts.add(requestInfo.abort)
+    }
 
     nativeCall(NATIVE_EVENTS_NAMES.request, { requestKey, url, options })
     return requestInfo
@@ -208,17 +219,43 @@ globalThis.lx_setup = (key, id, name, description, version, author, homepage, ra
     const targetRequest = requestQueue.get(requestKey)
     if (!targetRequest) return
     requestQueue.delete(requestKey)
+    if (targetRequest.parentUserKey != null) {
+      const aborts = userRequestSubAborts.get(targetRequest.parentUserKey)
+      if (aborts) aborts.delete(targetRequest.requestInfo.abort)
+    }
     targetRequest.requestInfo.aborted = true
-    // if (targetRequest.timeout) clearTimeout(targetRequest.timeout)
-    if (error == null) targetRequest.callback(null, response)
-    else targetRequest.callback(new Error(error), null)
+    if (error == null) {
+      if (response && response.isBinary && typeof response.body === 'string') {
+        response.body = utils.buffer.from(response.body, 'base64')
+        delete response.isBinary
+      }
+      targetRequest.callback(null, response)
+    } else targetRequest.callback(new Error(error), null)
+  }
+
+  const handleCancelUserApiRequest = (userRequestKey) => {
+    if (!userRequestKey) return
+    cancelledUserRequests.add(userRequestKey)
+    const aborts = userRequestSubAborts.get(userRequestKey)
+    if (aborts) {
+      userRequestSubAborts.delete(userRequestKey)
+      for (const abortFn of aborts) {
+        try { abortFn() } catch {}
+      }
+    }
   }
 
   const handleRequest = ({ requestKey, data }) => {
     // console.log(data)
     if (!events.request) return nativeCall(NATIVE_EVENTS_NAMES.response, { requestKey, status: false, errorMessage: 'Request event is not defined' })
+    const prevKey = activeUserRequestKey
+    activeUserRequestKey = requestKey
     try {
-      events.request.call(globalThis.lx, { source: data.source, action: data.action, info: data.info }).then(response => {
+      const reqPromise = events.request.call(globalThis.lx, { source: data.source, action: data.action, info: data.info })
+      activeUserRequestKey = prevKey
+      reqPromise.then(response => {
+        userRequestSubAborts.delete(requestKey)
+        if (cancelledUserRequests.delete(requestKey)) return
         let result
         switch (data.action) {
           case 'musicUrl':
@@ -250,10 +287,15 @@ globalThis.lx_setup = (key, id, name, description, version, author, homepage, ra
         }
         nativeCall(NATIVE_EVENTS_NAMES.response, { requestKey, status: true, result })
       }).catch(err => {
+        userRequestSubAborts.delete(requestKey)
+        if (cancelledUserRequests.delete(requestKey)) return
         // console.log('handleRequest err', err)
         nativeCall(NATIVE_EVENTS_NAMES.response, { requestKey, status: false, errorMessage: err.message })
       })
     } catch (err) {
+      activeUserRequestKey = prevKey
+      userRequestSubAborts.delete(requestKey)
+      if (cancelledUserRequests.delete(requestKey)) return
       // console.log('handleRequest call err', err)
       nativeCall(NATIVE_EVENTS_NAMES.response, { requestKey, status: false, errorMessage: err.message })
     }
@@ -270,6 +312,9 @@ globalThis.lx_setup = (key, id, name, description, version, author, homepage, ra
         return
       case 'request':
         handleRequest(data)
+        return
+      case 'cancelUserApiRequest':
+        handleCancelUserApiRequest(data)
         return
       case 'response':
         handleNativeResponse(data)

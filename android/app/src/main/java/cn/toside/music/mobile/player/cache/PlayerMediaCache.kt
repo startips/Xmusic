@@ -1,8 +1,11 @@
 package cn.toside.music.mobile.player.cache
 
 import android.content.ContentResolver
+import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -119,11 +122,33 @@ object PlayerMediaCache {
     }
   }
 
+  /**
+   * Returns true only when the full media payload for [keyOrUrl] is completely cached
+   * (known content length > 0 and all bytes [0, length) are present in SimpleCache).
+   */
   fun isCached(keyOrUrl: String): Boolean {
     synchronized(lock) {
       val c = cache ?: return false
       return try {
-        c.getCachedSpans(keyOrUrl).isNotEmpty()
+        val knownLength = ContentMetadata.getContentLength(c.getContentMetadata(keyOrUrl))
+        if (knownLength <= 0L) return false
+        c.getCachedBytes(keyOrUrl, 0L, knownLength) >= knownLength
+      } catch (_: Exception) {
+        false
+      }
+    }
+  }
+
+  /**
+   * Returns true if at least [minBytes] (or full content if shorter) from position 0 are cached.
+   */
+  fun isLeadingCached(keyOrUrl: String, minBytes: Long = 64L * 1024L): Boolean {
+    synchronized(lock) {
+      val c = cache ?: return false
+      return try {
+        val knownLength = ContentMetadata.getContentLength(c.getContentMetadata(keyOrUrl))
+        val target = if (knownLength > 0L) min(knownLength, minBytes) else minBytes
+        target > 0L && c.getCachedBytes(keyOrUrl, 0L, target) >= target
       } catch (_: Exception) {
         false
       }
@@ -227,14 +252,53 @@ object PlayerMediaCache {
       .setFlags(flags)
   }
 
+  /**
+   * Resolves a legacy raw filesystem path (e.g. /sdcard/... or /storage/emulated/0/...)
+   * to its MediaStore content:// URI when direct POSIX reads are restricted by Scoped Storage.
+   */
+  fun resolvePlayableLocalUri(context: Context, uri: Uri): Uri {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return uri
+    val scheme = uri.scheme
+    if (scheme != null && scheme != ContentResolver.SCHEME_FILE) return uri
+    val rawPath = uri.path ?: return uri
+    val file = File(rawPath)
+    if (file.exists() && file.canRead()) return uri
+
+    val normalizedPath = if (rawPath.startsWith("/sdcard/")) {
+      "/storage/emulated/0/" + rawPath.removePrefix("/sdcard/")
+    } else {
+      rawPath
+    }
+    return try {
+      context.applicationContext.contentResolver.query(
+        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+        arrayOf(MediaStore.Audio.Media._ID),
+        "${MediaStore.Audio.Media.DATA} = ?",
+        arrayOf(normalizedPath),
+        null,
+      )?.use { cursor ->
+        if (cursor.moveToFirst()) {
+          val id = cursor.getLong(0)
+          ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+        } else {
+          uri
+        }
+      } ?: uri
+    } catch (_: Exception) {
+      uri
+    }
+  }
+
   fun buildMediaSource(
     context: Context,
     uri: Uri,
     userAgent: String?,
     headers: Map<String, String>?,
     cacheKey: String? = null,
+    mediaId: String? = null,
   ): MediaSource {
     val isLocal = isLocalUri(uri)
+    val effectiveUri = if (isLocal) resolvePlayableLocalUri(context, uri) else uri
     val dsFactory: DataSource.Factory = if (isLocal) {
       DefaultDataSource.Factory(context)
     } else {
@@ -246,7 +310,10 @@ object PlayerMediaCache {
       }
     }
 
-    val mediaItemBuilder = MediaItem.Builder().setUri(uri)
+    val mediaItemBuilder = MediaItem.Builder().setUri(effectiveUri)
+    if (!mediaId.isNullOrBlank()) {
+      mediaItemBuilder.setMediaId(mediaId)
+    }
     if (!isLocal && !cacheKey.isNullOrBlank()) {
       mediaItemBuilder.setCustomCacheKey(cacheKey)
     }

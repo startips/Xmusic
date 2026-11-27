@@ -13,11 +13,14 @@ import com.whl.quickjs.wrapper.JSCallFunction
 import com.whl.quickjs.wrapper.QuickJSContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import org.json.JSONTokener
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -38,7 +41,8 @@ data class UserApiScriptInfo(
 /**
  * Single-thread coroutine-confined QuickJS runtime for UserApi custom scripts.
  * All QuickJSContext creation, evaluation, invocation, timeout callbacks, and destruction
- * strictly execute on the single dedicated QuickJS thread.
+ * strictly execute on the single dedicated QuickJS thread, while script HTTP requests execute
+ * directly on native OkHttp without crossing the React Native JS bridge.
  */
 class QuickJsEngine(
   private val reactContext: ReactApplicationContext,
@@ -60,6 +64,8 @@ class QuickJsEngine(
     emitLog("error", "Uncaught exception in QuickJsEngine: ${ex.message}")
   }
   private val scope = CoroutineScope(SupervisorJob() + jsDispatcher + exceptionHandler)
+  private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO + exceptionHandler)
+  private val httpClient = QuickJsHttpClient()
 
   private val destroyed = AtomicBoolean(false)
   private var jsContext: QuickJSContext? = null
@@ -88,6 +94,8 @@ class QuickJsEngine(
 
   fun destroy() {
     if (!destroyed.compareAndSet(false, true)) return
+    httpClient.cancelAll()
+    ioScope.cancel()
     scope.cancel()
     try {
       executor.execute {
@@ -110,6 +118,7 @@ class QuickJsEngine(
       QuickJSLoader.init()
       loaderInitialized = true
     }
+    httpClient.cancelAll()
     key = UUID.randomUUID().toString()
     inited = false
 
@@ -162,6 +171,48 @@ class QuickJsEngine(
     }
   }
 
+  private fun handleNativeHttpRequest(rawData: String) {
+    val payload = try {
+      JSONObject(rawData)
+    } catch (e: Exception) {
+      Log.w(TAG, "Malformed HTTP request payload: ${e.message}")
+      return
+    }
+    val requestKey = payload.optString("requestKey", "")
+    val url = payload.optString("url", "")
+    val options = payload.optJSONObject("options")
+    if (requestKey.isEmpty() || url.isEmpty()) return
+
+    val activeKey = key
+    httpClient.execute(requestKey, url, options, ioScope) { reqKey, error, respJson ->
+      if (destroyed.get()) return@execute
+      val responsePayload = JSONObject().apply {
+        put("requestKey", reqKey)
+        if (error != null) put("error", error) else put("error", JSONObject.NULL)
+        if (respJson != null) put("response", respJson) else put("response", JSONObject.NULL)
+      }.toString()
+      scope.launch {
+        if (!destroyed.get() && jsContext != null && key == activeKey) {
+          callJsOnJsThread("response", responsePayload)
+        }
+      }
+    }
+  }
+
+  private fun handleNativeCancelRequest(rawData: String) {
+    val reqKey = try {
+      when (val parsed = JSONTokener(rawData).nextValue()) {
+        is String -> parsed
+        else -> rawData
+      }
+    } catch (_: Exception) {
+      rawData
+    }
+    if (reqKey.isNotEmpty()) {
+      httpClient.cancel(reqKey)
+    }
+  }
+
   private fun bindNativeBridge(ctx: QuickJSContext) {
     val global = ctx.globalObject
 
@@ -169,9 +220,19 @@ class QuickJsEngine(
       if (args != null && args.size >= 3 && key == args[0]) {
         val action = args[1] as? String ?: return@JSCallFunction null
         val data = args[2] as? String
-        if (action == "init") {
-          if (inited) return@JSCallFunction null
-          inited = true
+        when (action) {
+          "request" -> {
+            if (data != null) handleNativeHttpRequest(data)
+            return@JSCallFunction null
+          }
+          "cancelRequest" -> {
+            if (data != null) handleNativeCancelRequest(data)
+            return@JSCallFunction null
+          }
+          "init" -> {
+            if (inited) return@JSCallFunction null
+            inited = true
+          }
         }
         emitAction(action, data)
       }
@@ -196,7 +257,7 @@ class QuickJsEngine(
         sb.append('[')
         for (i in byteArray.indices) {
           if (i > 0) sb.append(',')
-          sb.append(byteArray[i].toInt())
+          sb.append(byteArray[i].toInt() and 0xFF)
         }
         sb.append(']')
         sb.toString()

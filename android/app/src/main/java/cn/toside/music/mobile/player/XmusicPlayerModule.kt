@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.support.v4.media.session.PlaybackStateCompat
-import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import cn.toside.music.mobile.core.getBooleanOrDefault
 import cn.toside.music.mobile.core.getDoubleOrDefault
@@ -85,13 +84,6 @@ class XmusicPlayerModule(
     if (connecting) return
     connecting = true
     val intent = Intent(reactAppContext, XmusicPlaybackService::class.java)
-    try {
-      ContextCompat.startForegroundService(reactAppContext, intent)
-    } catch (_: Exception) {
-      try {
-        reactAppContext.startService(intent)
-      } catch (_: Exception) {}
-    }
     reactAppContext.bindService(intent, this, Context.BIND_AUTO_CREATE)
   }
 
@@ -156,6 +148,7 @@ class XmusicPlayerModule(
       promise.reject("ERR_INVALID_URL", "Track url is empty")
       return
     }
+    val trackId = track.getStringOrNull("id").orEmpty()
     val userAgent = track.getStringOrNull("userAgent")
     val cacheKey = track.getStringOrNull("cacheKey")
     val durationSec = track.getDoubleOrDefault("duration", 0.0)
@@ -170,7 +163,47 @@ class XmusicPlayerModule(
         durationSec = durationSec,
         startTimeSec = startTimeSec,
         autoPlay = autoPlay,
+        trackId = trackId,
       )
+      promise.resolve(null)
+    }
+  }
+
+  @ReactMethod
+  fun setNextTrack(track: ReadableMap?, promise: Promise) {
+    val b = binder
+    val url = track.getStringOrNull("url")
+    val trackId = track.getStringOrNull("id").orEmpty()
+    if (b == null || url.isNullOrBlank() || trackId.isBlank()) {
+      promise.resolve(null)
+      return
+    }
+    val userAgent = track.getStringOrNull("userAgent")
+    val cacheKey = track.getStringOrNull("cacheKey")
+    val durationSec = track.getDoubleOrDefault("duration", 0.0)
+    val headersMap = extractStringMap(track?.getMap("headers"))
+    b.post {
+      b.controller.setNextTrack(
+        trackId = trackId,
+        url = url,
+        userAgent = userAgent,
+        headers = headersMap,
+        cacheKey = cacheKey,
+        durationSec = durationSec,
+      )
+      promise.resolve(null)
+    }
+  }
+
+  @ReactMethod
+  fun clearNextTrack(promise: Promise) {
+    val b = binder
+    if (b == null) {
+      promise.resolve(null)
+      return
+    }
+    b.post {
+      b.controller.clearNextTrack()
       promise.resolve(null)
     }
   }

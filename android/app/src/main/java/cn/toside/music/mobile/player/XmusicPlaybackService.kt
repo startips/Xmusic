@@ -12,10 +12,13 @@ import android.os.Process
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.util.UnstableApi
+import cn.toside.music.mobile.MainActivity
 import cn.toside.music.mobile.player.session.XmusicMediaNotificationManager
 
 /**
  * Foreground media playback service owning [XmusicPlayerController] and MediaSession.
+ * Supports lazy foreground promotion (no placeholder notification while idle-bound) and
+ * native cold-start resume for local or cached tracks via desktop widgets / media keys.
  */
 @UnstableApi
 class XmusicPlaybackService : Service() {
@@ -39,17 +42,7 @@ class XmusicPlaybackService : Service() {
 
   override fun onCreate() {
     super.onCreate()
-    val ctrl = ensureController()
-    val placeholder = ctrl.notificationManager.buildPlaceholderNotification()
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      startForeground(
-        XmusicMediaNotificationManager.NOTIFICATION_ID,
-        placeholder,
-        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
-      )
-    } else {
-      startForeground(XmusicMediaNotificationManager.NOTIFICATION_ID, placeholder)
-    }
+    ensureController()
   }
 
   override fun onBind(intent: Intent?): IBinder {
@@ -59,6 +52,13 @@ class XmusicPlaybackService : Service() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val action = intent?.action
+    val startedAsFgs = intent?.getBooleanExtra("started_as_fgs", false) == true
+    if (startedAsFgs) {
+      val ctrl = ensureController()
+      if (!ctrl.notificationManager.session.isActive) {
+        promotePlaceholderIfStartedForeground()
+      }
+    }
     if (action == XmusicMediaNotificationManager.ACTION_TOGGLE_FAVORITE) {
       if (controller == null || !ensureController().notificationManager.session.isActive) {
         stopIfColdStart()
@@ -69,15 +69,24 @@ class XmusicPlaybackService : Service() {
     }
 
     if (action != null && action.startsWith("xmusic_widget_")) {
-      val ctrl = controller
-      if (ctrl == null || !ctrl.notificationManager.session.isActive) {
-        stopIfColdStart()
+      val ctrl = ensureController()
+      if (!ctrl.notificationManager.session.isActive) {
+        if (action == "xmusic_widget_play_pause") {
+          handleColdStartPlayRequest(ctrl)
+        } else {
+          launchMainActivityFallback()
+          stopIfColdStart()
+        }
         return START_NOT_STICKY
       }
       when (action) {
         "xmusic_widget_play_pause" -> {
           val playing = ctrl.getState() == PlaybackStateCompat.STATE_PLAYING
-          XmusicPlayerEventBus.emit(if (playing) "remote-pause" else "remote-play")
+          if (XmusicPlayerEventBus.hasActiveBridge()) {
+            XmusicPlayerEventBus.emit(if (playing) "remote-pause" else "remote-play")
+          } else {
+            if (playing) ctrl.pause() else ctrl.play()
+          }
         }
         "xmusic_widget_prev" -> XmusicPlayerEventBus.emit("remote-previous")
         "xmusic_widget_next" -> XmusicPlayerEventBus.emit("remote-next")
@@ -86,17 +95,57 @@ class XmusicPlaybackService : Service() {
     }
 
     if (action == Intent.ACTION_MEDIA_BUTTON) {
-      val ctrl = controller
-      if (ctrl == null || !ctrl.notificationManager.session.isActive) {
-        stopIfColdStart()
+      val ctrl = ensureController()
+      if (!ctrl.notificationManager.session.isActive) {
+        handleColdStartPlayRequest(ctrl)
       } else {
         MediaButtonReceiver.handleIntent(ctrl.notificationManager.session, intent)
       }
       return START_NOT_STICKY
     }
 
-    ensureController()
+    val ctrl = ensureController()
+    if (!ctrl.notificationManager.session.isActive) {
+      promotePlaceholderIfStartedForeground()
+    }
     return START_NOT_STICKY
+  }
+
+  private fun handleColdStartPlayRequest(ctrl: XmusicPlayerController) {
+    if (XmusicPlayerEventBus.hasActiveBridge()) {
+      XmusicPlayerEventBus.emit("remote-play")
+      return
+    }
+    if (ctrl.tryResumeFromRecovery()) {
+      return
+    }
+    launchMainActivityFallback()
+    stopIfColdStart()
+  }
+
+  private fun launchMainActivityFallback() {
+    try {
+      val launch = Intent(this, MainActivity::class.java).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+      }
+      startActivity(launch)
+    } catch (_: Exception) {}
+  }
+
+  private fun promotePlaceholderIfStartedForeground() {
+    val ctrl = ensureController()
+    val placeholder = ctrl.notificationManager.buildPlaceholderNotification()
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        startForeground(
+          XmusicMediaNotificationManager.NOTIFICATION_ID,
+          placeholder,
+          ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+        )
+      } else {
+        startForeground(XmusicMediaNotificationManager.NOTIFICATION_ID, placeholder)
+      }
+    } catch (_: Exception) {}
   }
 
   private fun stopIfColdStart() {

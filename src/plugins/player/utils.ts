@@ -1,11 +1,24 @@
 import BackgroundTimer from 'react-native-background-timer'
 import nativePlayer from './nativePlayer'
-import { buildTrackCacheKey, playMusic as handlePlayMusic, prefetchTrackAudio } from './playList'
+import {
+  buildTrackCacheKey,
+  clearQueuedNextTrack,
+  playMusic as handlePlayMusic,
+  prefetchTrackAudio,
+  promoteAutoAdvancedTrack,
+  queueNextTrackAudio,
+} from './playList'
 import { existsFile, moveFile, privateStorageDirectoryPath, temporaryDirectoryPath } from '@/utils/fs'
 import { toast } from '@/utils/tools'
 
 export { useBufferProgress } from './hook'
-export { buildTrackCacheKey, prefetchTrackAudio }
+export {
+  buildTrackCacheKey,
+  prefetchTrackAudio,
+  queueNextTrackAudio,
+  clearQueuedNextTrack,
+  promoteAutoAdvancedTrack,
+}
 
 export const isEmpty = (trackId = global.lx.playerTrackId) => !trackId
 

@@ -1,99 +1,76 @@
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { isActive } from '@/utils/tools'
-import { useEffect, useState } from 'react'
 import state, { type InitState } from './state'
 
-export const usePlayerMusicInfo = () => {
-  const [value, update] = useState(state.musicInfo)
-
-  useEffect(() => {
-    global.state_event.on('playerMusicInfoChanged', update)
-    return () => {
-      global.state_event.off('playerMusicInfoChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribePlayerMusicInfo = (onStoreChange: () => void) => {
+  global.state_event.on('playerMusicInfoChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playerMusicInfoChanged', onStoreChange)
+  }
 }
+const getPlayerMusicInfoSnapshot = () => state.musicInfo
+export const usePlayerMusicInfo = () =>
+  useSyncExternalStore(subscribePlayerMusicInfo, getPlayerMusicInfoSnapshot)
 
-export const useLyricStatus = () => {
-  const [value, update] = useState(state.lyricStatus)
-
-  useEffect(() => {
-    update(state.lyricStatus)
-    global.state_event.on('lyricStatusChanged', update)
-    return () => {
-      global.state_event.off('lyricStatusChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribeLyricStatus = (onStoreChange: () => void) => {
+  global.state_event.on('lyricStatusChanged', onStoreChange)
+  return () => {
+    global.state_event.off('lyricStatusChanged', onStoreChange)
+  }
 }
+const getLyricStatusSnapshot = () => state.lyricStatus
+export const useLyricStatus = () =>
+  useSyncExternalStore(subscribeLyricStatus, getLyricStatusSnapshot)
 
-export const usePlayQualityInfo = () => {
-  const [value, update] = useState(state.playQualityInfo)
-
-  useEffect(() => {
-    update(state.playQualityInfo)
-    global.state_event.on('playQualityInfoChanged', update)
-    return () => {
-      global.state_event.off('playQualityInfoChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribePlayQualityInfo = (onStoreChange: () => void) => {
+  global.state_event.on('playQualityInfoChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playQualityInfoChanged', onStoreChange)
+  }
 }
+const getPlayQualityInfoSnapshot = () => state.playQualityInfo
+export const usePlayQualityInfo = () =>
+  useSyncExternalStore(subscribePlayQualityInfo, getPlayQualityInfoSnapshot)
 
-export const usePlayMusicInfo = () => {
-  const [value, update] = useState(state.playMusicInfo)
-
-  useEffect(() => {
-    global.state_event.on('playMusicInfoChanged', update)
-    return () => {
-      global.state_event.off('playMusicInfoChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribePlayMusicInfo = (onStoreChange: () => void) => {
+  global.state_event.on('playMusicInfoChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playMusicInfoChanged', onStoreChange)
+  }
 }
+const getPlayMusicInfoSnapshot = () => state.playMusicInfo
+export const usePlayMusicInfo = () =>
+  useSyncExternalStore(subscribePlayMusicInfo, getPlayMusicInfoSnapshot)
 
-export const usePlayInfo = () => {
-  const [value, update] = useState(state.playInfo)
-
-  useEffect(() => {
-    global.state_event.on('playInfoChanged', update)
-    return () => {
-      global.state_event.off('playInfoChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribePlayInfo = (onStoreChange: () => void) => {
+  global.state_event.on('playInfoChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playInfoChanged', onStoreChange)
+  }
 }
+const getPlayInfoSnapshot = () => state.playInfo
+export const usePlayInfo = () =>
+  useSyncExternalStore(subscribePlayInfo, getPlayInfoSnapshot)
 
-export const useStatusText = () => {
-  const [value, update] = useState(state.statusText)
-
-  useEffect(() => {
-    global.state_event.on('playStateTextChanged', update)
-    return () => {
-      global.state_event.off('playStateTextChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribeStatusText = (onStoreChange: () => void) => {
+  global.state_event.on('playStateTextChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playStateTextChanged', onStoreChange)
+  }
 }
+const getStatusTextSnapshot = () => state.statusText
+export const useStatusText = () =>
+  useSyncExternalStore(subscribeStatusText, getStatusTextSnapshot)
 
-export const useIsPlay = () => {
-  const [value, update] = useState(state.isPlay)
-
-  useEffect(() => {
-    global.state_event.on('playStateChanged', update)
-    return () => {
-      global.state_event.off('playStateChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribeIsPlay = (onStoreChange: () => void) => {
+  global.state_event.on('playStateChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playStateChanged', onStoreChange)
+  }
 }
+const getIsPlaySnapshot = () => state.isPlay
+export const useIsPlay = () =>
+  useSyncExternalStore(subscribeIsPlay, getIsPlaySnapshot)
 
 export const useProgress = (autoUpdate = true) => {
   const [value, update] = useState(state.progress)
@@ -113,16 +90,12 @@ export const useProgress = (autoUpdate = true) => {
   return value
 }
 
-export const useTempPlayList = () => {
-  const [value, update] = useState(state.tempPlayList)
-
-  useEffect(() => {
-    update([...state.tempPlayList])
-    global.state_event.on('playTempPlayListChanged', update)
-    return () => {
-      global.state_event.off('playTempPlayListChanged', update)
-    }
-  }, [])
-
-  return value
+const subscribeTempPlayList = (onStoreChange: () => void) => {
+  global.state_event.on('playTempPlayListChanged', onStoreChange)
+  return () => {
+    global.state_event.off('playTempPlayListChanged', onStoreChange)
+  }
 }
+const getTempPlayListSnapshot = () => state.tempPlayList
+export const useTempPlayList = () =>
+  useSyncExternalStore(subscribeTempPlayList, getTempPlayListSnapshot)

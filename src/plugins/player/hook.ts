@@ -1,62 +1,33 @@
 import { useEffect, useState } from 'react'
-import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState } from './nativePlayer'
+import nativePlayer from './nativePlayer'
+import playerState from '@/store/player/state'
+import { setBufferProgress } from '@/core/player/progress'
 
 export function useBufferProgress() {
-  const [progress, setProgress] = useState(0)
+  const [progress, setProgress] = useState(playerState.bufferedProgress)
 
   useEffect(() => {
     let isUnmounted = false
-    let preBuffered = 0
-    let duration = 0
-    let interval: ReturnType<typeof setInterval> | null = null
+    setProgress(playerState.bufferedProgress)
 
-    const clearItv = () => {
-      if (!interval) return
-      clearInterval(interval as unknown as number)
-      interval = null
+    const handleChange = (next: number) => {
+      if (!isUnmounted) setProgress(next)
     }
-    const updateBuffer = async() => {
-      const snap = await nativePlayer.getPlaybackSnapshot()
-      if (!duration && snap.duration > 0) duration = snap.duration
-      const buffered = snap.buffered
-      if (duration > 0 && buffered >= duration) clearItv()
-      if (buffered == preBuffered || isUnmounted) return
-      preBuffered = buffered
-      setProgress(duration ? (buffered / duration) : 0)
+    global.state_event.on('bufferProgressChanged', handleChange)
+
+    if (playerState.bufferedProgress === 0 && playerState.musicInfo.id) {
+      void nativePlayer.getPlaybackSnapshot().then((snap) => {
+        if (isUnmounted) return
+        const dur = snap.duration > 0 ? snap.duration : playerState.progress.maxPlayTime
+        if (dur > 0 && snap.buffered > 0) {
+          setBufferProgress(snap.buffered / dur)
+        }
+      }).catch(() => {})
     }
 
-    const sub = addPlayerEventListener<{ state: PlayerState }>(PlayerEvent.PlaybackState, data => {
-      switch (data.state) {
-        case PlayerState.None:
-        case PlayerState.Stopped:
-          clearItv()
-          setProgress(0)
-          break
-        case PlayerState.Paused:
-          clearItv()
-          break
-        case PlayerState.Playing:
-          clearItv()
-          interval = setInterval(updateBuffer, 2000)
-          void updateBuffer()
-          break
-        case PlayerState.Buffering:
-          clearItv()
-          duration = 0
-          interval = setInterval(updateBuffer, 1000)
-          void updateBuffer()
-          break
-      }
-    })
-
-    void updateBuffer()
-    void nativePlayer.getState().then((state) => {
-      if (state == PlayerState.Buffering) interval = setInterval(updateBuffer, 1000)
-    })
     return () => {
       isUnmounted = true
-      sub.remove()
-      clearItv()
+      global.state_event.off('bufferProgressChanged', handleChange)
     }
   }, [])
 

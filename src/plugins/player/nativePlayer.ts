@@ -12,6 +12,7 @@ export enum PlayerState {
 export enum PlayerEvent {
   PlaybackState = 'playback-state',
   PlaybackTrackEnded = 'playback-track-ended',
+  PlaybackTrackAutoAdvanced = 'playback-track-auto-advanced',
   PlaybackError = 'playback-error',
   PlaybackAudioFormat = 'playback-audio-format',
   RemotePlay = 'remote-play',
@@ -71,6 +72,8 @@ interface NativeXmusicPlayerSpec {
   setupPlayer: (options: SetupPlayerOptions) => Promise<void>
   updateOptions: (options: UpdatePlayerOptions) => Promise<void>
   loadTrack: (track: LX.Player.Track, startTimeSec: number, autoPlay: boolean) => Promise<void>
+  setNextTrack: (track: LX.Player.Track) => Promise<void>
+  clearNextTrack: () => Promise<void>
   play: () => Promise<void>
   pause: () => Promise<void>
   stop: (keepSession: boolean) => Promise<void>

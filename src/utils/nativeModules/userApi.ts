@@ -29,6 +29,7 @@ export interface SendResponseParams {
 export interface SendActions {
   request: LX.UserApi.UserApiRequestParams
   response: SendResponseParams
+  cancelUserApiRequest: string
 }
 export const sendAction = <T extends keyof SendActions>(action: T, data: SendActions[T]) => {
   UserApiModule.sendAction(action, JSON.stringify(data))

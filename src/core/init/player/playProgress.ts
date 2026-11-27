@@ -1,6 +1,7 @@
 import { updateListMusics } from '@/core/list'
-import { setMaxplayTime, setNowPlayTime } from '@/core/player/progress'
-import { setCurrentTime, getDuration, getPosition } from '@/plugins/player'
+import { setBufferProgress, setMaxplayTime, setNowPlayTime } from '@/core/player/progress'
+import { setCurrentTime, getDuration } from '@/plugins/player'
+import nativePlayer from '@/plugins/player/nativePlayer'
 import { formatPlayTime2 } from '@/utils/common'
 import { savePlayInfo } from '@/utils/data'
 import { throttleBackgroundTimer } from '@/utils/tools'
@@ -30,12 +31,21 @@ export default () => {
 
   const getCurrentTime = () => {
     let id = playerState.musicInfo.id
-    void getPosition().then(position => {
-      if (!position || id != playerState.musicInfo.id) return
+    void nativePlayer.getPlaybackSnapshot().then(snap => {
+      if (id != playerState.musicInfo.id) return
+      const effectiveDuration = snap.duration > 0 ? snap.duration : playerState.progress.maxPlayTime
+      if (snap.duration > 0 && playerState.progress.maxPlayTime <= 0) {
+        setMaxplayTime(snap.duration)
+      }
+      if (effectiveDuration > 0) {
+        setBufferProgress(snap.buffered / effectiveDuration)
+      }
+      const position = snap.position
+      if (!position) return
       setNowPlayTime(position)
       if (!playerState.isPlay) return
 
-      const maxTime = playerState.progress.maxPlayTime
+      const maxTime = effectiveDuration || playerState.progress.maxPlayTime
       if (maxTime > 30 && position > 5 && maxTime - position <= 18) {
         prefetchNextMusic()
       }
@@ -43,7 +53,7 @@ export default () => {
       if (settingState.setting['player.isSavePlayTime'] && !playerState.playMusicInfo.isTempPlay && isScreenOn && isAppActive) {
         delaySavePlayInfo()
       }
-    })
+    }).catch(() => {})
   }
   const getMaxTime = async() => {
     setMaxplayTime(await getDuration())
@@ -106,8 +116,7 @@ export default () => {
     clearUpdateTimeout()
     setNowPlayTime(0)
     setMaxplayTime(0)
-    // prevProgressStatus = 'none'
-    // handleSetTaskBarState(playProgress.progress, prevProgressStatus)
+    setBufferProgress(0)
   }
 
   const handleError = () => {
@@ -120,10 +129,8 @@ export default () => {
 
 
   const handleSetPlayInfo = () => {
-    // restorePlayTime = playProgress.nowPlayTime
-    // void setCurrentTime(playerState.progress.nowPlayTime)
-    // setMaxplayTime(playProgress.maxPlayTime)
     handlePause()
+    setBufferProgress(0)
     if (!playerState.playMusicInfo.isTempPlay) {
       void savePlayInfo({
         time: playerState.progress.nowPlayTime,

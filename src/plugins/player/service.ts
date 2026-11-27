@@ -2,7 +2,7 @@
 import nativePlayer, { addPlayerEventListener, PlayerEvent, PlayerState, type AudioFormatInfo } from './nativePlayer'
 import { isEmpty } from './utils'
 import { exitApp } from '@/core/common'
-import { pause, play, playNext, playPrev } from '@/core/player/player'
+import { handleAutoAdvancedTrack, pause, play, playNext, playPrev } from '@/core/player/player'
 import { setPlayAudioFormat } from '@/core/player/playInfo'
 import { toggleCurrentTrackFavoriteSilently } from '@/core/player/favoriteSync'
 
@@ -83,6 +83,15 @@ const registerPlaybackService = () => {
         break
     }
     if (global.lx.isPlayedStop) void handleExitApp('Timeout Exit')
+  })
+
+  addPlayerEventListener<{ trackId: string }>(PlayerEvent.PlaybackTrackAutoAdvanced, async({ trackId }) => {
+    if (global.lx.gettingUrlId) return
+    if (global.lx.isPlayedStop) {
+      await handleExitApp('Timeout Exit')
+      return
+    }
+    void handleAutoAdvancedTrack(trackId)
   })
 
   addPlayerEventListener(PlayerEvent.PlaybackTrackEnded, async() => {

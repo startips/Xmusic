@@ -16,6 +16,16 @@ import { apis } from '@/utils/musicSdk/api-source'
 const getOtherSourcePromises = new Map()
 export const existTimeExp = /\[\d{1,2}:.*\d{1,4}\]/
 const otherSourceCache = new Map<LX.Music.MusicInfo | LX.Download.ListItem, LX.Music.MusicInfoOnline[]>()
+const activeMusicUrlCancelFns = new Set<() => void>()
+
+export const cancelPendingMusicUrlRequests = () => {
+  if (!activeMusicUrlCancelFns.size) return
+  const fns = Array.from(activeMusicUrlCancelFns)
+  activeMusicUrlCancelFns.clear()
+  for (const fn of fns) {
+    try { fn() } catch {}
+  }
+}
 
 export const getOtherSource = async(musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, isRefresh = false): Promise<LX.Music.MusicInfoOnline[]> => {
   // if (!isRefresh) {
@@ -263,8 +273,14 @@ export const getOnlineOtherSourceMusicUrl = async({ musicInfos, quality, onToggl
   if (cachedUrl && !isRefresh) return { url: cachedUrl, musicInfo, quality: itemQuality, isFromCache: true }
 
   let reqPromise
+  let cancelFn: (() => void) | null = null
   try {
-    reqPromise = musicSdk[musicInfo.source].getMusicUrl(toOldMusicInfo(musicInfo), itemQuality).promise
+    const reqObj = musicSdk[musicInfo.source].getMusicUrl(toOldMusicInfo(musicInfo), itemQuality)
+    if (typeof reqObj.cancelHttp === 'function') {
+      cancelFn = () => { reqObj.cancelHttp() }
+      activeMusicUrlCancelFns.add(cancelFn)
+    }
+    reqPromise = reqObj.promise
   } catch (err: any) {
     reqPromise = Promise.reject(err)
   }
@@ -274,9 +290,11 @@ export const getOnlineOtherSourceMusicUrl = async({ musicInfos, quality, onToggl
     return { musicInfo, url, quality: type, isFromCache: false }
     // eslint-disable-next-line @typescript-eslint/promise-function-async
   }).catch((err: any) => {
-    if (err.message == requestMsg.tooManyRequests) throw err
+    if (err.message == requestMsg.tooManyRequests || err.message == requestMsg.cancelRequest) throw err
     console.log(err)
     return getOnlineOtherSourceMusicUrl({ musicInfos, quality, onToggleSource, isRefresh, retryedSource })
+  }).finally(() => {
+    if (cancelFn) activeMusicUrlCancelFns.delete(cancelFn)
   })
 }
 
@@ -300,8 +318,14 @@ export const handleGetOnlineMusicUrl = async({ musicInfo, quality, onToggleSourc
   const targetQuality = quality ?? getPlayQuality(settingState.setting['player.playQuality'], musicInfo)
 
   let reqPromise
+  let cancelFn: (() => void) | null = null
   try {
-    reqPromise = musicSdk[musicInfo.source].getMusicUrl(toOldMusicInfo(musicInfo), targetQuality).promise
+    const reqObj = musicSdk[musicInfo.source].getMusicUrl(toOldMusicInfo(musicInfo), targetQuality)
+    if (typeof reqObj.cancelHttp === 'function') {
+      cancelFn = () => { reqObj.cancelHttp() }
+      activeMusicUrlCancelFns.add(cancelFn)
+    }
+    reqPromise = reqObj.promise
   } catch (err: any) {
     reqPromise = Promise.reject(err)
   }
@@ -309,7 +333,7 @@ export const handleGetOnlineMusicUrl = async({ musicInfo, quality, onToggleSourc
     return { musicInfo, url, quality: type, isFromCache: false }
   }).catch(async(err: any) => {
     console.log(err)
-    if (!allowToggleSource || err.message == requestMsg.tooManyRequests) throw err
+    if (!allowToggleSource || err.message == requestMsg.tooManyRequests || err.message == requestMsg.cancelRequest) throw err
     onToggleSource()
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     return getOtherSource(musicInfo).then(otherSource => {
@@ -325,6 +349,8 @@ export const handleGetOnlineMusicUrl = async({ musicInfo, quality, onToggleSourc
       }
       throw err
     })
+  }).finally(() => {
+    if (cancelFn) activeMusicUrlCancelFns.delete(cancelFn)
   })
 }
 

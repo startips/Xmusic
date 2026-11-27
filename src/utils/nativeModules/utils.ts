@@ -1,4 +1,4 @@
-import { AppState, NativeEventEmitter, NativeModules } from 'react-native'
+import { AppState, NativeEventEmitter, NativeModules, PermissionsAndroid, Platform } from 'react-native'
 
 const { UtilsModule } = NativeModules
 
@@ -29,20 +29,28 @@ export const getDeviceName = async(): Promise<string> => {
 
 export const isNotificationsEnabled = UtilsModule.isNotificationsEnabled as () => Promise<boolean>
 
-export const requestNotificationPermission = async() => new Promise<boolean>((resolve) => {
-  let subscription = AppState.addEventListener('change', (state) => {
-    if (state != 'active') return
-    subscription.remove()
-    setTimeout(() => {
-      void isNotificationsEnabled().then(resolve)
-    }, 1000)
+export const requestNotificationPermission = async() => {
+  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+    try {
+      const res = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS)
+      if (res === PermissionsAndroid.RESULTS.GRANTED) return true
+    } catch {}
+  }
+  return new Promise<boolean>((resolve) => {
+    let subscription = AppState.addEventListener('change', (state) => {
+      if (state != 'active') return
+      subscription.remove()
+      setTimeout(() => {
+        void isNotificationsEnabled().then(resolve)
+      }, 1000)
+    })
+    UtilsModule.openNotificationPermissionActivity().then((result: boolean) => {
+      if (result) return
+      subscription.remove()
+      resolve(false)
+    })
   })
-  UtilsModule.openNotificationPermissionActivity().then((result: boolean) => {
-    if (result) return
-    subscription.remove()
-    resolve(false)
-  })
-})
+}
 
 export const shareText = async(shareTitle: string, title: string, text: string): Promise<void> => {
   UtilsModule.shareText(shareTitle, title, text)

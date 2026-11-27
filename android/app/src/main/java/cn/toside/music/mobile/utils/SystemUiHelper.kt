@@ -14,6 +14,7 @@ import android.os.Vibrator
 import android.view.Display
 import android.view.HapticFeedbackConstants
 import android.view.WindowManager
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import cn.toside.music.mobile.core.sendJsEvent
@@ -99,7 +100,7 @@ class SystemUiHelper(
       }
     }
     screenOnOffReceiver = receiver
-    reactContext.registerReceiver(receiver, filter)
+    ContextCompat.registerReceiver(reactContext, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
   }
 
   fun screenKeepAwake(keep: Boolean) {

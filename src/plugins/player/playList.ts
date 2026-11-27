@@ -73,6 +73,25 @@ export const prefetchTrackAudio = async(musicInfo: LX.Player.PlayMusic, url: str
   await nativePlayer.prefetchTrack(track, maxBytes)
 }
 
+export const queueNextTrackAudio = async(musicInfo: LX.Player.PlayMusic, url: string): Promise<string | null> => {
+  if (!url) return null
+  const track = buildTrack(musicInfo, url)
+  await nativePlayer.setNextTrack(track)
+  return track.id ?? null
+}
+
+export const clearQueuedNextTrack = async(): Promise<void> => {
+  await nativePlayer.clearNextTrack()
+}
+
+export const promoteAutoAdvancedTrack = (trackId: string, mInfo: LX.Player.MusicInfo) => {
+  global.lx.playerTrackId = trackId
+  state.isPlaying = true
+  state.prevDuration = -1
+  state.prevTrackId = ''
+  delayUpdateMusicInfo(mInfo)
+}
+
 export const updateMetaData = async(musicInfo: LX.Player.MusicInfo, isPlay: boolean, force = false) => {
   const trackId = global.lx.playerTrackId
   if (!force && isPlay == state.isPlaying && trackId == state.prevTrackId) {

@@ -12,3 +12,7 @@ export const setProgress = (currentTime: number, totalTime: number) => {
   playerActions.setProgress(currentTime, totalTime)
 }
 
+export const setBufferProgress = (progress: number) => {
+  playerActions.setBufferProgress(progress)
+}
+

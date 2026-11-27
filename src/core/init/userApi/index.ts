@@ -1,42 +1,24 @@
-import { type InitParams, onScriptAction, sendAction, type ResponseParams, type UpdateInfoParams, type RequestParams } from '@/utils/nativeModules/userApi'
+import { type InitParams, onScriptAction, sendAction, type ResponseParams, type UpdateInfoParams } from '@/utils/nativeModules/userApi'
 import { log, setUserApiList, setUserApiStatus } from '@/core/userApi'
 import settingState from '@/store/setting/state'
 import BackgroundTimer from 'react-native-background-timer'
-import { fetchData } from './request'
 import { getUserApiList } from '@/utils/data'
+import { requestMsg } from '@/utils/message'
 import { confirmDialog, openUrl, tipDialog } from '@/utils/tools'
 
 
-export default async(setting: LX.AppSetting) => {
+export default async(_setting: LX.AppSetting) => {
   const userApiRequestMap = new Map<string, { resolve: (value: ResponseParams['result']) => void, reject: (error: Error) => void, timeout: number }>()
-  const scriptRequestMap = new Map<string, { request: Promise<any>, abort: () => void }>()
 
-  const cancelRequest = (requestKey: string, message: string) => {
-    const target = scriptRequestMap.get(requestKey)
+  const cancelUserApiRequest = (requestKey: string) => {
+    const target = userApiRequestMap.get(requestKey)
     if (!target) return
-    scriptRequestMap.delete(requestKey)
-    target.abort()
+    userApiRequestMap.delete(requestKey)
+    BackgroundTimer.clearTimeout(target.timeout)
+    sendAction('cancelUserApiRequest', requestKey)
+    target.reject(new Error(requestMsg.cancelRequest))
   }
-  const sendScriptRequest = (requestKey: string, url: string, options: RequestParams['options']) => {
-    let req = fetchData(url, options)
-    req.request.then(response => {
-      // console.log(response)
-      sendAction('response', {
-        error: null,
-        requestKey,
-        response,
-      })
-    }).catch(err => {
-      sendAction('response', {
-        error: err.message,
-        requestKey,
-        response: null,
-      })
-    }).finally(() => {
-      scriptRequestMap.delete(requestKey)
-    })
-    scriptRequestMap.set(requestKey, req)
-  }
+
   const sendUserApiRequest = async(data: LX.UserApi.UserApiRequestParams) => {
     const handleApiUpdate = () => {
       const target = userApiRequestMap.get(data.requestKey)
@@ -53,6 +35,7 @@ export default async(setting: LX.AppSetting) => {
           const target = userApiRequestMap.get(data.requestKey)
           if (!target) return
           userApiRequestMap.delete(data.requestKey)
+          sendAction('cancelUserApiRequest', data.requestKey)
           target.reject(new Error('request timeout'))
         }, 25_000),
       })
@@ -72,7 +55,6 @@ export default async(setting: LX.AppSetting) => {
     else target.reject(new Error(errorMessage ?? 'failed'))
   }
   const handleStateChange = ({ status, errorMessage, info }: InitParams) => {
-    // console.log(status, message, info)
     setUserApiStatus(status, errorMessage)
     if (!info || info.id !== settingState.setting['common.apiSource']) return
     if (status) {
@@ -88,8 +70,8 @@ export default async(setting: LX.AppSetting) => {
                 apis[source].getMusicUrl = (songInfo: LX.Music.MusicInfo, type: LX.Quality) => {
                   const requestKey = `request__${Math.random().toString().substring(2)}`
                   return {
-                    canceleFn() {
-                      // userApiRequestCancel(requestKey)
+                    cancelHttp() {
+                      cancelUserApiRequest(requestKey)
                     },
                     promise: sendUserApiRequest({
                       requestKey,
@@ -103,7 +85,6 @@ export default async(setting: LX.AppSetting) => {
                       },
                       // eslint-disable-next-line @typescript-eslint/promise-function-async
                     }).then(res => {
-                      // console.log(res)
                       return { type, url: res.data.url }
                     }).catch(err => {
                       console.log(err.message)
@@ -116,8 +97,8 @@ export default async(setting: LX.AppSetting) => {
                 apis[source].getLyric = (songInfo: LX.Music.MusicInfo) => {
                   const requestKey = `request__${Math.random().toString().substring(2)}`
                   return {
-                    canceleFn() {
-                      // userApiRequestCancel(requestKey)
+                    cancelHttp() {
+                      cancelUserApiRequest(requestKey)
                     },
                     promise: sendUserApiRequest({
                       requestKey,
@@ -131,7 +112,6 @@ export default async(setting: LX.AppSetting) => {
                       },
                       // eslint-disable-next-line @typescript-eslint/promise-function-async
                     }).then(res => {
-                      // console.log(res)
                       return res.data
                     }).catch(async err => {
                       console.log(err.message)
@@ -144,8 +124,8 @@ export default async(setting: LX.AppSetting) => {
                 apis[source].getPic = (songInfo: LX.Music.MusicInfo) => {
                   const requestKey = `request__${Math.random().toString().substring(2)}`
                   return {
-                    canceleFn() {
-                      // userApiRequestCancel(requestKey)
+                    cancelHttp() {
+                      cancelUserApiRequest(requestKey)
                     },
                     promise: sendUserApiRequest({
                       requestKey,
@@ -159,7 +139,6 @@ export default async(setting: LX.AppSetting) => {
                       },
                       // eslint-disable-next-line @typescript-eslint/promise-function-async
                     }).then(res => {
-                      // console.log(res)
                       return res.data
                     }).catch(async err => {
                       console.log(err.message)
@@ -182,7 +161,6 @@ export default async(setting: LX.AppSetting) => {
       if (errorMessage) {
         void tipDialog({
           message: `${global.i18n.t('user_api__init_failed_alert', { name: info.name })}\n${errorMessage}`,
-          // selection: true,
           btnText: global.i18n.t('ok'),
         })
       }
@@ -193,8 +171,6 @@ export default async(setting: LX.AppSetting) => {
     if (updateUrl) {
       void confirmDialog({
         message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
-        // selection: true,
-        // showCancel: true,
         confirmButtonText: global.i18n.t('user_api_update_alert_open_url'),
         cancelButtonText: global.i18n.t('close'),
       }).then(confirm => {
@@ -206,14 +182,12 @@ export default async(setting: LX.AppSetting) => {
     } else {
       void tipDialog({
         message: `${global.i18n.t('user_api_update_alert', { name })}\n${log}`,
-        // selection: true,
         btnText: global.i18n.t('ok'),
       })
     }
   }
 
   onScriptAction((event) => {
-    // console.log('script actuon: ', event)
     switch (event.action) {
       case 'init':
         if ((event as unknown as { errorMessage?: string }).errorMessage) event.data.errorMessage = (event as unknown as { errorMessage: string }).errorMessage
@@ -221,12 +195,6 @@ export default async(setting: LX.AppSetting) => {
         break
       case 'response':
         handleUserApiResponse(event.data)
-        break
-      case 'request':
-        sendScriptRequest(event.data.requestKey, event.data.url, event.data.options)
-        break
-      case 'cancelRequest':
-        cancelRequest(event.data, 'request canceled')
         break
       case 'showUpdateAlert':
         showUpdateAlert(event.data)

@@ -88,6 +88,10 @@ export class StateEvent extends Event {
     this.emit('playProgressChanged', progress)
   }
 
+  bufferProgressChanged(progress: PlayerState['bufferedProgress']) {
+    this.emit('bufferProgressChanged', progress)
+  }
+
   playPlayedListChanged(playedList: PlayerState['playedList']) {
     this.emit('playPlayedListChanged', playedList)
   }

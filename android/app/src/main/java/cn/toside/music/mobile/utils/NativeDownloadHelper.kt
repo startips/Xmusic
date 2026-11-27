@@ -11,6 +11,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
@@ -97,8 +98,9 @@ class NativeDownloadHelper(
       prev.job.cancel()
     }
 
-    lateinit var entry: ActiveDownload
-    val job = coroutineScope.scope.launch(Dispatchers.IO) {
+    val entryRef = arrayOfNulls<ActiveDownload>(1)
+    val job = coroutineScope.scope.launch(Dispatchers.IO, start = CoroutineStart.LAZY) {
+      val currentEntry = entryRef[0]
       val targetFile = File(toFile)
       val partFile = File("${targetFile.absolutePath}.part")
       try {
@@ -116,7 +118,7 @@ class NativeDownloadHelper(
           .build()
 
         val call = client.newCall(request)
-        entry.call = call
+        currentEntry?.call = call
         ensureActive()
 
         call.execute().use { response ->
@@ -209,12 +211,16 @@ class NativeDownloadHelper(
         if (partFile.exists()) partFile.delete()
         promise.reject("ERR_DOWNLOAD", t.message ?: t.javaClass.simpleName, t)
       } finally {
-        activeDownloads.remove(jobId, entry)
+        if (currentEntry != null) {
+          activeDownloads.remove(jobId, currentEntry)
+        }
       }
     }
 
-    entry = ActiveDownload(job = job)
+    val entry = ActiveDownload(job = job)
+    entryRef[0] = entry
     activeDownloads[jobId] = entry
+    job.start()
   }
 
   private fun emitProgress(jobId: Int, contentLength: Long, bytesWritten: Long) {

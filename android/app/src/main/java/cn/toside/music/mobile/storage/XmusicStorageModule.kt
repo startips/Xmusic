@@ -9,12 +9,19 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.util.concurrent.atomic.AtomicInteger
 
 class XmusicStorageModule(
   private val reactAppContext: ReactApplicationContext,
 ) : ReactContextBaseJavaModule(reactAppContext) {
 
   private val coroutineScope = ModuleCoroutineScope()
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  private val writeDispatcher = Dispatchers.IO.limitedParallelism(1)
+  private val pendingWrites = AtomicInteger(0)
+
   private val engine: XmusicStorageEngine by lazy {
     XmusicStorageEngine.getInstance(reactAppContext)
   }
@@ -26,16 +33,34 @@ class XmusicStorageModule(
     super.invalidate()
   }
 
+  private fun launchWrite(promise: Promise, errorCode: String, block: () -> Any?) {
+    pendingWrites.incrementAndGet()
+    promise.launchCatching(coroutineScope.scope, writeDispatcher, errorCode) {
+      try {
+        block()
+      } finally {
+        pendingWrites.decrementAndGet()
+      }
+    }
+  }
+
+  private fun launchRead(promise: Promise, errorCode: String, block: () -> Any?) {
+    val dispatcher = if (pendingWrites.get() > 0) writeDispatcher else Dispatchers.IO
+    promise.launchCatching(coroutineScope.scope, dispatcher, errorCode) {
+      block()
+    }
+  }
+
   @ReactMethod
   fun getItem(key: String, promise: Promise) {
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_GET") {
+    launchRead(promise, "ERR_STORAGE_GET") {
       engine.getItem(key)
     }
   }
 
   @ReactMethod
   fun setItem(key: String, value: String, promise: Promise) {
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_SET") {
+    launchWrite(promise, "ERR_STORAGE_SET") {
       engine.setItem(key, value)
       null
     }
@@ -43,7 +68,7 @@ class XmusicStorageModule(
 
   @ReactMethod
   fun removeItem(key: String, promise: Promise) {
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_REMOVE") {
+    launchWrite(promise, "ERR_STORAGE_REMOVE") {
       engine.removeItem(key)
       null
     }
@@ -51,7 +76,7 @@ class XmusicStorageModule(
 
   @ReactMethod
   fun getAllKeys(promise: Promise) {
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_KEYS") {
+    launchRead(promise, "ERR_STORAGE_KEYS") {
       val arr = Arguments.createArray()
       for (k in engine.getAllKeys()) {
         arr.pushString(k)
@@ -67,7 +92,7 @@ class XmusicStorageModule(
       val k = keys.getString(i)
       if (!k.isNullOrEmpty()) keyList.add(k)
     }
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_MULTIGET") {
+    launchRead(promise, "ERR_STORAGE_MULTIGET") {
       val out = Arguments.createArray()
       for ((k, v) in engine.multiGet(keyList)) {
         val pair = Arguments.createArray()
@@ -89,7 +114,7 @@ class XmusicStorageModule(
       val v = pair.getString(1)
       entries.add(k to v)
     }
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_MULTISET") {
+    launchWrite(promise, "ERR_STORAGE_MULTISET") {
       engine.multiSet(entries)
       null
     }
@@ -102,7 +127,7 @@ class XmusicStorageModule(
       val k = keys.getString(i)
       if (!k.isNullOrEmpty()) keyList.add(k)
     }
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_MULTIREMOVE") {
+    launchWrite(promise, "ERR_STORAGE_MULTIREMOVE") {
       engine.multiRemove(keyList)
       null
     }
@@ -110,8 +135,78 @@ class XmusicStorageModule(
 
   @ReactMethod
   fun clear(promise: Promise) {
-    promise.launchCatching(coroutineScope.scope, Dispatchers.IO, "ERR_STORAGE_CLEAR") {
+    launchWrite(promise, "ERR_STORAGE_CLEAR") {
       engine.clear()
+      null
+    }
+  }
+
+  @ReactMethod
+  fun getPlaylistTracks(listId: String, promise: Promise) {
+    launchRead(promise, "ERR_PLAYLIST_GET") {
+      engine.getPlaylistTracksJson(listId)
+    }
+  }
+
+  @ReactMethod
+  fun overwritePlaylistTracks(listId: String, tracksJsonArray: String, promise: Promise) {
+    launchWrite(promise, "ERR_PLAYLIST_OVERWRITE") {
+      engine.overwritePlaylistTracks(listId, tracksJsonArray)
+      null
+    }
+  }
+
+  @ReactMethod
+  fun addPlaylistTracks(listId: String, tracksJsonArray: String, atTop: Boolean, promise: Promise) {
+    launchWrite(promise, "ERR_PLAYLIST_ADD") {
+      engine.addPlaylistTracks(listId, tracksJsonArray, atTop)
+      null
+    }
+  }
+
+  @ReactMethod
+  fun removePlaylistTracks(listId: String, trackIds: ReadableArray, promise: Promise) {
+    val ids = ArrayList<String>(trackIds.size())
+    for (i in 0 until trackIds.size()) {
+      val id = trackIds.getString(i)
+      if (!id.isNullOrEmpty()) ids.add(id)
+    }
+    launchWrite(promise, "ERR_PLAYLIST_REMOVE") {
+      engine.removePlaylistTracks(listId, ids)
+      null
+    }
+  }
+
+  @ReactMethod
+  fun updatePlaylistTracks(updatesJsonArray: String, promise: Promise) {
+    launchWrite(promise, "ERR_PLAYLIST_UPDATE") {
+      engine.updatePlaylistTracks(updatesJsonArray)
+      null
+    }
+  }
+
+  @ReactMethod
+  fun reorderPlaylistTracks(listId: String, orderedTrackIds: ReadableArray, promise: Promise) {
+    val ids = ArrayList<String>(orderedTrackIds.size())
+    for (i in 0 until orderedTrackIds.size()) {
+      val id = orderedTrackIds.getString(i)
+      if (!id.isNullOrEmpty()) ids.add(id)
+    }
+    launchWrite(promise, "ERR_PLAYLIST_REORDER") {
+      engine.reorderPlaylistTracks(listId, ids)
+      null
+    }
+  }
+
+  @ReactMethod
+  fun clearPlaylistTracks(listIds: ReadableArray, promise: Promise) {
+    val ids = ArrayList<String>(listIds.size())
+    for (i in 0 until listIds.size()) {
+      val id = listIds.getString(i)
+      if (!id.isNullOrEmpty()) ids.add(id)
+    }
+    launchWrite(promise, "ERR_PLAYLIST_CLEAR") {
+      engine.clearPlaylistTracks(ids)
       null
     }
   }

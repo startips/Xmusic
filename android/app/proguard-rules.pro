@@ -14,7 +14,7 @@
 -keep class cn.toside.music.mobile.view.** { *; }
 
 
--keep class org.jaudiotagger.tag.** { *; }
+-keep class org.jaudiotagger.** { *; }
 
 
 -keep public class * implements com.bumptech.glide.module.GlideModule
@@ -30,3 +30,6 @@
 -keep class cn.toside.music.mobile.**Module { *; }
 -keep class cn.toside.music.mobile.**Package { *; }
 -keep class cn.toside.music.mobile.player.** { *; }
+-keep class cn.toside.music.mobile.userApi.QuickJsConsole { *; }
+-keep class com.whl.quickjs.** { *; }
+-keep class cn.toside.music.mobile.widget.** { *; }
