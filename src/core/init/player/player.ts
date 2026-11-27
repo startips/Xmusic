@@ -3,7 +3,7 @@ import { syncAudioEffectsFromSetting, syncAudioTransitionFromSetting } from '@/c
 import { syncNativeAudioSession } from '@/utils/nativeModules/audioEffect'
 import { syncCurrentTrackFavoriteNotification } from '@/core/player/favoriteSync'
 import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
-import { pause, playNext } from '@/core/player/player'
+import { cancelNextMusicPrefetch, pause, playNext, resetNextMusicPrefetch, scheduleNextMusicPrefetch } from '@/core/player/player'
 import { setStatusText, setIsPlay } from '@/core/player/playStatus'
 // import { resetPlayerMusicInfo } from '@/core/player/playInfo'
 import { setStop } from '@/plugins/player'
@@ -21,9 +21,11 @@ export default async(setting: LX.AppSetting) => {
     if (settingState.setting['player.eqEnabled']) {
       void syncNativeAudioSession()
     }
+    scheduleNextMusicPrefetch()
   }
   const setPauseStatus = () => {
     setIsPlay(false)
+    cancelNextMusicPrefetch()
     if (global.lx.isPlayedStop) void pause()
   }
 
@@ -43,6 +45,7 @@ export default async(setting: LX.AppSetting) => {
 
   const setStopStatus = () => {
     setIsPlay(false)
+    cancelNextMusicPrefetch()
     setStatusText('')
     void setStop()
   }
@@ -58,8 +61,10 @@ export default async(setting: LX.AppSetting) => {
     if (keys.includes('player.togglePlayMethod')) {
       const newValue = settings['player.togglePlayMethod']
       if (playerState.playedList.length) clearPlayedList()
+      resetNextMusicPrefetch()
       const playMusicInfo = playerState.playMusicInfo
       if (newValue == 'random' && playMusicInfo.musicInfo && !playMusicInfo.isTempPlay) addPlayedList({ ...(playMusicInfo as LX.Player.PlayMusicInfo) })
+      if (playerState.isPlay) scheduleNextMusicPrefetch(2000)
     }
     if (keys.includes('player.isSoftPlayPause') || keys.includes('player.crossfadeDuration')) {
       syncAudioTransitionFromSetting(settingState.setting)

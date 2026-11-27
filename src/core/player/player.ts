@@ -266,6 +266,7 @@ const handlePlay = async() => {
   }
 
   global.lx.isPlayedStop &&= false
+  cancelNextMusicPrefetch()
   prefetchedMusicId = null
   resetRandomNextMusicInfo()
 
@@ -340,6 +341,7 @@ export const playTempPlayListIndex = async(index: number) => {
 }
 
 const handleToggleStop = async() => {
+  cancelNextMusicPrefetch()
   prefetchedMusicId = null
   setLyricStatus('idle')
   await stop()
@@ -348,10 +350,41 @@ const handleToggleStop = async() => {
   }, 0)
 }
 
+let earlyPrefetchTimer: number | null = null
+
+export const cancelNextMusicPrefetch = () => {
+  if (earlyPrefetchTimer != null) {
+    BackgroundTimer.clearTimeout(earlyPrefetchTimer)
+    earlyPrefetchTimer = null
+  }
+}
+
+export const resetNextMusicPrefetch = () => {
+  cancelNextMusicPrefetch()
+  prefetchedMusicId = null
+  resetRandomNextMusicInfo()
+}
+
+export const scheduleNextMusicPrefetch = (delayMs = 3000) => {
+  cancelNextMusicPrefetch()
+  const targetId = playerState.playMusicInfo.musicInfo?.id
+  if (!targetId || prefetchedMusicId === targetId) return
+  const toggleMethod = settingState.setting['player.togglePlayMethod']
+  if (toggleMethod === 'singleLoop' || toggleMethod === 'none') return
+
+  earlyPrefetchTimer = BackgroundTimer.setTimeout(() => {
+    earlyPrefetchTimer = null
+    if (!playerState.isPlay || global.lx.isPlayedStop) return
+    if (playerState.playMusicInfo.musicInfo?.id !== targetId) return
+    prefetchNextMusic()
+  }, delayMs)
+}
+
 /**
- * 歌曲临近结束时静默预解析下一首播放直链与歌词缓存
+ * 歌曲稳定播放后或临近结束时静默预解析下一首直链、歌词与音频前 4 MiB 缓存
  */
 export const prefetchNextMusic = () => {
+  cancelNextMusicPrefetch()
   const currentId = playerState.playMusicInfo.musicInfo?.id
   if (!currentId || prefetchedMusicId === currentId) return
   const toggleMethod = settingState.setting['player.togglePlayMethod']

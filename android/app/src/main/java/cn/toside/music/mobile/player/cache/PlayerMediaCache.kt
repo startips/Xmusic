@@ -31,8 +31,8 @@ import kotlin.math.min
 
 /**
  * Manages Media3 SimpleCache at files/TrackPlayer (preserving legacy cache compatibility),
- * builds cached/local MediaSource instances, and drives low-priority background full-track
- * and next-track audio prefetching via CacheWriter.
+ * builds cached/local MediaSource instances, and drives low-priority next-track leading
+ * audio prefetching via CacheWriter without competing with active playback connections.
  */
 @UnstableApi
 object PlayerMediaCache {
@@ -41,7 +41,6 @@ object PlayerMediaCache {
   private const val CONNECT_TIMEOUT_MS = 12_000
   private const val READ_TIMEOUT_MS = 15_000
   private const val DEFAULT_NEXT_PREFETCH_BYTES = 4L * 1024L * 1024L
-  private const val MAX_SINGLE_TRACK_CACHE_BYTES = 150L * 1024L * 1024L
   private const val CACHE_WRITER_BUF_BYTES = 64 * 1024
 
   private class PrefetchHandle {
@@ -68,10 +67,7 @@ object PlayerMediaCache {
       isDaemon = true
     }
   }
-  private val currentJobSeq = AtomicInteger(0)
   private val nextJobSeq = AtomicInteger(0)
-  @Volatile
-  private var currentTrackJob: PrefetchHandle? = null
   @Volatile
   private var nextTrackJob: PrefetchHandle? = null
 
@@ -213,16 +209,22 @@ object PlayerMediaCache {
     context: Context,
     userAgent: String?,
     headers: Map<String, String>?,
+    blockOnCache: Boolean,
   ): CacheDataSource.Factory {
     val httpFactory = buildHttpDataSourceFactory(context, userAgent, headers)
     val sinkFactory = CacheDataSink.Factory()
       .setCache(activeCache)
       .setFragmentSize(CacheDataSink.DEFAULT_FRAGMENT_SIZE)
+    val flags = if (blockOnCache) {
+      CacheDataSource.FLAG_BLOCK_ON_CACHE or CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR
+    } else {
+      CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR
+    }
     return CacheDataSource.Factory()
       .setCache(activeCache)
       .setUpstreamDataSourceFactory(httpFactory)
       .setCacheWriteDataSinkFactory(sinkFactory)
-      .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+      .setFlags(flags)
   }
 
   fun buildMediaSource(
@@ -238,7 +240,7 @@ object PlayerMediaCache {
     } else {
       val activeCache = synchronized(lock) { if (maxCacheBytes > 0L) cache else null }
       if (activeCache != null) {
-        buildCacheDataSourceFactory(activeCache, context, userAgent, headers)
+        buildCacheDataSourceFactory(activeCache, context, userAgent, headers, blockOnCache = true)
       } else {
         buildHttpDataSourceFactory(context, userAgent, headers)
       }
@@ -253,12 +255,6 @@ object PlayerMediaCache {
       .createMediaSource(mediaItemBuilder.build())
   }
 
-  fun cancelCurrentTrackPrefetch() {
-    currentJobSeq.incrementAndGet()
-    currentTrackJob?.cancel()
-    currentTrackJob = null
-  }
-
   fun cancelNextTrackPrefetch() {
     nextJobSeq.incrementAndGet()
     nextTrackJob?.cancel()
@@ -266,61 +262,12 @@ object PlayerMediaCache {
   }
 
   fun cancelAllPrefetch() {
-    cancelCurrentTrackPrefetch()
     cancelNextTrackPrefetch()
   }
 
   /**
-   * Downloads remaining uncached spans of the currently playing remote track into SimpleCache
-   * on a low-priority background thread so high-bitrate FLAC/Hi-Res playback never stalls at
-   * ExoPlayer's RAM buffer cap.
-   */
-  fun prefetchFullTrack(
-    context: Context,
-    url: String,
-    userAgent: String?,
-    headers: Map<String, String>?,
-    cacheKey: String?,
-  ) {
-    val appCtx = context.applicationContext
-    val uri = Uri.parse(url)
-    if (isLocalUri(uri)) return
-
-    val activeCache: SimpleCache
-    val maxTrackBytes: Long
-    synchronized(lock) {
-      if (maxCacheBytes <= 0L) return
-      activeCache = cache ?: return
-      maxTrackBytes = min(maxCacheBytes / 2L, MAX_SINGLE_TRACK_CACHE_BYTES)
-    }
-    if (maxTrackBytes <= 0L) return
-
-    val key = cacheKey?.takeIf { it.isNotBlank() } ?: url
-    val seq = currentJobSeq.incrementAndGet()
-    currentTrackJob?.cancel()
-    val handle = PrefetchHandle()
-    currentTrackJob = handle
-
-    prefetchExecutor.execute {
-      if (handle.cancelled.get() || seq != currentJobSeq.get()) return@execute
-      runCacheWriter(
-        appContext = appCtx,
-        activeCache = activeCache,
-        uri = uri,
-        key = key,
-        userAgent = userAgent,
-        headers = headers,
-        targetLength = C.LENGTH_UNSET.toLong(),
-        maxBudgetBytes = maxTrackBytes,
-        handle = handle,
-        isStillActive = { !handle.cancelled.get() && seq == currentJobSeq.get() },
-      )
-    }
-  }
-
-  /**
    * Pre-caches the leading bytes (default 4 MiB) of the upcoming track into SimpleCache
-   * for instant track transitions.
+   * for instant zero-rebuffer track transitions.
    */
   fun prefetchNextTrack(
     context: Context,
@@ -388,9 +335,6 @@ object PlayerMediaCache {
         C.LENGTH_UNSET.toLong()
       }
       if (knownLength > 0L) {
-        if (knownLength > maxBudgetBytes && targetLength == C.LENGTH_UNSET.toLong()) {
-          return
-        }
         val checkLen = if (targetLength > 0L) min(knownLength, targetLength) else knownLength
         val alreadyCached = try {
           activeCache.getCachedBytes(key, 0L, checkLen)
@@ -406,7 +350,7 @@ object PlayerMediaCache {
         C.LENGTH_UNSET.toLong()
       }
 
-      val ds = buildCacheDataSourceFactory(activeCache, appContext, userAgent, headers)
+      val ds = buildCacheDataSourceFactory(activeCache, appContext, userAgent, headers, blockOnCache = false)
         .createDataSourceForDownloading()
       val dataSpec = DataSpec.Builder()
         .setUri(uri)

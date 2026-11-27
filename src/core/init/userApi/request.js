@@ -8,7 +8,36 @@ const defaultHeaders = {
 // var proxyUrl = "http://" + user + ":" + password + "@" + host + ":" + port;
 // var proxiedRequest = request.defaults({'proxy': proxyUrl});
 
-const handleRequestData = async({
+const findHeaderKeyCI = (hdrs, targetName) => {
+  const lower = targetName.toLowerCase()
+  return Object.keys(hdrs).find(key => key.toLowerCase() === lower)
+}
+
+const getHeaderCI = (hdrs, targetName) => {
+  const key = findHeaderKeyCI(hdrs, targetName)
+  return key ? hdrs[key] : undefined
+}
+
+const mergeHeadersCI = (...headerMaps) => {
+  const result = {}
+  const lowerToKey = {}
+  for (const map of headerMaps) {
+    if (!map || typeof map !== 'object') continue
+    for (const [key, value] of Object.entries(map)) {
+      if (value === undefined) continue
+      const lower = key.toLowerCase()
+      const existingKey = lowerToKey[lower]
+      if (existingKey && existingKey !== key) {
+        delete result[existingKey]
+      }
+      lowerToKey[lower] = key
+      result[key] = value
+    }
+  }
+  return result
+}
+
+export const handleRequestData = async({
   method = 'get',
   headers = {},
   format = 'json',
@@ -17,12 +46,14 @@ const handleRequestData = async({
   ...options
 }) => {
   // console.log(url, options)
-  headers = Object.assign({
-    Accept: 'application/json',
-  }, headers)
-  if (method.toLocaleLowerCase() === 'post' && !headers['Content-Type']) {
+  const mergedHeaders = mergeHeadersCI(
+    { Accept: 'application/json' },
+    defaultHeaders,
+    headers,
+  )
+  if (method.toLocaleLowerCase() === 'post' && !getHeaderCI(mergedHeaders, 'content-type')) {
     if (options.form) {
-      headers['Content-Type'] = 'application/x-www-form-urlencoded'
+      mergedHeaders['Content-Type'] = 'application/x-www-form-urlencoded'
       const formBody = []
       for (let [key, value] of Object.entries(options.form)) {
         let encodedKey = encodeURIComponent(key)
@@ -32,20 +63,21 @@ const handleRequestData = async({
       options.body = formBody.join('&')
       delete options.form
     } else if (options.formData) {
-      headers['Content-Type'] = 'multipart/form-data'
-      const formBody = []
-      for (let [key, value] of Object.entries(options.form)) {
-        let encodedKey = encodeURIComponent(key)
-        let encodedValue = encodeURIComponent(value)
-        formBody.push(`${encodedKey}=${encodedValue}`)
-      }
+      mergedHeaders['Content-Type'] = 'multipart/form-data'
       options.body = options.formData
       delete options.formData
     } else {
-      headers['Content-Type'] = 'application/json'
+      mergedHeaders['Content-Type'] = 'application/json'
     }
   }
-  if (headers['Content-Type'] === 'application/json' && options.body) {
+  const contentType = getHeaderCI(mergedHeaders, 'content-type')
+  if (
+    typeof contentType === 'string' &&
+    contentType.toLowerCase().includes('application/json') &&
+    options.body != null &&
+    typeof options.body === 'object' &&
+    !Buffer.isBuffer(options.body)
+  ) {
     options.body = JSON.stringify(options.body)
   }
 
@@ -54,7 +86,7 @@ const handleRequestData = async({
     method,
     credentials,
     cache,
-    headers: Object.assign({}, defaultHeaders, headers),
+    headers: mergedHeaders,
   }
 }
 
@@ -71,7 +103,7 @@ const blobToBuffer = (blob) => {
   })
 }
 
-export const fetchData = (url, { timeout = 13_000, ...options }) => {
+export const fetchData = (url, { timeout = 18_000, ...options }) => {
   // console.log('---start---', url)
 
   const controller = new global.AbortController()

@@ -64,12 +64,6 @@ class XmusicPlayerController(
   private var hasActiveTrack: Boolean = false
   private var currentTrackIsLocal: Boolean = false
   private var explicitDurationMs: Long = 0L
-  private var activeTrackUrl: String? = null
-  private var activeTrackUserAgent: String? = null
-  private var activeTrackHeaders: Map<String, String>? = null
-  private var activeTrackCacheKey: String? = null
-  private var fullCacheTriggeredForTrack: Boolean = false
-  private var pendingFullCacheTask: Runnable? = null
 
   // 60fps volume envelope state
   private var userVolume: Float = 1.0f
@@ -227,8 +221,7 @@ class XmusicPlayerController(
   ) {
     val p = player ?: return
     cancelActiveRamp()
-    cancelPendingFullCache()
-    PlayerMediaCache.cancelCurrentTrackPrefetch()
+    PlayerMediaCache.cancelAllPrefetch()
     mainHandler.removeCallbacks(eofMonitorTask)
     pauseRamping = false
     pendingPlayRampMs = 0
@@ -240,18 +233,6 @@ class XmusicPlayerController(
     currentTrackIsLocal = PlayerMediaCache.isLocalUri(uri)
     explicitDurationMs = if (durationSec > 0.0) (durationSec * 1000.0).toLong() else 0L
     hasActiveTrack = true
-    fullCacheTriggeredForTrack = false
-    if (!currentTrackIsLocal) {
-      activeTrackUrl = url
-      activeTrackUserAgent = userAgent
-      activeTrackHeaders = headers
-      activeTrackCacheKey = cacheKey
-    } else {
-      activeTrackUrl = null
-      activeTrackUserAgent = null
-      activeTrackHeaders = null
-      activeTrackCacheKey = null
-    }
 
     val source = PlayerMediaCache.buildMediaSource(service, uri, userAgent, headers, cacheKey)
     p.playWhenReady = false
@@ -357,7 +338,6 @@ class XmusicPlayerController(
 
   fun stop() {
     cancelActiveRamp()
-    cancelPendingFullCache()
     PlayerMediaCache.cancelAllPrefetch()
     mainHandler.removeCallbacks(eofMonitorTask)
     pendingPlayRampMs = 0
@@ -367,11 +347,6 @@ class XmusicPlayerController(
     eofFactor = 1.0f
     hasActiveTrack = false
     explicitDurationMs = 0L
-    activeTrackUrl = null
-    activeTrackUserAgent = null
-    activeTrackHeaders = null
-    activeTrackCacheKey = null
-    fullCacheTriggeredForTrack = false
 
     player?.let { p ->
       p.stop()
@@ -472,7 +447,6 @@ class XmusicPlayerController(
 
   private fun destroyPlayerOnly() {
     cancelActiveRamp()
-    cancelPendingFullCache()
     PlayerMediaCache.cancelAllPrefetch()
     mainHandler.removeCallbacks(eofMonitorTask)
     pendingPlayRampMs = 0
@@ -495,9 +469,6 @@ class XmusicPlayerController(
   override fun onIsPlayingChanged(isPlaying: Boolean) {
     if (isPlaying) {
       maybeStartPendingPlayRamp()
-      scheduleFullTrackCacheIfNeeded()
-    } else {
-      cancelPendingFullCache()
     }
     handlePlaybackStateChange()
   }
@@ -629,29 +600,6 @@ class XmusicPlayerController(
     if (wifiLock != null && wifiLock.isHeld) {
       try { wifiLock.release() } catch (_: Exception) {}
     }
-  }
-
-  private fun cancelPendingFullCache() {
-    pendingFullCacheTask?.let { mainHandler.removeCallbacks(it) }
-    pendingFullCacheTask = null
-  }
-
-  private fun scheduleFullTrackCacheIfNeeded() {
-    if (fullCacheTriggeredForTrack || currentTrackIsLocal) return
-    val url = activeTrackUrl ?: return
-    if (pendingFullCacheTask != null) return
-    val ua = activeTrackUserAgent
-    val hdrs = activeTrackHeaders
-    val key = activeTrackCacheKey
-    val task = Runnable {
-      pendingFullCacheTask = null
-      val p = player ?: return@Runnable
-      if (!p.isPlaying || fullCacheTriggeredForTrack || activeTrackUrl != url) return@Runnable
-      fullCacheTriggeredForTrack = true
-      PlayerMediaCache.prefetchFullTrack(service, url, ua, hdrs, key)
-    }
-    pendingFullCacheTask = task
-    mainHandler.postDelayed(task, 2000L)
   }
 
   private fun cancelActiveRamp() {
