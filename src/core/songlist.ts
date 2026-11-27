@@ -11,16 +11,6 @@ type CacheValue = LimitDetailCache | ListInfo
 const cache = new Map<string, CacheValue>()
 const LIST_LOAD_LIMIT = 30
 
-
-/**
- * 获取排序列表
- * @param source
- * @returns
- */
-export const getSortList = (source: LX.OnlineSource) => {
-  return songlistState.sortList[source]!
-}
-
 /**
  * 获取标签列表
  * @param source

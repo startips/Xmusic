@@ -37,7 +37,7 @@ windowSizeTools.onSizeChanged((newSize) => {
   refreshMetrics(newSize)
 })
 
-export function getTextSize(size: number) {
+function getTextSize(size: number) {
   if (screenW <= 0) refreshMetrics()
   const scaleWidth = screenW / designWidth
   const scaleHeight = screenH / designHeight
@@ -59,17 +59,4 @@ export function scaleSizeW(size: number) {
   if (screenW <= 0) refreshMetrics()
   const scaleWidth = size * scale
   return Math.round((scaleWidth / pixelRatio) * (global.lx?.fontSize ?? 1))
-}
-
-export const scaleSizeWR = (size: number) => {
-  return size * 2 - scaleSizeW(size)
-}
-
-export const scaleSizeHR = (size: number) => {
-  return size * 2 - scaleSizeH(size)
-}
-
-export const scaleSizeAbsHR = (size: number) => {
-  const scaleHeight = size * scale
-  return size * 2 - Math.floor(scaleHeight / pixelRatio)
 }

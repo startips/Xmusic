@@ -38,20 +38,6 @@ open class LyricPlayer {
   private val offset: Int = 150
   private var performanceTime: Int = 0
   private var startPlayTime: Int = 0
-  private var tempPause: Boolean = false
-  private var tempPaused: Boolean = false
-
-  fun setTempPause(isPaused: Boolean) {
-    if (isPaused) {
-      tempPause = true
-    } else {
-      tempPause = false
-      if (tempPaused) {
-        tempPaused = false
-        if (isPlay) refresh()
-      }
-    }
-  }
 
   private fun startTimeout(delayMs: Long, action: () -> Unit) {
     stopTimeout()
@@ -200,7 +186,6 @@ open class LyricPlayer {
   fun pause() {
     if (!isPlay) return
     isPlay = false
-    tempPaused = false
     stopTimeout()
     if (curLineNum == maxLine) return
     val nextLineNum = findCurLineNum(getCurrentTime())
@@ -238,7 +223,6 @@ open class LyricPlayer {
   }
 
   private fun refresh() {
-    if (tempPaused) tempPaused = false
     curLineNum++
 
     if (curLineNum >= maxLine) {
@@ -255,10 +239,6 @@ open class LyricPlayer {
       if (delay > 0L) {
         if (isPlay) {
           startTimeout(delay) {
-            if (tempPause) {
-              tempPaused = true
-              return@startTimeout
-            }
             if (!isPlay) return@startTimeout
             refresh()
           }

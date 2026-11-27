@@ -42,8 +42,6 @@ const defaultSetting: LX.AppSetting = {
   'player.isShowBluetoothLyric': false,
   'player.isShowBluetoothFullLyric': false,
 
-  // 'playDetail.isZoomActiveLrc': false,
-  // 'playDetail.isShowLyricProgressSetting': false,
   'playDetail.style.align': 'center',
   'playDetail.vertical.style.lrcFontSize': 210,
   'playDetail.horizontal.style.lrcFontSize': 220,
@@ -54,10 +52,8 @@ const defaultSetting: LX.AppSetting = {
   'search.isShowHistorySearch': false,
 
   'list.isClickPlayList': false,
-  'list.isShowSource': true,
   'list.isShowAlbumName': false,
   'list.isShowInterval': true,
-  'list.isSaveScrollLocation': true,
   'list.addMusicLocationType': 'top',
 
   'download.fileName': '歌名 - 歌手',

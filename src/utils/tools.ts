@@ -26,35 +26,11 @@ export const getDeviceLanguage = async() => {
 
 export const isAndroid = Platform.OS === 'android'
 // @ts-expect-error
-export const osVer = Platform.constants.Release as string
+const osVer = Platform.constants.Release as string
 
 export const isActive = () => AppState.currentState == 'active'
 
 export const TEMP_FILE_PATH = temporaryDirectoryPath + '/tempFile'
-
-// fix https://github.com/facebook/react-native/issues/4934
-// export const getWindowSise = (windowDimensions?: ReturnType<(typeof Dimensions)['get']>) => {
-//   return windowSizeTools.getSize()
-//   // windowDimensions ??= Dimensions.get('window')
-//   // if (Platform.OS === 'ios') return windowDimensions
-//   // return windowDimensions
-//   // const windowSize = {
-//   //   width: ExtraDimensions.getRealWindowWidth(),
-//   //   height: ExtraDimensions.getRealWindowHeight(),
-//   // }
-//   // if (
-//   //   (windowDimensions.height > windowDimensions.width && windowSize.height < windowSize.width) ||
-//   //   (windowDimensions.width > windowDimensions.height && windowSize.width < windowSize.height)
-//   // ) {
-//   //   windowSize.height = windowSize.width
-//   // }
-//   // windowSize.width = windowDimensions.width
-
-//   // if (ExtraDimensions.isSoftMenuBarEnabled()) {
-//   //   windowSize.height -= ExtraDimensions.getSoftMenuBarHeight()
-//   // }
-//   // return windowSize
-// }
 
 const getAndroidApiLevel = (): number => (Platform.OS === 'android' ? Number(Platform.Version) || 0 : 0)
 
@@ -234,7 +210,7 @@ export const tipDialog = async({
   })
 }
 
-export const clipboardWriteText = (str: string) => {
+const clipboardWriteText = (str: string) => {
   Clipboard.setString(str)
 }
 
@@ -469,7 +445,7 @@ const trasformeProps: Array<keyof Style> = [
   'top',
   'bottom',
 ]
-export const trasformeStyle = <T extends Style>(styles: T): T => {
+const trasformeStyle = <T extends Style>(styles: T): T => {
   const newStyle: T = { ...styles }
 
   for (const [p, v] of Object.entries(newStyle) as Array<[keyof Style, Style[keyof Style]]>) {

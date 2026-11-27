@@ -21,7 +21,7 @@ export const sizeFormate = (size: number): string => {
  * @param date 时间
  * @returns 时间对象或空字符串
  */
-export const toDateObj = (date?: number | string | Date): Date | '' => {
+const toDateObj = (date?: number | string | Date): Date | '' => {
   // console.log(date)
   if (!date) return ''
   switch (typeof date) {
@@ -68,21 +68,6 @@ export const formatPlayTime2 = (time: number) => {
   let m = Math.trunc(time / 60)
   let s = Math.trunc(time % 60)
   return numFix(m) + ':' + numFix(s)
-}
-
-
-export const isUrl = (path: string) => /https?:\/\//.test(path)
-
-// 解析URL参数为对象
-export const parseUrlParams = (str: string): Record<string, string> => {
-  const params: Record<string, string> = {}
-  if (typeof str !== 'string') return params
-  const paramsArr = str.split('&')
-  for (const param of paramsArr) {
-    let [key, value] = param.split('=')
-    params[key] = value
-  }
-  return params
 }
 
 /**
@@ -228,14 +213,6 @@ export const arrShuffle = <T>(array: T[]) => {
 
   return array
 }
-
-
-// export const freezeListItem = <T extends any[]>(list: T): MakeArrayItemReadOnly<T> => {
-//   for (let i = 0; i < list.length; i++) {
-//     Object.freeze(list[i])
-//   }
-//   return list
-// }
 
 export const b64DecodeUnicode = (str: string) => {
   // Going backwards: from bytestream, to percent-encoding, to original string.

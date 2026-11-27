@@ -2,19 +2,6 @@ import { type COMPONENT_IDS } from '@/config/constant'
 import { useEffect, useState } from 'react'
 import state, { type InitState } from './state'
 
-export const useFontSize = () => {
-  const [value, update] = useState(state.fontSize)
-
-  useEffect(() => {
-    global.state_event.on('fontSizeUpdated', update)
-    return () => {
-      global.state_event.off('fontSizeUpdated', update)
-    }
-  }, [])
-
-  return value
-}
-
 export const useStatusbarHeight = () => {
   const [value, update] = useState(state.statusbarHeight)
 
@@ -116,19 +103,6 @@ export const useNavActiveId = () => {
     global.state_event.on('navActiveIdUpdated', update)
     return () => {
       global.state_event.off('navActiveIdUpdated', update)
-    }
-  }, [])
-
-  return value
-}
-
-export const useBgPic = () => {
-  const [value, update] = useState(state.bgPic)
-
-  useEffect(() => {
-    global.state_event.on('bgPicUpdated', update)
-    return () => {
-      global.state_event.off('bgPicUpdated', update)
     }
   }, [])
 

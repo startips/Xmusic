@@ -16,11 +16,6 @@ import {
 } from '@/plugins/storage'
 import { DEFAULT_SETTING, LIST_IDS, storageDataPrefix, type NAV_ID_Type } from '@/config/constant'
 import { throttleBackgroundTimer } from './tools'
-// import { gzip, ungzip } from '@/utils/nativeModules/gzip'
-// import { readFile, writeFile, temporaryDirectoryPath, unlink } from '@/utils/fs'
-// import { isNotificationsEnabled, openNotificationPermissionActivity, shareText } from '@/utils/nativeModules/utils'
-// import { i18n } from '@/plugins/i18n'
-// import musicSdk from '@/utils/musicSdk'
 
 const fontSizeKey = storageDataPrefix.fontSize
 const playInfoStorageKey = storageDataPrefix.playInfo
@@ -74,7 +69,6 @@ const saveViewPrevStateThrottle = throttleBackgroundTimer((state) => {
   void saveData(viewPrevStateKey, state)
 }, 1000)
 
-export const getFontSize = async() => (await getData<number>(fontSizeKey) ?? 1)
 export const saveFontSize = async(size: number) => {
   await saveData(fontSizeKey, size)
 }
@@ -129,22 +123,6 @@ const initListUpdateInfo = async() => {
   // eslint-disable-next-line require-atomic-updates
   listUpdateInfo ??= await getData(listUpdateInfoKey) ?? {}
 }
-export const getListUpdateInfo = async() => {
-  await initListUpdateInfo()
-  return listUpdateInfo
-}
-export const saveListUpdateInfo = async(info: LX.List.ListUpdateInfo) => {
-  await initListUpdateInfo()
-  listUpdateInfo = info
-  saveListUpdateInfoThrottle()
-}
-export const setListAutoUpdate = async(id: string, enable: boolean) => {
-  await initListUpdateInfo()
-  const targetInfo = listUpdateInfo[id] ?? { updateTime: 0, isAutoUpdate: false }
-  targetInfo.isAutoUpdate = enable
-  listUpdateInfo[id] = targetInfo
-  saveListUpdateInfoThrottle()
-}
 export const setListUpdateTime = async(id: string, time: number) => {
   await initListUpdateInfo()
   const targetInfo = listUpdateInfo[id] ?? { updateTime: 0, isAutoUpdate: false }
@@ -152,10 +130,6 @@ export const setListUpdateTime = async(id: string, time: number) => {
   listUpdateInfo[id] = targetInfo
   saveListUpdateInfoThrottle()
 }
-// export const setListUpdateInfo = (id, { updateTime, isAutoUpdate }) => {
-//   listUpdateInfo[id] = { updateTime, isAutoUpdate }
-//   saveListUpdateInfo()
-// }
 export const removeListUpdateInfo = async(id: string) => {
   await initListUpdateInfo()
   delete listUpdateInfo[id]
@@ -382,11 +356,6 @@ export const getLyric = async(musicInfo: LX.Music.MusicInfo) => getData<LX.Music
 export const saveLyric = async(musicInfo: LX.Music.MusicInfo, lyricInfo: LX.Music.LyricInfo) => saveData(`${storageDataPrefix.lyric}${musicInfo.id}`, lyricInfo)
 export const clearLyric = async(keys?: string[]) => {
   if (!keys) keys = (await getAllKeys()).filter(key => key.startsWith(storageDataPrefix.lyric))
-  await removeDataMultiple(keys)
-}
-export const saveEditedLyric = async(musicInfo: LX.Music.MusicInfo, lyricInfo: LX.Music.LyricInfo) => saveData(`${storageDataPrefix.lyric}${musicInfo.id}_edited`, lyricInfo)
-export const clearEditedLyric = async() => {
-  let keys = (await getAllKeys()).filter(key => key.startsWith(storageDataPrefix.lyric) && key.endsWith('_edited'))
   await removeDataMultiple(keys)
 }
 export const getPlayerLyric = async(musicInfo: LX.Music.MusicInfo): Promise<LX.Player.LyricInfo> => {

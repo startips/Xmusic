@@ -28,45 +28,7 @@ export const request = async(url: string, { timeout = 10000, ...options }: Reque
 }
 
 
-// export const aesEncrypt = (text: string, key: string, iv: string) => {
-//   const cipher = createCipheriv('aes-128-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'))
-//   return Buffer.concat([cipher.update(Buffer.from(text)), cipher.final()]).toString('base64')
-// }
-
-// export const aesDecrypt = (text: string, key: string, iv: string) => {
-//   const decipher = createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), Buffer.from(iv, 'base64'))
-//   return Buffer.concat([decipher.update(Buffer.from(text, 'base64')), decipher.final()]).toString()
-// }
-
 export { generateRsaKey } from '@/utils/nativeModules/crypto'
-// export const generateRsaKey = async() => new Promise<{ publicKey: string, privateKey: string }>((resolve, reject) => {
-//   generateKeyPair(
-//     'rsa',
-//     {
-//       modulusLength: 2048, // It holds a number. It is the key size in bits and is applicable for RSA, and DSA algorithm only.
-//       publicKeyEncoding: {
-//         type: 'spki', // Note the type is pkcs1 not spki
-//         format: 'pem',
-//       },
-//       privateKeyEncoding: {
-//         type: 'pkcs8', // Note again the type is set to pkcs1
-//         format: 'pem',
-//         // cipher: "aes-256-cbc", //Optional
-//         // passphrase: "", //Optional
-//       },
-//     },
-//     (err, publicKey, privateKey) => {
-//       if (err) {
-//         reject(err)
-//         return
-//       }
-//       resolve({
-//         publicKey,
-//         privateKey,
-//       })
-//     },
-//   )
-// })
 
 
 export const encryptMsg = async(keyInfo: LX.Sync.KeyInfo, msg: string): Promise<string> => {
@@ -114,9 +76,4 @@ export const parseUrl = (href: string): LX.Sync.UrlInfo => {
     hostPath: href.replace(httpProtocol + '//', ''),
     href,
   }
-}
-
-
-export const sendStatus = (status: LX.Sync.Status) => {
-  // syncLog.log(JSON.stringify(status))
 }

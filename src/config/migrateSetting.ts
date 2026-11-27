@@ -19,8 +19,6 @@ export default (setting: any): Partial<LX.AppSetting> => {
     setting['playDetail.portrait.style.lrcFontSize'] = setting.player?.portrait?.style?.lrcFontSize
     setting['playDetail.landscape.style.lrcFontSize'] = setting.player?.landscape?.style?.lrcFontSize
     setting['list.isClickPlayList'] = setting.list?.isClickPlayList
-    setting['list.isShowSource'] = setting.list?.isShowSource
-    setting['list.isSaveScrollLocation'] = setting.list?.isSaveScrollLocation
     setting['list.addMusicLocationType'] = setting.list?.addMusicLocationType
     setting['common.themeMode'] = setting.isAutoTheme === false ? 'light' : 'system'
     setting['common.langId'] = setting.langId

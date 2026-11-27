@@ -12,7 +12,6 @@ import com.facebook.react.PackageList
 import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
-import com.facebook.react.flipper.ReactNativeFlipper
 import com.reactnativenavigation.NavigationApplication
 import com.reactnativenavigation.react.NavigationReactNativeHost
 
@@ -47,6 +46,5 @@ class MainApplication : NavigationApplication() {
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       DefaultNewArchitectureEntryPoint.load()
     }
-    ReactNativeFlipper.initializeFlipper(this, reactNativeHost.reactInstanceManager)
   }
 }

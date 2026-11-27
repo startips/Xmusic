@@ -52,16 +52,6 @@ object XmusicWidgetUpdater {
     }
   }
 
-  fun invalidateCoverCache() {
-    synchronized(coverLock) {
-      cachedCoverMtime = -1L
-      cachedCoverSize = -1L
-      cachedVinylAccent = 0
-      cachedRoundedCover = null
-      cachedVinylCover = null
-    }
-  }
-
   /**
    * Single atomic writer for cacheDir/widget_cover.png, synchronized with widget readers.
    */
