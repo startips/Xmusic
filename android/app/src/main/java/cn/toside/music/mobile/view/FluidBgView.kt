@@ -106,6 +106,8 @@ class FluidBgView(context: Context) : View(context) {
   private var frameScheduled = false
   private val energyBuf = FloatArray(3)
   private var smoothBass = 0f
+  private var slowBass = 0f
+  private var bassPunch = 0f
   private var smoothMid = 0f
   private var smoothTreble = 0f
   private val steadyFrameRunnable = Runnable {
@@ -187,6 +189,8 @@ class FluidBgView(context: Context) : View(context) {
     this.audioReactive = reactive
     if (!reactive) {
       smoothBass = 0f
+      slowBass = 0f
+      bassPunch = 0f
       smoothMid = 0f
       smoothTreble = 0f
       for (i in 0 until ORB_COUNT) orbPaints[i].alpha = 255
@@ -329,14 +333,24 @@ class FluidBgView(context: Context) : View(context) {
     }
 
     if (audioReactive && playing && !powerSaveMode && AudioSpectrumEngine.sampleSpectrum(null, energyBuf, nowNs)) {
-      val atk = 1.0f - exp(-dtSec * 16.0f)
-      val dec = 1.0f - exp(-dtSec * 5.0f)
-      smoothBass += (energyBuf[0] - smoothBass) * (if (energyBuf[0] > smoothBass) atk else dec)
+      val atk = 1.0f - exp(-dtSec * 20.0f)
+      val dec = 1.0f - exp(-dtSec * 5.5f)
+      val slowDec = 1.0f - exp(-dtSec * 2.2f)
+      val bass = energyBuf[0]
+      slowBass = if (bass > slowBass) slowBass + (bass - slowBass) * (1.0f - exp(-dtSec * 4.0f))
+      else slowBass - (slowBass - bass) * slowDec
+      val rawPunch = max(0f, bass - slowBass * 0.85f) * 2.2f
+      val punchRate = if (rawPunch > bassPunch) 1.0f - exp(-dtSec * 24.0f) else 1.0f - exp(-dtSec * 7.0f)
+      bassPunch += (rawPunch.coerceIn(0f, 1f) - bassPunch) * punchRate
+
+      smoothBass += (bass - smoothBass) * (if (bass > smoothBass) atk else dec)
       smoothMid += (energyBuf[1] - smoothMid) * (if (energyBuf[1] > smoothMid) atk else dec)
       smoothTreble += (energyBuf[2] - smoothTreble) * (if (energyBuf[2] > smoothTreble) atk else dec)
     } else {
       val dec = 1.0f - exp(-dtSec * 6.0f)
       smoothBass -= smoothBass * dec
+      slowBass -= slowBass * dec
+      bassPunch -= bassPunch * dec
       smoothMid -= smoothMid * dec
       smoothTreble -= smoothTreble * dec
     }
@@ -365,11 +379,14 @@ class FluidBgView(context: Context) : View(context) {
     val maxDim = max(w, h).toFloat()
     val t = accumulatedPhaseSec
 
-    val bassScale = 1.0f + smoothBass * 0.18f
-    val midScale = 1.0f + smoothMid * 0.13f + smoothTreble * 0.05f
+    val bassDrive = (smoothBass * 0.65f + bassPunch * 0.80f).coerceIn(0f, 1f)
+    val midDrive = smoothMid.coerceIn(0f, 1f)
+    val trebleDrive = smoothTreble.coerceIn(0f, 1f)
+    val bassScale = if (audioReactive) 0.86f + bassDrive * 0.42f else 1.0f
+    val midScale = if (audioReactive) 0.88f + midDrive * 0.32f + trebleDrive * 0.12f else 1.0f
     if (audioReactive) {
-      val bassAlpha = (222 + (smoothBass * 33f).roundToInt()).coerceIn(222, 255)
-      val midAlpha = (222 + (smoothMid * 33f).roundToInt()).coerceIn(222, 255)
+      val bassAlpha = (155 + (bassDrive * 100f).roundToInt()).coerceIn(155, 255)
+      val midAlpha = (155 + (midDrive * 100f).roundToInt()).coerceIn(155, 255)
       orbPaints[0].alpha = bassAlpha
       orbPaints[1].alpha = midAlpha
       orbPaints[2].alpha = midAlpha

@@ -7,7 +7,7 @@ import { useCoverPalette, useTheme } from '@/store/theme/hook'
 import { blendRgb, parseColorToRgb } from '@/theme/m3'
 
 interface NativeSpectrumProps extends ViewProps {
-  mode?: 'bars' | 'ribbon'
+  mode?: 'ambient' | 'bars' | 'ribbon'
   playing?: boolean
   primaryColor?: number
   secondaryColor?: number
@@ -23,7 +23,7 @@ const toNativeArgb = (r: number, g: number, b: number, alpha = 1): number => {
 }
 
 export interface AudioSpectrumProps {
-  mode: 'bars' | 'ribbon'
+  mode: 'ambient' | 'bars' | 'ribbon'
   intensity?: number
   style?: ViewProps['style']
 }

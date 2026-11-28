@@ -4,14 +4,17 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import android.os.PowerManager
 import android.view.View
 import cn.toside.music.mobile.player.dsp.AudioSpectrumEngine
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
@@ -20,16 +23,19 @@ import kotlin.math.sin
 
 /**
  * Native hardware-accelerated M3E Audio Spectrum Visualizer View.
- * Supports mirrored capsule bars ("bars") and 3-layer organic aurora ribbons ("ribbon"),
- * driven zero-GC directly from [AudioSpectrumEngine].
+ * Supports beat-reactive atmospheric halos ("ambient"), mirrored capsule bars ("bars"),
+ * and 3-layer organic aurora ribbons ("ribbon"), driven zero-GC directly from [AudioSpectrumEngine].
  */
 class SpectrumView(context: Context) : View(context) {
   companion object {
+    const val MODE_AMBIENT = "ambient"
     const val MODE_BARS = "bars"
     const val MODE_RIBBON = "ribbon"
     private const val BANDS = AudioSpectrumEngine.BAND_COUNT
     private const val LAYER_COUNT = 3
     private val RIBBON_ALPHAS = floatArrayOf(0.16f, 0.26f, 0.42f)
+    private val AMBIENT_STOPS = floatArrayOf(0f, 0.35f, 0.72f, 1.0f)
+    private val AMBIENT_FALLOFF = floatArrayOf(1.0f, 0.58f, 0.18f, 0.0f)
   }
 
   private val density = context.resources.displayMetrics.density
@@ -72,6 +78,21 @@ class SpectrumView(context: Context) : View(context) {
   private val pointX = FloatArray(BANDS + 2)
   private val pointY = FloatArray(BANDS + 2)
 
+  // Zero-GC state for "ambient" atmospheric halo mode
+  private val energyBuf = FloatArray(3)
+  private var smoothBass = 0f
+  private var slowBass = 0f
+  private var bassPunch = 0f
+  private var smoothMid = 0f
+  private var smoothTreble = 0f
+  private var ambientPhase = 0f
+  private val ambientPaints = Array(LAYER_COUNT) { Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG) }
+  private val ambientShaders = arrayOfNulls<RadialGradient>(LAYER_COUNT)
+  private val ambientMatrix = Matrix()
+  private val ambientStopColors = IntArray(4)
+  private val horizonPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+  private var horizonShader: RadialGradient? = null
+
   private var cachedShaderW = -1
   private var cachedShaderH = -1
   private var shadersDirty = true
@@ -106,7 +127,11 @@ class SpectrumView(context: Context) : View(context) {
   }
 
   fun setMode(mode: String?) {
-    val next = if (mode == MODE_RIBBON) MODE_RIBBON else MODE_BARS
+    val next = when (mode) {
+      MODE_AMBIENT -> MODE_AMBIENT
+      MODE_RIBBON -> MODE_RIBBON
+      else -> MODE_BARS
+    }
     if (this.mode == next) return
     this.mode = next
     shadersDirty = true
@@ -231,6 +256,32 @@ class SpectrumView(context: Context) : View(context) {
       )
     }
     crestPaint.color = scaleAlpha(primaryColor, 0.68f * intensity)
+
+    val ambientColors = intArrayOf(primaryColor, secondaryColor, tertiaryColor)
+    val ambientPeaks = intArrayOf(190, 150, 130)
+    for (i in 0 until LAYER_COUNT) {
+      val base = ambientColors[i]
+      val r = Color.red(base)
+      val g = Color.green(base)
+      val b = Color.blue(base)
+      val peak = (ambientPeaks[i] * intensity).roundToInt().coerceIn(0, 255)
+      for (s in AMBIENT_STOPS.indices) {
+        ambientStopColors[s] = Color.argb((peak * AMBIENT_FALLOFF[s]).roundToInt().coerceIn(0, 255), r, g, b)
+      }
+      val grad = RadialGradient(0f, 0f, 1f, ambientStopColors, AMBIENT_STOPS, Shader.TileMode.CLAMP)
+      ambientShaders[i] = grad
+      ambientPaints[i].shader = grad
+    }
+
+    val hr = Color.red(primaryColor)
+    val hg = Color.green(primaryColor)
+    val hb = Color.blue(primaryColor)
+    val hPeak = (155f * intensity).roundToInt().coerceIn(0, 255)
+    for (s in AMBIENT_STOPS.indices) {
+      ambientStopColors[s] = Color.argb((hPeak * AMBIENT_FALLOFF[s]).roundToInt().coerceIn(0, 255), hr, hg, hb)
+    }
+    horizonShader = RadialGradient(0f, 0f, 1f, ambientStopColors, AMBIENT_STOPS, Shader.TileMode.CLAMP)
+    horizonPaint.shader = horizonShader
   }
 
   private fun scaleAlpha(color: Int, factor: Float): Int {
@@ -247,7 +298,7 @@ class SpectrumView(context: Context) : View(context) {
   }
 
   private fun maxDisplayEnergy(): Float {
-    var m = 0f
+    var m = max(smoothBass, max(smoothMid, smoothTreble))
     for (i in 0 until BANDS) {
       if (smoothBands[i] > m) m = smoothBands[i]
     }
@@ -269,6 +320,40 @@ class SpectrumView(context: Context) : View(context) {
       if (dt > 0.0 && dt < 0.25) dtSec = dt.toFloat()
     }
     lastFrameNs = nowNs
+
+    if (mode == MODE_AMBIENT) {
+      val hasAudio = playing && !powerSaveMode &&
+        AudioSpectrumEngine.sampleSpectrum(null, energyBuf, nowNs)
+      if (hasAudio) {
+        val atk = 1.0f - exp(-dtSec * 22.0f)
+        val dec = 1.0f - exp(-dtSec * 5.5f)
+        val slowDec = 1.0f - exp(-dtSec * 2.2f)
+        val bass = energyBuf[0]
+        slowBass = if (bass > slowBass) {
+          slowBass + (bass - slowBass) * (1.0f - exp(-dtSec * 4.0f))
+        } else {
+          slowBass - (slowBass - bass) * slowDec
+        }
+        val rawPunch = (max(0f, bass - slowBass * 0.85f) * 2.2f).coerceIn(0f, 1f)
+        val punchRate = if (rawPunch > bassPunch) 1.0f - exp(-dtSec * 26.0f) else 1.0f - exp(-dtSec * 7.0f)
+        bassPunch += (rawPunch - bassPunch) * punchRate
+
+        smoothBass += (bass - smoothBass) * (if (bass > smoothBass) atk else dec)
+        smoothMid += (energyBuf[1] - smoothMid) * (if (energyBuf[1] > smoothMid) atk else dec)
+        smoothTreble += (energyBuf[2] - smoothTreble) * (if (energyBuf[2] > smoothTreble) atk else dec)
+        ambientPhase += dtSec * (0.45f + smoothBass * 0.9f)
+      } else {
+        val dec = 1.0f - exp(-dtSec * 6.0f)
+        smoothBass -= smoothBass * dec
+        slowBass -= slowBass * dec
+        bassPunch -= bassPunch * dec
+        smoothMid -= smoothMid * dec
+        smoothTreble -= smoothTreble * dec
+      }
+      drawAmbientHalo(canvas, w.toFloat(), h.toFloat())
+      scheduleNextFrame(force = false)
+      return
+    }
 
     val hasAudio = playing && !powerSaveMode &&
       AudioSpectrumEngine.sampleSpectrum(rawBands, null, nowNs)
@@ -371,5 +456,91 @@ class SpectrumView(context: Context) : View(context) {
         canvas.drawPath(crestPath, crestPaint)
       }
     }
+  }
+
+  private fun drawAmbientHalo(canvas: Canvas, w: Float, h: Float) {
+    if (max(smoothBass, max(smoothMid, smoothTreble)) <= 0.004f) return
+
+    val bassDrive = (smoothBass * 0.65f + bassPunch * 0.75f).coerceIn(0f, 1f)
+    val midDrive = smoothMid.coerceIn(0f, 1f)
+    val trebleDrive = smoothTreble.coerceIn(0f, 1f)
+    val phase = ambientPhase.toDouble()
+
+    // 1. Bottom-center bass bloom behind transport controls
+    drawBloom(
+      canvas = canvas,
+      shader = ambientShaders[0],
+      paint = ambientPaints[0],
+      w = w,
+      h = h,
+      cx = w * (0.50f + 0.06f * sin(phase).toFloat()),
+      cy = h * 0.80f,
+      rx = w * (0.46f + 0.36f * bassDrive),
+      ry = h * (0.18f + 0.16f * bassDrive),
+      alpha = (65 + 190 * bassDrive).roundToInt().coerceIn(0, 255),
+    )
+
+    // 2. Wide cover horizon aura band across the artwork's lower fade boundary
+    val horizonDrive = max(bassDrive, midDrive)
+    drawBloom(
+      canvas = canvas,
+      shader = horizonShader,
+      paint = horizonPaint,
+      w = w,
+      h = h,
+      cx = w * 0.50f,
+      cy = h * 0.59f,
+      rx = w * (0.55f + 0.35f * (bassDrive * 0.6f + midDrive * 0.4f)),
+      ry = h * (0.09f + 0.09f * bassDrive),
+      alpha = (45 + 175 * horizonDrive).roundToInt().coerceIn(0, 255),
+    )
+
+    // 3. Upper-left mid/vocal bloom
+    drawBloom(
+      canvas = canvas,
+      shader = ambientShaders[1],
+      paint = ambientPaints[1],
+      w = w,
+      h = h,
+      cx = w * (0.18f + 0.09f * cos(phase * 0.8).toFloat()),
+      cy = h * (0.15f + 0.05f * sin(phase * 0.6).toFloat()),
+      rx = w * (0.38f + 0.30f * midDrive),
+      ry = w * (0.38f + 0.30f * midDrive),
+      alpha = (40 + 165 * midDrive).roundToInt().coerceIn(0, 255),
+    )
+
+    // 4. Upper-right treble shimmer bloom
+    drawBloom(
+      canvas = canvas,
+      shader = ambientShaders[2],
+      paint = ambientPaints[2],
+      w = w,
+      h = h,
+      cx = w * (0.84f + 0.08f * sin(phase * 0.9 + 1.2).toFloat()),
+      cy = h * (0.24f + 0.06f * cos(phase * 0.7).toFloat()),
+      rx = w * (0.34f + 0.28f * trebleDrive),
+      ry = w * (0.34f + 0.28f * trebleDrive),
+      alpha = (35 + 155 * trebleDrive).roundToInt().coerceIn(0, 255),
+    )
+  }
+
+  private fun drawBloom(
+    canvas: Canvas,
+    shader: RadialGradient?,
+    paint: Paint,
+    w: Float,
+    h: Float,
+    cx: Float,
+    cy: Float,
+    rx: Float,
+    ry: Float,
+    alpha: Int,
+  ) {
+    if (shader == null || rx <= 1f || ry <= 1f || alpha <= 0) return
+    paint.alpha = alpha
+    ambientMatrix.setScale(rx, ry)
+    ambientMatrix.postTranslate(cx, cy)
+    shader.setLocalMatrix(ambientMatrix)
+    canvas.drawRect(0f, 0f, w, h, paint)
   }
 }

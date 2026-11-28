@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { View, AppState } from 'react-native'
+import { View, AppState, StyleSheet } from 'react-native'
 import { screenkeepAwake, screenUnkeepAwake } from '@/utils/nativeModules/utils'
 import MoreBtn from './MoreBtn'
 
@@ -71,6 +71,9 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
         paddingRight,
       }}
     >
+      {visualizerMode === 'ambient'
+        ? <AudioSpectrum mode="ambient" intensity={0.9} style={StyleSheet.absoluteFill} />
+        : null}
       <View style={{ ...styles.left, paddingBottom: bottomPad }}>
         <Header onBack={onBack} />
         <View style={styles.leftContent}>

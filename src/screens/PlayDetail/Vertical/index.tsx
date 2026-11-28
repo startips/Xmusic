@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useMemo, useEffect, useCallback } from 'react'
-import { View, AppState, Animated, Pressable } from 'react-native'
+import { View, AppState, Animated, Pressable, StyleSheet } from 'react-native'
 
 import Header from './components/Header'
 import Player from './Player'
@@ -157,6 +157,15 @@ export default memo(({ componentId, onBack }: { componentId: string, onBack: () 
         locations={[0, 0.30, 0.66, 1]}
         style={styles.bottomScrim}
       />
+      {visualizerMode === 'ambient'
+        ? (
+            <AudioSpectrum
+              mode="ambient"
+              intensity={pageIndex === 1 ? 0.65 : 1}
+              style={StyleSheet.absoluteFill}
+            />
+          )
+        : null}
       <View style={styles.container}>
         <PagerView
           ref={pagerViewRef}
